@@ -424,6 +424,7 @@ typedef struct
     XCVR_RSM_RTT_TYPE_T rtt_type;         /*!< RTT Type, determines payload size for RTT steps. */
     XCVR_RSM_PA_RAMP_TIME_T pa_ramp_time; /*!< PA ramp time in usec, 0, 1, 2, 4, & 3 are valid values */
     bool enable_inpr;                     /*!< Choose whether Inline Phase Return feature should be enabled. */
+    uint16_t hpm_cal_manual_val;  /*!< The value for HPM_CAL_FACTOR_MANUAL to be used when ::hpm_cal_mode uses the manual value (alone or in combination with PKT RAM values. */
 #endif                                    /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 } xcvr_lcl_rsm_config_t;
 

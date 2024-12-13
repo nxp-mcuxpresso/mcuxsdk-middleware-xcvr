@@ -508,14 +508,6 @@ void XCVR_LCL_RsmPLLInit(XCVR_RSM_SQTE_RATE_T rate)
         XCVR_PLL_DIG_TUNING_CAP_RX_CTRL_TUNING_RANGE_4(0U) | XCVR_PLL_DIG_TUNING_CAP_RX_CTRL_TUNING_RANGE_5(0U) |
         XCVR_PLL_DIG_TUNING_CAP_RX_CTRL_TUNING_RANGE_6(0U) | XCVR_PLL_DIG_TUNING_CAP_RX_CTRL_TUNING_RANGE_7(0U);
 
-    /* this is not needed, as long as RSM_HPM_CAL = 1. For the dynamic selection: RSM_HPM_CAL = 0, HPM_DYNAMIC_SEL=1,
-     * HPM_DYNAMIC_RX_PKT_TABLE=1, HPM_DYNAMIC_RX_TONE_TABLE=0  */
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* KW47 always uses HPM CAL from PKT RAM */
-        temp = XCVR_PLL_DIG->HPM_CTRL;
-    temp |= (XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_RX_PKT_TABLE_MASK | XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_SEL_MASK);
-        XCVR_PLL_DIG->HPM_CTRL = temp; 
-#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
-
 #if(0) // disabled since this is overriden by IPS_FO by defaul ble config to use DRS feature.
         temp = XCVR_PLL_DIG->HPM_SDM_RES;
         temp &= ~(XCVR_PLL_DIG_HPM_SDM_RES_HPM_COUNT_ADJUST_MASK);
@@ -831,12 +823,35 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         /* ************** */
         /* Setup PLL for ranging */
         /* ************** */
-        /* NOTE: This code assumes t_ip1 and t_ip2 config structures both use identical HPM CAL enable bit settings
-         * (which is the case in the initial coding */
-        bool do_hpm_cal = ((xcvr_lcl_rsm_generic_config.RSM_CTRL3 & XCVR_MISC_RSM_CTRL3_RSM_HPM_CAL_MASK) ==
-                           0U); /* RSM isn't providing HPM CAL values */
+
         XCVR_LCL_RsmPLLInit(rsm_settings_ptr->rate);
         (void)status; /* Failure status won't affect the flow of the program, will just get passed as a return */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+        /* HPM_CTRL */
+        temp = XCVR_PLL_DIG->HPM_CTRL;
+        temp &= ~(XCVR_PLL_DIG_HPM_CTRL_RX_HPM_CAL_EN_MASK |
+                        XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_RX_PKT_TABLE_MASK |
+                        XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_RX_TONE_TABLE_MASK |
+                        XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_SEL_MASK);
+        temp |= (XCVR_PLL_DIG_HPM_CTRL_RX_HPM_CAL_EN(0) |
+                       XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_RX_PKT_TABLE(1)  |
+                       XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_RX_TONE_TABLE(0) |
+                       XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_SEL(1) );
+        XCVR_PLL_DIG->HPM_CTRL = temp;
+        /* HPMCAL_CTRL */
+        temp = XCVR_PLL_DIG->HPMCAL_CTRL;
+        temp &= ~(XCVR_PLL_DIG_HPMCAL_CTRL_HP_CAL_DISABLE_MASK |
+                        XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_MANUAL_MASK);
+        temp |= (XCVR_PLL_DIG_HPMCAL_CTRL_HP_CAL_DISABLE(0) |
+                        XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_MANUAL(rsm_settings_ptr->hpm_cal_manual_val));
+        XCVR_PLL_DIG->HPMCAL_CTRL = temp;
+#else
+
+        /* NOTE: This code assumes t_ip1 and t_ip2 config structures both use identical HPM CAL enable bit settings
+         * (which is the case in the initial coding */
+        /* KW45 HPM CAL support */
+        bool do_hpm_cal = ((xcvr_lcl_rsm_generic_config.RSM_CTRL3 & XCVR_MISC_RSM_CTRL3_RSM_HPM_CAL_MASK) ==
+                           0U); /* RSM isn't providing HPM CAL values */
         if (do_hpm_cal)
         {
             XCVR_PLL_DIG->HPM_CTRL |=
@@ -848,6 +863,7 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
             XCVR_PLL_DIG->HPM_CTRL &= ~(XCVR_PLL_DIG_HPM_CTRL_RX_HPM_CAL_EN_MASK); /* RSM forces HPM CAL values so PLL
                                                                                       does not perform calibration.  */
         }
+#endif
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* KW47 Inline Phase Return */
         if (rsm_settings_ptr->enable_inpr)
@@ -1233,7 +1249,8 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
                                                       logic will configure additional fields */
         temp &= ~(XCVR_MISC_RSM_CTRL3_RSM_DMA_RX_EN_MASK | XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DLY_MASK |
                   XCVR_MISC_RSM_CTRL3_RSM_DMA_DUR_MASK |
-                  XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DIS_MASK); /* Zero out all fields being modified by logic */
+                  XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DIS_MASK|
+                  XCVR_MISC_RSM_CTRL3_RSM_HPM_CAL_MASK); /* Zero out all fields being modified by logic */
         if (rate_is_2mbps)
         {
             temp |= XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DLY(
@@ -1262,6 +1279,11 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         {
             temp |= XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DIS_MASK;
         }
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)
+        temp |= XCVR_MISC_RSM_CTRL3_RSM_HPM_CAL(1);
+#else
+        temp |= XCVR_MISC_RSM_CTRL3_RSM_HPM_CAL(0);
+#endif
         XCVR_MISC->RSM_CTRL3 = temp;
 
         /* RSM_CTRL4 */
