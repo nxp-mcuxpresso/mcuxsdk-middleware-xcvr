@@ -807,6 +807,7 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
             }
 #endif /* defined(SUPPORT_RSM_LONG_PN) && (SUPPORT_RSM_LONG_PN == 1) */
             /* the 1Mbps case is programmed in the normal settings configuration process */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN < 470) /* only apply custom settings for KW45 */
             if (rate_is_2mbps)
             {
                 /* FM REF for GFSK BT=0.5, h=0.5 modulation - Mihai */
@@ -815,6 +816,7 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
                 XCVR_2P4GHZ_PHY->RTT_CTRL &= ~(GEN4PHY_RTT_CTRL_HA_RTT_THRESHOLD_MASK);
                 XCVR_2P4GHZ_PHY->RTT_CTRL |= GEN4PHY_RTT_CTRL_HA_RTT_THRESHOLD(0x166);
             }
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN < 470) */
         }
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* KW47 demod control */
         temp = XCVR_2P4GHZ_PHY->DMD_CTRL1;
