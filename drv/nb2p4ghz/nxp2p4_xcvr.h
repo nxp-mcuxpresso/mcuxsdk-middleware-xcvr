@@ -134,6 +134,10 @@ typedef struct
 
 #endif /* !defined(HPMCAL_CTRL) */
 
+#ifndef IQMC_TRIM_DOWNLOAD_SUPPORT
+#define IQMC_TRIM_DOWNLOAD_SUPPORT (0)
+#endif /* ifndef IQMC_TRIM_DOWNLOAD_SUPPORT */
+
 /* Error check compile flags */
 #if !((RF_OSC_26MHZ == 1U) || (RF_OSC_26MHZ == 0U))
 /* Code requires this flag to strictly be 0 or 1 */

@@ -63,6 +63,12 @@ xcvrStatus_t XCVR_Init(const xcvr_config_t **xcvr_config, const xcvr_coding_conf
         current_xcvr_config.coding_mode   = (*rbme_config)->coding_mode;
     }
 
+        /* Process trim value to apply in 1Mbps or 2Mbps operation */
+#if defined(IQMC_TRIM_DOWNLOAD_SUPPORT) && (IQMC_TRIM_DOWNLOAD_SUPPORT == 1)
+    uint64_t packed_trim_value = XCVR_TRIM_ReadIqmcIfr();
+    XCVR_TRIM_HandleIqmcIfr(packed_trim_value);
+#endif /* defined(IQMC_TRIM_DOWNLOAD_SUPPORT) */
+
     return status;
 }
 
@@ -88,6 +94,12 @@ xcvrStatus_t XCVR_InitNoDacTrim(const xcvr_config_t **xcvr_config, const xcvr_co
             current_xcvr_config.coding_mode   = (*rbme_config)->coding_mode;
         }
     }
+
+        /* Process trim value to apply in 1Mbps or 2Mbps operation */
+#if defined(IQMC_TRIM_DOWNLOAD_SUPPORT) && (IQMC_TRIM_DOWNLOAD_SUPPORT == 1)
+    uint64_t packed_trim_value = XCVR_TRIM_ReadIqmcIfr();
+    XCVR_TRIM_HandleIqmcIfr(packed_trim_value);
+#endif /* defined(IQMC_TRIM_DOWNLOAD_SUPPORT) */
 
     return status;
 }
@@ -287,6 +299,12 @@ xcvrStatus_t XCVR_ChangeMode(const xcvr_config_t **xcvr_config, /* Change from o
         status = XCVR_SetDcocDacTrims(&dac_trims);
 #endif /* defined(RADIO_IS_GEN_3P5) */
     }
+
+        /* Reload trim value to apply in 1Mbps or 2Mbps operation since it gets corrupted in mode change */
+#if defined(IQMC_TRIM_DOWNLOAD_SUPPORT) && (IQMC_TRIM_DOWNLOAD_SUPPORT == 1)
+    uint64_t packed_trim_value = XCVR_TRIM_ReadIqmcIfr();
+    XCVR_TRIM_HandleIqmcIfr(packed_trim_value);
+#endif /* defined(IQMC_TRIM_DOWNLOAD_SUPPORT) */
 
     return status;
 }
