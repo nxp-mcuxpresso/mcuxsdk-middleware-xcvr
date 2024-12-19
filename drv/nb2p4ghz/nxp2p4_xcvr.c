@@ -154,8 +154,10 @@ void XCVR_RadioStartup(void)
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 400)
     RFMC_rf_osc_startup();
 #else
-// TODO: update CPU names
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && !defined(KW45B41Z82_NBU_SERIES) && !defined(KW45B41Z83_NBU_SERIES)
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) &&                           \
+    !defined(KW45B41Z82_NBU_SERIES) &&              /* Not on radio core (KW5) */ \
+    !defined(KW45B41Z83_NBU_SERIES) &&              /* Not on radio core (KW5) */ \
+    !(defined(IS_RADIO_CORE) && IS_RADIO_CORE == 1) /* Not on radio core (KW47 and later radios) */
     RFMC_rf_osc_startup(); /* Startup the RF OSC (has no effect if it is already started) and make sure radio is not in
                               reset or low power */
 #if defined (FPGA_TARGET) && (FPGA_TARGET == 1)
@@ -2150,7 +2152,7 @@ void XCVR_releaseLdoAntAll(void)
     XCVR_TSM->OVRD1  &= ~(XCVR_TSM_OVRD1_SEQ_LDO_ANT_PUP_OVRD_EN_MASK | XCVR_TSM_OVRD1_SEQ_LDO_ANT_PUP_OVRD_MASK);
 }
 
-xcvrStatus_t XCVR_setLdoAntTrim(unsigned char ucLdoAntTrimValue)
+xcvrStatus_t XCVR_setLdoAntTrim(uint8_t ucLdoAntTrimValue)
 {
 xcvrStatus_t status = gXcvrInvalidParameters_c;
 
@@ -2167,9 +2169,9 @@ xcvrStatus_t status = gXcvrInvalidParameters_c;
     return status;
 }
 
-unsigned char XCVR_getLdoAntTrim(void)
+uint8_t XCVR_getLdoAntTrim(void)
 {
-    return (XCVR_ANALOG->LDO_1 & XCVR_ANALOG_LDO_1_LDO_ANT_TRIM_MASK) >> XCVR_ANALOG_LDO_1_LDO_ANT_TRIM_SHIFT;
+    return (uint8_t)((XCVR_ANALOG->LDO_1 & XCVR_ANALOG_LDO_1_LDO_ANT_TRIM_MASK) >> XCVR_ANALOG_LDO_1_LDO_ANT_TRIM_SHIFT);
 }
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 400) */
 
@@ -2190,7 +2192,8 @@ void XCVR_FastPeriphReg_UpDownload_Go(PKT_RAM_BANK_SEL_T pkt_ram_sel, uint32_t o
 }
 
 
-// TODO: Refactor to validate descriptor data structures in a separate routine so that it can be optional. Already tested structures doesn't need revalidation.
+// TODO: Refactor to validate descriptor data structures in a separate routine so that it can be optional. Already
+// tested structures doesn't need revalidation.
 
 uint32_t  XCVR_FastPeriphDescrip_WordCount(uint32_t * descriptor_list, uint16_t num_descrips, bool compressed_list)
 {
@@ -2210,7 +2213,8 @@ uint32_t  XCVR_FastPeriphDescrip_WordCount(uint32_t * descriptor_list, uint16_t 
         for (i=0;i<num_descrips;i++)
         {
             descriptor = descriptor_ptr[index]; /* Read the descriptor from the list; Use the pointer as an array */
-            temp = (uint8_t)((descriptor&PR2IPS_COUNT_MASK)>>PR2IPS_COUNT_SHIFT); /* Count of words for this specific descriptor */
+            temp       = (uint8_t)((descriptor & PR2IPS_COUNT_MASK) >>
+                             PR2IPS_COUNT_SHIFT); /* Count of words for this specific descriptor */
             word_count += temp+1UL;
             if (compressed_list)
             {
@@ -2227,7 +2231,9 @@ uint32_t  XCVR_FastPeriphDescrip_WordCount(uint32_t * descriptor_list, uint16_t 
     return word_count;
 }
 
-xcvrStatus_t XCVR_FastPeriphDescrip_Load(uint32_t * descriptor_list, uint16_t num_descrips, volatile uint32_t * pkt_ram_mem_ptr)
+xcvrStatus_t XCVR_FastPeriphDescrip_Load(uint32_t *descriptor_list,
+                                         uint16_t num_descrips,
+                                         volatile uint32_t *pkt_ram_mem_ptr)
 {
     xcvrStatus_t status = gXcvrSuccess_c;
         /* Check for NULLPTR */    
@@ -2243,7 +2249,8 @@ xcvrStatus_t XCVR_FastPeriphDescrip_Load(uint32_t * descriptor_list, uint16_t nu
         uint32_t descriptor;
         uint32_t word_count;
         /* This loop moves descriptors to the proper, expanded locations in PKT RAM */
-        /* All zeros descriptor is detected and skipped in the input handling. The last descriptor written to ouptut in PKT RAM is always all zeros */
+        /* All zeros descriptor is detected and skipped in the input handling. The last descriptor written to ouptut in
+         * PKT RAM is always all zeros */
         for (i=0;i<num_descrips;i++)
         {
             descriptor = *descriptor_ptr++; /* Read the descriptor from the list */
@@ -2270,7 +2277,9 @@ xcvrStatus_t XCVR_FastPeriphDescrip_Load(uint32_t * descriptor_list, uint16_t nu
     return status;
 }
 
-xcvrStatus_t XCVR_FastPeriphDescripData_Load(uint32_t * descriptor_data_list, uint16_t total_words_to_load, volatile uint32_t * pkt_ram_mem_ptr)
+xcvrStatus_t XCVR_FastPeriphDescripData_Load(uint32_t *descriptor_data_list,
+                                             uint16_t total_words_to_load,
+                                             volatile uint32_t *pkt_ram_mem_ptr)
 {
     xcvrStatus_t status = gXcvrSuccess_c;
     /* Check for NULLPTR */    
@@ -2286,7 +2295,7 @@ xcvrStatus_t XCVR_FastPeriphDescripData_Load(uint32_t * descriptor_data_list, ui
         uint32_t index;
         for (index=0U; index<total_words_to_load; index++)
         {
-            pkt_ram_mem_ptr[index] = *desc_data_ptr++;
+            pkt_ram_mem_ptr[index] = desc_data_ptr[index];
         }
         /* Write an all zero descriptor to terminate the list (it is assumed NOT to be in the original descriptors) */
         pkt_ram_mem_ptr[index] = 0UL;
@@ -2296,7 +2305,12 @@ xcvrStatus_t XCVR_FastPeriphDescripData_Load(uint32_t * descriptor_data_list, ui
     return status;
 }
 
-xcvrStatus_t XCVR_ValidateFastPeriphDescrip(PKT_RAM_BANK_SEL_T pkt_ram_sel, uint32_t offset_in_pkt_ram, uint32_t * descriptor_data_list,  uint16_t num_descrips, bool compressed_list, volatile uint32_t ** pkt_ram_mem_ptr)
+xcvrStatus_t XCVR_ValidateFastPeriphDescrip(PKT_RAM_BANK_SEL_T pkt_ram_sel,
+                                            uint32_t offset_in_pkt_ram,
+                                            uint32_t *descriptor_data_list,
+                                            uint16_t num_descrips,
+                                            bool compressed_list,
+                                            volatile uint32_t **pkt_ram_mem_ptr)
 {
     xcvrStatus_t status = gXcvrSuccess_c;
     uint32_t temp;
@@ -2353,13 +2367,15 @@ bool XCVR_FastPeriph_WaitComplete(void)
     bool status_ok = false;
     volatile uint32_t temp = RADIO_CTRL->PACKET_RAM_TO_IPS_CTRL;
     /* wait while ENABLE bit is set and DONE bit is cleared */
-    while ((temp & (RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_STATUS_DONE_MASK | RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_ENA_MASK)) ==
+    while ((temp & (RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_STATUS_DONE_MASK |
+                    RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_ENA_MASK)) ==
         RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_ENA_MASK)
     {
         temp = RADIO_CTRL->PACKET_RAM_TO_IPS_CTRL;
     }
     status_ok = ((temp&RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_STATUS_ERROR_MASK) == 0U);
-    RADIO_CTRL->PACKET_RAM_TO_IPS_CTRL = temp&~(RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_ENA_MASK); /* Clear the enable bit before returning */
+    RADIO_CTRL->PACKET_RAM_TO_IPS_CTRL =
+        temp & ~(RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_ENA_MASK); /* Clear the enable bit before returning */
     
     return status_ok;  /* True means no error, False indicates an error occurred */
 }
@@ -2371,8 +2387,7 @@ bool XCVR_FastPeriph_CheckErrorComplete(void)
     if ((temp & (RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_STATUS_DONE_MASK | 
         RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_STATUS_ERROR_MASK |
         RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_ENA_MASK)) ==
-                        (RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_STATUS_DONE_MASK | 
-                        RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_ENA_MASK))
+        (RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_STATUS_DONE_MASK | RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_ENA_MASK))
     {
         status_ok = true;
     }
