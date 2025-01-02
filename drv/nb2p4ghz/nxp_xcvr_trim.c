@@ -1404,24 +1404,24 @@ void IQMCFinalize(uint32_t iqmc_trim_reg_value)
 
 #endif /* defined(RADIO_IS_GEN_3P5) */
 
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450)
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
 uint64_t XCVR_TRIM_ReadIqmcIfr(void)
 {
     /* Support IQMC trim download from IFR - if programmed */
     /* Read from IFR memory space into unit64_t (largest possible size for IQMC trim) */
     uint64_t packed_trim_value = 0xFFFFFFFFFFFFFFFFLL; /* init to all F's to emulate unprogrammed flash memory */
     uint64_t *iqmc_trim_ptr    = NULLPTR;
-#if defined(KW45B41Z82_NBU_SERIES) || defined(KW45B41Z83_NBU_SERIES)
+#if defined(IS_RADIO_CORE) && (IS_RADIO_CORE == 1)
     iqmc_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_NBU + IQMC_IFR_PHRASE_OFFSET);
     packed_trim_value = *iqmc_trim_ptr; /* Read the contents of the IFR memory */
 #else
     /* If NBU is started already then IFR won't be available -  only read IFR is NBU is still in reset */
     if ((RFMC->RF2P4GHZ_CTRL & RFMC_RF2P4GHZ_CTRL_CPU_RST_MASK) == RFMC_RF2P4GHZ_CTRL_CPU_RST_MASK)
     {
-        iqmc_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_CM33 + IQMC_IFR_PHRASE_OFFSET);
+        iqmc_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_HOST + IQMC_IFR_PHRASE_OFFSET);
         packed_trim_value = *iqmc_trim_ptr; /* Read the contents of the IFR memory */
     }
-#endif /* defined(KW45B41Z82_NBU_SERIES) || defined(KW45B41Z83_NBU_SERIES) */
+#endif /* defined(IS_RADIO_CORE) && (IS_RADIO_CORE == 1) */
 
     return packed_trim_value;
 }
@@ -1433,29 +1433,17 @@ void XCVR_TRIM_HandleIqmcIfr(uint64_t packed_trim_value)
     /* NOTE: Phase field (IQMC_PHASE_ADJ can be zeros but gain should never be all zeros */
     if (!((temp_trim == 0ULL) || (temp_trim == IQMC_TRIM_USED_BITS_MASK)))
     {
-        uint32_t iqmc_1mbps_val = 0U;
+        uint32_t iqmc_1mbps_val = 0x00000400UL;
         uint32_t iqmc_2mbps_val = 0x00000400UL;
         /* Mask and shift to unpack 1Mbps IQMC settings from IFR and rearrange for use in IQMC register */
         iqmc_1mbps_val = XCVR_RX_DIG_IQMC_CTRL1_IQMC_GAIN_ADJ((temp_trim & IQMC_TRIM_1MBPS_PACKED_GAIN_MASK) >>
                                                               IQMC_TRIM_1MBPS_PACKED_GAIN_SHIFT);
         iqmc_1mbps_val |= XCVR_RX_DIG_IQMC_CTRL1_IQMC_PHASE_ADJ((temp_trim & IQMC_TRIM_1MBPS_PACKED_PHASE_MASK) >>
                                                                 IQMC_TRIM_1MBPS_PACKED_PHASE_SHIFT);
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)
-        /* No DRS register for IQMC, use Fast_Override Module */
-        /* Store to IPS FO slot #1 */
-        XCVR_MISC->IPS_FO_DRS0_DATA[1] = iqmc_1mbps_val;
-        XCVR_MISC->IPS_FO_DRS1_DATA[1] = iqmc_2mbps_val; /* Default gain and phase register setting used for 2Mbps */
-        /* IPS_FO_ADDR is NOT generated into common config file */
-        XCVR_MISC->IPS_FO_ADDR[1] |=
-            XCVR_MISC_IPS_FO_ADDR_ADDR(0x34U) |
-            XCVR_MISC_IPS_FO_ADDR_ENTRY_RX_MASK |
-            XCVR_MISC_IPS_FO_ADDR_ENTRY_TX_MASK; /* Enable Fast Overwrite for both RX and TX (to be safe) */
-#else  
         /* Kw47 and above has IQMC trim DRS register */
         XCVR_RX_DIG->IQMC_CTRL1 = iqmc_1mbps_val;
         XCVR_RX_DIG->IQMC_CTRL1_DRS =  iqmc_2mbps_val; /* Default gain and phase register setting used for 2Mbps */
-#endif  /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450) */
     }
 }
 
-#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */

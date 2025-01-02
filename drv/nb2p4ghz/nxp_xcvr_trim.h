@@ -89,7 +89,7 @@ typedef uint8_t DAC_SWEEP_STEP2_t;
 #define TZA_STEP_P10 (24U)
 #define NUM_SWEEP_STEP_ENTRIES2 (3U) /* Including the baseline entry #0. */
 
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=450)
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=470)
 #define IQMC_TRIM_1MBPS_PACKED_GAIN_MASK 0x7FFULL
 #define IQMC_TRIM_1MBPS_PACKED_PHASE_MASK 0x7FF800ULL
 #define IQMC_TRIM_1MBPS_PACKED_GAIN_SHIFT 0U
@@ -106,15 +106,10 @@ typedef uint8_t DAC_SWEEP_STEP2_t;
 
 /* Address constants for IQMC trim download from IFR */
 #define IQMC_IFR_PHRASE_OFFSET 0x182U * 16U /* Base for 16 octet phrase is 0x182 (msf_soctrim2 field) */
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)
-#define RADIO_IFR_BASE_ADDR_NBU 0x00048000U  
-#define RADIO_IFR_BASE_ADDR_CM33 0x48848000U    
-#else /* NXP_RADIO_GEN > 450 */
 #define RADIO_IFR_BASE_ADDR_NBU 0x00088000U  
-#define RADIO_IFR_BASE_ADDR_CM33 0x48888000U  
-#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450) */
+#define RADIO_IFR_BASE_ADDR_HOST 0x48888000U  
 
-#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=450) */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=470) */
 
 /* \brief  Defines an entry in an array of structs to describe TZA DCOC STEP and TZA_DCOC_STEP_RECIPROCAL. */
 typedef struct
@@ -349,7 +344,7 @@ void IQMCRunTrials(xcvr_iqmc_trials_t *trials_data, uint8_t num_trials);
 xcvrTrimStatus_t IQMCCalcResult(const xcvr_iqmc_trials_t *trials_data, uint8_t num_trials, uint32_t *iqmc_cal_ptr);
 #endif /* defined(GCOV_DO_COVERAGE) */
 
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=450)
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=470)
 /*! *********************************************************************************
 * \brief  This function reads  a packed IQMC trim value from IFR for 1Mbps and 2Mbps rates
 *
@@ -373,8 +368,7 @@ uint64_t XCVR_TRIM_ReadIqmcIfr(void);
 * \brief  This function applies a IQMC trim value from IFR for 1Mbps and 2Mbps rates
 *
 * This function is supporting production trim of IQMC values stored in the Radio IFR space. These values
-* are used to configure the IQMC during radio operation. On radio gen 4p5, IPS Fast Overwrite is used to
-* switch between different settings of IQMC for 1Mbps and 2Mbps rates.
+* are used to configure the IQMC during radio operation. 
 *
 * \param[in] packed_trim_value - the 64 bit value containing the packed IQMC trim values.
 *
@@ -383,15 +377,11 @@ uint64_t XCVR_TRIM_ReadIqmcIfr(void);
 * \ingroup PublicAPIs
 *
 * \details
-*   The IQMC calibration trials store the gain and phase calibrations for 1Mbps and 2Mbps rates. On radio gen 4p5,
-*   These values are placed in the IPS Fast Overwrite data registers so that a different value can be applied for 
-*   1Mbps and 2Mbps operations. This routine assumes that the IPS FO slot #1 is used and the  address in that slot
-*   is already configured but that the data and RX/TX flags must be setup. 
-*   Radio gen 4p7 and above have a dedicated value for alternate datarate. Then do not use IPS FO.
+*   The IQMC calibration trials store the gain and phase calibrations for 1Mbps and 2Mbps rates. 
 *   
 ***********************************************************************************/
 void XCVR_TRIM_HandleIqmcIfr(uint64_t packed_trim_value);
-#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=450) */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=470) */
 
 
 /*! @}*/
