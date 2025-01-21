@@ -1882,9 +1882,12 @@ xcvrStatus_t XCVR_SetManAgc(uint8_t man_agc_idx)
         /* AGC must be enabled for the manual value to be applied */
         XCVR_RX_DIG->CTRL0 |= XCVR_RX_DIG_CTRL0_RX_AGC_EN_MASK;
         /* Override AGC manual index */
-        XCVR_RX_DIG->AGC_OVRD &= ~(XCVR_RX_DIG_AGC_OVRD_AGC_GAIN_IDX_OVRD_MASK);
-        XCVR_RX_DIG->AGC_OVRD |=
-            (XCVR_RX_DIG_AGC_OVRD_AGC_GAIN_IDX_OVRD_EN_MASK | XCVR_RX_DIG_AGC_OVRD_AGC_GAIN_IDX_OVRD(man_agc_idx));
+        uint32_t temp = XCVR_RX_DIG->AGC_OVRD;
+        temp &= ~(XCVR_RX_DIG_AGC_OVRD_AGC_GAIN_IDX_OVRD_MASK);
+        /* Lock AGC state machine to avoid RSSI reset in case AA match arrives before end of RSSI measurement completion */
+        temp |=  (XCVR_RX_DIG_AGC_OVRD_AGC_GAIN_IDX_OVRD_EN_MASK | XCVR_RX_DIG_AGC_OVRD_AGC_GAIN_IDX_OVRD(man_agc_idx) |
+            XCVR_RX_DIG_AGC_OVRD_AGC_PHY_FREEZE_OVRD_EN_MASK | XCVR_RX_DIG_AGC_OVRD_AGC_PHY_FREEZE_OVRD_MASK);
+        XCVR_RX_DIG->AGC_OVRD = temp;
     }
 
 #else
@@ -1922,7 +1925,8 @@ void XCVR_ClearManAgc(void)
     /* DCOC calibration only happens during RX initialization, so pulse the RX INIT signal manually */
     XCVR_RX_DIG->CTRL0 |= XCVR_RX_DIG_CTRL0_RX_AGC_EN_MASK;
     XCVR_RX_DIG->AGC_OVRD &=
-        ~(XCVR_RX_DIG_AGC_OVRD_AGC_GAIN_IDX_OVRD_EN_MASK | XCVR_RX_DIG_AGC_OVRD_AGC_GAIN_IDX_OVRD_MASK);
+        ~(XCVR_RX_DIG_AGC_OVRD_AGC_GAIN_IDX_OVRD_EN_MASK | XCVR_RX_DIG_AGC_OVRD_AGC_GAIN_IDX_OVRD_MASK |
+        XCVR_RX_DIG_AGC_OVRD_AGC_PHY_FREEZE_OVRD_EN_MASK | XCVR_RX_DIG_AGC_OVRD_AGC_PHY_FREEZE_OVRD_MASK);
 #else
     /* Release a forced Manual AGC setting */
     /* Clear manual AGC and return to automatic */
