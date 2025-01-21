@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015, Freescale Semiconductor, Inc.
- * Copyright 2018-2024 NXP
+ * Copyright 2018-2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -596,6 +596,22 @@ XCVR_ACTIVE_LL_SEL_T XCVR_GetActiveLL(void)
     }
     return temp_lle;
 }
+
+uint8_t XCVR_GetCodedDataRate(void)
+{
+    uint8_t rate_indicator = 0U;
+#if !defined(FPGA_SUPPORT) || (FPGA_SUPPORT == 0) 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+    rate_indicator = (((XCVR_2P4GHZ_PHY->STAT0 & GEN4_PHY_STAT0_DATA_RATE_MASK) >> GEN4_PHY_STAT0_DATA_RATE_SHIFT) == 3 ? 1U : 0U);
+#else
+    rate_indicator = (((XCVR_2P4GHZ_PHY->STAT0 & GEN4PHY_STAT0_DATA_RATE_MASK) >> GEN4PHY_STAT0_DATA_RATE_SHIFT) == 3 ? 1U : 0U);
+#endif  /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) */
+#endif
+
+    return rate_indicator;
+}
+
+
 
 xcvrStatus_t XCVR_SetPLLBand(XCVR_BAND_SEL_T band)
 {
