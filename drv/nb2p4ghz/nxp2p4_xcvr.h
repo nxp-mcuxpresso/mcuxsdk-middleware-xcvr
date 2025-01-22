@@ -135,7 +135,11 @@ typedef struct
 #endif /* !defined(HPMCAL_CTRL) */
 
 #ifndef IQMC_TRIM_DOWNLOAD_SUPPORT
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN==470)
+#define IQMC_TRIM_DOWNLOAD_SUPPORT (1)
+#else 
 #define IQMC_TRIM_DOWNLOAD_SUPPORT (0)
+#endif      
 #endif /* ifndef IQMC_TRIM_DOWNLOAD_SUPPORT */
 
 /* Error check compile flags */
