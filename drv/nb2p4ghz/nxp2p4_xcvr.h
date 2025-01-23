@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015,2018, Freescale Semiconductor, Inc.
- * Copyright 2018-2024 NXP
+ * Copyright 2018-2025 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -842,6 +842,18 @@ xcvrStatus_t XCVR_SetPLLBand(XCVR_BAND_SEL_T band);
  * @return The selected band.
  */
 XCVR_BAND_SEL_T  XCVR_GetPLLBand(void);
+
+/*!
+ * @brief Fetches  the current active data rate for coded Bluetooth LE.
+ *
+ * This function reads the data rate status for coded operation in Bluetooth LE..
+ *
+ * @return Returns 1 if the coded data rate is 500Kbps (S2); Returns 0 if the coded data rate is 125Kbps (S8).
+ *
+ * @warn This routine does not check that coding is active and will return invalid data for non-coded cases. The results from this routine are only
+ * valid after the Link Layer hardware has started operation.
+ */
+uint8_t XCVR_GetCodedDataRate(void);
 
 /*!
  * @brief Controls setting the seed for the MSK to FSK transform in the PHY.
