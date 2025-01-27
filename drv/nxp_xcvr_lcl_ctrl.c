@@ -575,8 +575,12 @@ void XCVR_LCL_RsmPLLInit(XCVR_RSM_SQTE_RATE_T rate)
         }
         XCVR_PLL_DIG->MOD_CTRL = temp;
     
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
+        XCVR_PLL_DIG->LPM_SDM_CTRL1 &= ~(XCVR_PLL_DIG_LPM_SDM_CTRL1_HPM_ARRAY_BIAS_MASK); /* [CONNRF-1422] HPM_ARRAY_BIAS = 0 */
+#else
         /* IF compensation improvement [CONNRF_1163_IF_COMP] */
         XCVR_PLL_DIG->LPM_SDM_CTRL1 |= XCVR_PLL_DIG_LPM_SDM_CTRL1_HPM_ARRAY_BIAS(63U);
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 
 #if defined(NADM_WORKAROUND_IF_1_7MHZ)  &&  (NADM_WORKAROUND_IF_1_7MHZ ==1)
         /* Set IF to 1.7MHz */
@@ -638,6 +642,7 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLBackup(rsm_reg_backup_t *reg_backup_ptr)
         /* PLL registers backup only - these registers need backup if corrupting PLL registers */
         reg_backup_ptr->XCVR_PLL_DIG_CHAN_MAP    = XCVR_PLL_DIG->CHAN_MAP;
         reg_backup_ptr->XCVR_PLL_DIG_HPM_CTRL    = XCVR_PLL_DIG->HPM_CTRL;
+        reg_backup_ptr->XCVR_PLL_DIG_HPMCAL_CTRL    = XCVR_PLL_DIG->HPMCAL_CTRL;
         reg_backup_ptr->XCVR_TX_DIG_GFSK_CTRL    = XCVR_TX_DIG->GFSK_CTRL;
         reg_backup_ptr->XCVR_PLL_DIG_LPM_CTRL    = XCVR_PLL_DIG->LPM_CTRL;
         reg_backup_ptr->XCVR_PLL_DIG_LPM_SDM_CTRL1 = XCVR_PLL_DIG->LPM_SDM_CTRL1;
@@ -719,6 +724,7 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLRestore(const rsm_reg_backup_t *reg_backup_ptr)
         /* restore all changed registers from backup */
         XCVR_PLL_DIG->CHAN_MAP    = reg_backup_ptr->XCVR_PLL_DIG_CHAN_MAP;
         XCVR_PLL_DIG->HPM_CTRL    = reg_backup_ptr->XCVR_PLL_DIG_HPM_CTRL;
+        XCVR_PLL_DIG->HPMCAL_CTRL    = reg_backup_ptr->XCVR_PLL_DIG_HPMCAL_CTRL;
         XCVR_TX_DIG->GFSK_CTRL    = reg_backup_ptr->XCVR_TX_DIG_GFSK_CTRL;
         XCVR_PLL_DIG->LPM_CTRL    = reg_backup_ptr->XCVR_PLL_DIG_LPM_CTRL;
         XCVR_PLL_DIG->LPM_SDM_CTRL1 = reg_backup_ptr->XCVR_PLL_DIG_LPM_SDM_CTRL1;
@@ -841,8 +847,10 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         /* HPMCAL_CTRL */
         temp = XCVR_PLL_DIG->HPMCAL_CTRL;
         temp &= ~(XCVR_PLL_DIG_HPMCAL_CTRL_HP_CAL_DISABLE_MASK |
+                        XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_SKIP_MASK |
                         XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_MANUAL_MASK);
-        temp |= (XCVR_PLL_DIG_HPMCAL_CTRL_HP_CAL_DISABLE(0) |
+        temp |= (XCVR_PLL_DIG_HPMCAL_CTRL_HP_CAL_DISABLE(1U) |
+                        XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_SKIP(1U) |
                         XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_MANUAL(rsm_settings_ptr->hpm_cal_manual_val));
         XCVR_PLL_DIG->HPMCAL_CTRL = temp;
 #else

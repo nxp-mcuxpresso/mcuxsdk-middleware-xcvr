@@ -690,6 +690,7 @@ typedef struct
     uint32_t XCVR_PLL_DIG_CHAN_MAP;
 
     uint32_t XCVR_PLL_DIG_HPM_CTRL;
+    uint32_t XCVR_PLL_DIG_HPMCAL_CTRL;
 
     uint32_t XCVR_PLL_DIG_HPM_SDM_RES;
     uint32_t XCVR_PLL_DIG_LPM_CTRL;
