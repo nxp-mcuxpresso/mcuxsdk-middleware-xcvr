@@ -29,21 +29,22 @@ void DSB_IRQHandler(void);
 
 void DSB_IRQHandler(void)
 {
-    /* CCNT field is cleared at transfer complete so use TCNT for count of bytes transferred */
-    uint16_t curr_count = (uint16_t)((DSB->XCR & DSB_XCR_TCNT_MASK) >> DSB_XCR_TCNT_SHIFT);
-    bool transfer_done  = ((DSB->INT & DSB_INT_DONE_MASK) == DSB_INT_DONE_MASK);
+    uint16_t curr_count = 0;
+    
+    /* Read and clear status flags to get all irq */
+    uint32_t int_flags = DSB->INT;
+    DSB->INT |= DSB_INT_DONE_MASK | DSB_INT_DBE_MASK | DSB_INT_UNDR_MASK | DSB_INT_OVRF_MASK;
+
     /* Only call routine if transfer is complete */
-    if (transfer_done)
+    if ( int_flags&DSB_INT_DONE_MASK ) 
     {
-        /* Clear done flag */
-        DSB->INT |= DSB_INT_DONE_MASK;
         dsb_handler.g_Transfer_Done = true;
+        /* CCNT field is cleared at transfer complete so use TCNT for count of bytes transferred */
+        uint16_t curr_count = (uint16_t)((DSB->XCR & DSB_XCR_TCNT_MASK) >> DSB_XCR_TCNT_SHIFT);
     }
     else /* transfer is not done, an error happened */
     {
-        curr_count = (uint16_t)(DSB->INT & 0xFFFFU); /* Return error interrupt bits in current count field */
-        /* Clear DSB errors */
-        DSB->INT |= DSB_INT_DBE_MASK | DSB_INT_UNDR_MASK | DSB_INT_OVRF_MASK;
+        curr_count = (uint16_t)(int_flags & 0xFFFFU); /* Return error interrupt bits in current count field */
     }
 
     /* Make sure the function pointer isn't NULLPTR */
@@ -361,9 +362,6 @@ dmaStatus_t dma_start_capture(const dma_capture_config_t *dma_configuration)
             XCVR_MISC->DMA_CTRL &=
                 ~(XCVR_MISC_DMA_CTRL_DMA_PAGE_MASK); /*Clear the DMA_PAGE to stop the (still) ongoing radio DMA */
 
-            /* Set the DSB_EN bit to receive the data stream. */
-            DSB->CSR |= DSB_CSR_DSB_EN_MASK;
-
             /* Configure DMA capture settings but not DMA_PAGE */
             XCVR_MISC->DMA_CTRL = XCVR_MISC_DMA_CTRL_DMA_EN(1) |
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN > 450)
@@ -388,15 +386,16 @@ dmaStatus_t dma_start_capture(const dma_capture_config_t *dma_configuration)
             XCVR_RX_DIG->DFT_CTRL |= XCVR_RX_DIG_DFT_CTRL_DFT_RX_IQ_OUT_SEL(dma_configuration->out_sel);
 
 #endif
-            /* Resets DSB destination address, buffer size, and transfer done flag for the case of multiple */
-            /* calls to dma_start_capture() without intervening dma_init() */
-            dsb_handler.g_Transfer_Done = false;
-            DSB->DADDR                  = DSB_DADDR_DADDR((uint32_t)destination_address);
-            DSB->XCR                    = DSB_XCR_TCNT(buffer_size);
-            DSB->CSR |= DSB_CSR_DMA_EN_MASK;
 
             /* Configure DMA page */
             XCVR_MISC->DMA_CTRL |= XCVR_MISC_DMA_CTRL_DMA_PAGE(dma_configuration->dma_page);
+            
+            /* Resets DSB destination address, buffer size, and transfer done flag for the case of multiple */
+            /* calls to dma_start_capture() without intervening dma_init() */
+            dsb_handler.g_Transfer_Done = false;
+            DSB->XCR                    = DSB_XCR_TCNT(buffer_size);
+            DSB->DADDR                  = DSB_DADDR_DADDR((uint32_t)destination_address);
+            DSB->CSR |= DSB_CSR_DSB_EN_MASK;
         }
     }
 
