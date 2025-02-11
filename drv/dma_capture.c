@@ -40,7 +40,7 @@ void DSB_IRQHandler(void)
     {
         dsb_handler.g_Transfer_Done = true;
         /* CCNT field is cleared at transfer complete so use TCNT for count of bytes transferred */
-        uint16_t curr_count = (uint16_t)((DSB->XCR & DSB_XCR_TCNT_MASK) >> DSB_XCR_TCNT_SHIFT);
+        curr_count = (uint16_t)((DSB->XCR & DSB_XCR_TCNT_MASK) >> DSB_XCR_TCNT_SHIFT);
     }
     else /* transfer is not done, an error happened */
     {
