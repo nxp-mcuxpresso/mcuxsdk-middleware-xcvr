@@ -508,7 +508,7 @@ const xcvr_mode_datarate_config_t xcvr_fsk_h_0p5_1mbps_config = {
 #if RF_OSC_26MHZ == 1
     .fsk_ctrl = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1B14) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x04EC),
 #else
-    .fsk_ctrl       = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1C00) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x0400),
+    .fsk_ctrl = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1C00) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x0400),
 #endif /* RF_OSC_26MHZ == 1 */
 
 /* GFSK_COEFF_0_1 configuration, dependencies: ['MD+DR', 'MD+DR'] */
@@ -551,7 +551,7 @@ const xcvr_mode_datarate_config_t xcvr_fsk_h_0p5_1mbps_config = {
     /* IMAGE_FILTER_CTRL configuration, dependencies: ['COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .image_filter_ctrl = XCVR_TX_DIG_IMAGE_FILTER_CTRL_IMAGE_FILTER_OVRD_EN(0),
 
-    /* PA_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
+    /* PA_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .pa_ctrl = XCVR_TX_DIG_PA_CTRL_PA_RAMP_SEL(1),
 
     /* TXDIG_CTRL configuration, dependencies: ['MD+DR', 'COM', 'MD+DR', 'MD+DR'] */
@@ -1047,7 +1047,7 @@ const xcvr_mode_datarate_config_t xcvr_fsk_h_0p5_500kbps_config = {
 #if RF_OSC_26MHZ == 1
     .fsk_ctrl = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1D8A) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x0276),
 #else
-    .fsk_ctrl       = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1E00) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x0200),
+    .fsk_ctrl = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1E00) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x0200),
 #endif /* RF_OSC_26MHZ == 1 */
 
 /* GFSK_COEFF_0_1 configuration, dependencies: ['MD+DR', 'MD+DR'] */
@@ -1090,7 +1090,7 @@ const xcvr_mode_datarate_config_t xcvr_fsk_h_0p5_500kbps_config = {
     /* IMAGE_FILTER_CTRL configuration, dependencies: ['COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .image_filter_ctrl = XCVR_TX_DIG_IMAGE_FILTER_CTRL_IMAGE_FILTER_OVRD_EN(0),
 
-    /* PA_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
+    /* PA_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .pa_ctrl = XCVR_TX_DIG_PA_CTRL_PA_RAMP_SEL(1),
 
     /* TXDIG_CTRL configuration, dependencies: ['MD+DR', 'COM', 'MD+DR', 'MD+DR'] */
@@ -1586,7 +1586,7 @@ const xcvr_mode_datarate_config_t xcvr_fsk_h_0p5_250kbps_config = {
 #if RF_OSC_26MHZ == 1
     .fsk_ctrl = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1EC5) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x013B),
 #else
-    .fsk_ctrl       = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1F00) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x0100),
+    .fsk_ctrl = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1F00) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x0100),
 #endif /* RF_OSC_26MHZ == 1 */
 
 /* GFSK_COEFF_0_1 configuration, dependencies: ['MD+DR', 'MD+DR'] */
@@ -1629,7 +1629,7 @@ const xcvr_mode_datarate_config_t xcvr_fsk_h_0p5_250kbps_config = {
     /* IMAGE_FILTER_CTRL configuration, dependencies: ['COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .image_filter_ctrl = XCVR_TX_DIG_IMAGE_FILTER_CTRL_IMAGE_FILTER_OVRD_EN(0),
 
-    /* PA_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
+    /* PA_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .pa_ctrl = XCVR_TX_DIG_PA_CTRL_PA_RAMP_SEL(1),
 
     /* TXDIG_CTRL configuration, dependencies: ['MD+DR', 'COM', 'MD+DR', 'MD+DR'] */

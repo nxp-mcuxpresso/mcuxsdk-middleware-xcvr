@@ -127,7 +127,7 @@ const xcvr_common_config_t xcvr_common_config = {
     /* TX_DAC_PA configuration, dependencies: ['COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM', 'COM'] */
     .tx_dac_pa = XCVR_ANALOG_TX_DAC_PA_DAC_INVERT_CLK(0) | XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_CFBK(1) |
                  XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_IBIAS(0) | XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_RLOAD(0) |
-                 XCVR_ANALOG_TX_DAC_PA_PA_SMOOTHER_CUR(0) | XCVR_ANALOG_TX_DAC_PA_PA_SMOOTHER_EN(0) |
+                 XCVR_ANALOG_TX_DAC_PA_PA_SMOOTHER_CUR(6) | XCVR_ANALOG_TX_DAC_PA_PA_SMOOTHER_EN(1) |
                  XCVR_ANALOG_TX_DAC_PA_TX_PA_VBIAS(0),
 
     /* XO_DIST configuration, dependencies: ['COM', 'COM', 'COM'] */
@@ -1091,11 +1091,12 @@ const xcvr_common_config_t xcvr_common_config = {
                          XCVR_TX_DIG_IMAGE_FILTER_CTRL_IMAGE_SYNC0_FILTER_OVRD(0) |
                          XCVR_TX_DIG_IMAGE_FILTER_CTRL_IMAGE_SYNC1_FILTER_OVRD(0),
 
-    /* PA_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
-    .pa_ctrl = XCVR_TX_DIG_PA_CTRL_EARLY_WU_COMPLETE(0) | XCVR_TX_DIG_PA_CTRL_PA_RAMP_ANA_EN(0) |
+    /* PA_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
+    .pa_ctrl = XCVR_TX_DIG_PA_CTRL_EARLY_WU_COMPLETE(0) | XCVR_TX_DIG_PA_CTRL_PA_RAMP_ANA_EN(1) |
                XCVR_TX_DIG_PA_CTRL_PA_RAMP_ANA_IDX(0x0) | XCVR_TX_DIG_PA_CTRL_PA_RAMP_DIG_INTERP_EN(1) |
-               XCVR_TX_DIG_PA_CTRL_PA_TGT_POWER(0x26) | XCVR_TX_DIG_PA_CTRL_TGT_PWR_SRC(1) |
-               XCVR_TX_DIG_PA_CTRL_TX_PA_PUP_OVRD(0) | XCVR_TX_DIG_PA_CTRL_TX_PA_PUP_OVRD_EN(0),
+               XCVR_TX_DIG_PA_CTRL_PA_RAMP_HOLD(7) | XCVR_TX_DIG_PA_CTRL_PA_TGT_POWER(0x26) |
+               XCVR_TX_DIG_PA_CTRL_TGT_PWR_SRC(1) | XCVR_TX_DIG_PA_CTRL_TX_PA_PUP_OVRD(0) |
+               XCVR_TX_DIG_PA_CTRL_TX_PA_PUP_OVRD_EN(0),
 
     /* PA_RAMP_TBL0 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
     .pa_ramp_tbl0 = XCVR_TX_DIG_PA_RAMP_TBL0_PA_RAMP0(0x00) | XCVR_TX_DIG_PA_RAMP_TBL0_PA_RAMP1(0x02) |

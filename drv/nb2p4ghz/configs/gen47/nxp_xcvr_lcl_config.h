@@ -138,8 +138,7 @@ typedef struct
  * Variables
  ******************************************************************************/
 /* TSM register values, configure these first */
-extern const xcvr_lcl_tsm_config_t
-    xcvr_lcl_tsm_generic_config; /*!<  TSM register configuration for generic sequence  */
+extern const xcvr_lcl_tsm_config_t xcvr_lcl_tsm_generic_config; /*!<  TSM register configuration for generic sequence */
 
 /* TSM & RSM register values, should be configured second, after the above TSM configs */
 extern const xcvr_lcl_rsm_reg_config_t
