@@ -120,14 +120,14 @@ int16_t atan2fp(int16_t y, int16_t x)
 #endif
 
     bool calc_done = false; /* flag to control whether to perform approximation or if the error checks have triggered */
-    int16_t retval = (int16_t)0xFFFFU;
+    int16_t retval = (int16_t)0xFFFF;
     int16_t absx   = FPABS(x);
     int16_t absy   = FPABS(y);
 
     /* handle error cases and cases that will cause divide by zero in approximation equations */
     if ((y == 0) && (x == 0))
     {
-        retval = (int16_t)0xFFFFU; /* invalid return value indicating an error */
+        retval = (int16_t)0xFFFF; /* invalid return value indicating an error */
     }
     else
     {

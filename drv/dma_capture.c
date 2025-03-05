@@ -36,7 +36,7 @@ void DSB_IRQHandler(void)
     DSB->INT |= DSB_INT_DONE_MASK | DSB_INT_DBE_MASK | DSB_INT_UNDR_MASK | DSB_INT_OVRF_MASK;
 
     /* Only call routine if transfer is complete */
-    if ( int_flags&DSB_INT_DONE_MASK ) 
+    if ( (int_flags&DSB_INT_DONE_MASK) ==  DSB_INT_DONE_MASK) 
     {
         dsb_handler.g_Transfer_Done = true;
         /* CCNT field is cleared at transfer complete so use TCNT for count of bytes transferred */
@@ -366,7 +366,7 @@ dmaStatus_t dma_start_capture(const dma_capture_config_t *dma_configuration)
             XCVR_MISC->DMA_CTRL = XCVR_MISC_DMA_CTRL_DMA_EN(1) |
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN > 450)
                                   XCVR_MISC_DMA_CTRL_DMA_SIGNAL_VALID_MASK_EN(
-                                      (dma_configuration->enable_dma_valid_mask == true ? 1U : 0U)) |
+                                      (dma_configuration->enable_dma_valid_mask ? 1U : 0U)) |
 #endif /*defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450)  */
                                   XCVR_MISC_DMA_CTRL_DMA_DEC(dma_configuration->decimation) |
                                   XCVR_MISC_DMA_CTRL_DMA_START_DLY(dma_configuration->start_delay) |

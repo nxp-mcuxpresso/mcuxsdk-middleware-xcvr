@@ -571,7 +571,7 @@ typedef double float64_t;
 #include "nxp_xcvr_mode_config.h"
 /* Packet RAM pointer function macro - References enums from above */
 #define GET_PKT_RAM_PTR(r, ofst) \
-    (r == TX_PKT_RAM_SEL ? (&(TX_PACKET_RAM->PACKET_RAM[ofst])) : (&(RX_PACKET_RAM->PACKET_RAM[ofst])))
+    ((r) == TX_PKT_RAM_SEL ? (&(TX_PACKET_RAM->PACKET_RAM[(ofst)])) : (&(RX_PACKET_RAM->PACKET_RAM[(ofst)])))
 
 /* These exported values only apply to Gen 3.5 and Gen 4.0 */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN <= 400)
@@ -1397,7 +1397,7 @@ void XCVR_releaseLdoAntAll(void);
  *
  * @note This routine is used by Link Layers which needs to change LDO_ANT_TRIM value according with their needs
  */
-xcvrStatus_t XCVR_setLdoAntTrim(unsigned char ucLdoAntTrimValue);
+xcvrStatus_t XCVR_setLdoAntTrim(uint8_t ucLdoAntTrimValue);
 
 /*!
  * @brief Function to get actual LDO ANT TRIM value.
@@ -1408,7 +1408,7 @@ xcvrStatus_t XCVR_setLdoAntTrim(unsigned char ucLdoAntTrimValue);
  *
  * @note This routine is used by Link Layers which needs to check LDO_ANT_TRIM value
  */
-unsigned char XCVR_getLdoAntTrim(void);
+uint8_t XCVR_getLdoAntTrim(void);
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 400) */
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)

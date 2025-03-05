@@ -620,9 +620,9 @@ uint8_t XCVR_GetCodedDataRate(void)
     uint8_t rate_indicator = 0U;
 #if !defined(FPGA_SUPPORT) || (FPGA_SUPPORT == 0) 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-    rate_indicator = (((XCVR_2P4GHZ_PHY->STAT0 & GEN4_PHY_STAT0_DATA_RATE_MASK) >> GEN4_PHY_STAT0_DATA_RATE_SHIFT) == 3 ? 1U : 0U);
+    rate_indicator = (((XCVR_2P4GHZ_PHY->STAT0 & GEN4_PHY_STAT0_DATA_RATE_MASK) >> GEN4_PHY_STAT0_DATA_RATE_SHIFT) == 3U ? 1U : 0U);
 #else
-    rate_indicator = (((XCVR_2P4GHZ_PHY->STAT0 & GEN4PHY_STAT0_DATA_RATE_MASK) >> GEN4PHY_STAT0_DATA_RATE_SHIFT) == 3 ? 1U : 0U);
+    rate_indicator = (((XCVR_2P4GHZ_PHY->STAT0 & GEN4PHY_STAT0_DATA_RATE_MASK) >> GEN4PHY_STAT0_DATA_RATE_SHIFT) == 3U ? 1U : 0U);
 #endif  /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) */
 #endif
 
@@ -1210,6 +1210,7 @@ xcvrStatus_t XCVR_OverrideFrequency(uint32_t freq)
         temp &= ~XCVR_PLL_DIG_LPM_SDM_CTRL1_LPM_INTG_MASK;
         temp |= (XCVR_PLL_DIG_LPM_SDM_CTRL1_LPM_INTG(integer_to_use) | XCVR_PLL_DIG_LPM_SDM_CTRL1_SDM_MAP_DISABLE_MASK);
         XCVR_PLL_DIG->LPM_SDM_CTRL1 = temp;
+        assert((numerator_rounded > -134217727) && (numerator_rounded < 134217728));
         XCVR_PLL_DIG->LPM_SDM_CTRL2 =
             (uint32_t)numerator_rounded; /* putting the signed quantity into a 32 bit (unsigned) register */
 

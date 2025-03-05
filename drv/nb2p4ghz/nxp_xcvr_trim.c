@@ -1313,6 +1313,7 @@ void IQMCRunTrials(xcvr_iqmc_trials_t *trials_data, uint8_t num_trials)
     trials_data->IQMC_phase_adj_sum = 0;
 
     /* Loop through the specified number of trials for IQMC calibration */
+    assert(num_trials < IQMCalibrationTrials);
     for (cnt = 0U; cnt < num_trials; cnt++)
     {
         /* Set up for IQMC calibration trial */
@@ -1409,7 +1410,7 @@ uint64_t XCVR_TRIM_ReadIqmcIfr(void)
 {
     /* Support IQMC trim download from IFR - if programmed */
     /* Read from IFR memory space into unit64_t (largest possible size for IQMC trim) */
-    uint64_t packed_trim_value = 0xFFFFFFFFFFFFFFFFLL; /* init to all F's to emulate unprogrammed flash memory */
+    uint64_t packed_trim_value = 0xFFFFFFFFFFFFFFFFULL; /* init to all F's to emulate unprogrammed flash memory */
     uint64_t *iqmc_trim_ptr    = NULLPTR;
 #if defined(IS_RADIO_CORE) && (IS_RADIO_CORE == 1)
     iqmc_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_NBU + IQMC_IFR_PHRASE_OFFSET);

@@ -133,8 +133,8 @@ typedef struct
                              the results are produced in sniffer mode) */
 } cs_pkt_ram_config_info_t;
 
-extern cs_subevent_info_t subevent_info;
-extern const uint8_t rtt_payload_sizes[7];
+// extern cs_subevent_info_t subevent_info;
+extern const uint8_t rtt_payload_sizes[8];
 
 #if defined(__cplusplus)
 extern "C" {
@@ -199,20 +199,26 @@ extern "C" {
         MAKE_MAPPED_CHAN_OVRD2((channel_num), mapped_channel); /* Maps to proper format for RSM channels */            \
         (cfg_entry)->header.CHANNEL_NUM    = mapped_channel; /* Entry is full 16 bits wide so no need to mask/shift */ \
         (cfg_entry)->header.STEP_CFO       = (step_cfo);     /* Entry is full 16 bits wide so no need to mask/shift */ \
-        (cfg_entry)->header.HPM_CAL_FACTOR = COM_MODE_013_CFG_HDR_HPM_CAL_FACTOR_HPM_CAL_FACTOR(                       \
-            hpm_cal >> 1U); /*  Field stores the 12MSBs of HPM_CAL_FACTOR: HPM_CAL_FACTOR[12:1] */                     \
+        (cfg_entry)->header.HPM_CAL_FACTOR = (uint16_t)(COM_MODE_013_CFG_HDR_HPM_CAL_FACTOR_HPM_CAL_FACTOR(                       \
+            hpm_cal >> 1U)); /*  Field stores the 12MSBs of HPM_CAL_FACTOR: HPM_CAL_FACTOR[12:1] */                     \
         (cfg_entry)->header.CTUNE_MANUAL = COM_MODE_013_CFG_HDR_CTUNE_MANUAL_CTUNE_MANUAL(ctune);                      \
         (cfg_entry)->header.PHASE_ADD    = COM_MODE_013_CFG_HDR_PHASE_ADD_PHASE_ADD(phase_add);                        \
-    } while (0)
+    } while (false)
 
 #if (1) /* use this option if the pointers passed into the macro are not incrementable */
 #define XCVR_LCL_WriteCommonHeader(pkt_ram_p, sys_ram_p)     \
     do                                                       \
     {                                                        \
-        (pkt_ram_p)->U32_data[0] = (sys_ram_p)->U32_data[0]; \
-        (pkt_ram_p)->U32_data[1] = (sys_ram_p)->U32_data[1]; \
-        (pkt_ram_p)->U32_data[2] = (sys_ram_p)->U32_data[2]; \
-    } while (0)
+        uint32_t addr_pktram; \
+        uint32_t addr_sysram; \
+        addr_pktram = (uint32_t)(pkt_ram_p); \
+        addr_sysram = (uint32_t)(sys_ram_p); \
+        COM_MODE_CFG_HDR_UNION_Type * pktram = (COM_MODE_CFG_HDR_UNION_Type *)addr_pktram; \
+        COM_MODE_CFG_HDR_UNION_Type * sysram = (COM_MODE_CFG_HDR_UNION_Type *)addr_sysram; \
+        (pktram)->U32_data[0] = (sysram)->U32_data[0]; \
+        (pktram)->U32_data[1] = (sysram)->U32_data[1]; \
+        (pktram)->U32_data[2] = (sysram)->U32_data[2]; \
+    } while (false)
 #else /* use this option if the pointers passed in are incrementable */
 #define XCVR_LCL_WriteCommonHeader(pkt_ram_p, sys_ram_p) \
     do                                                   \
@@ -220,7 +226,7 @@ extern "C" {
         *pkt_ram_p++ = *sys_ram_p++;                     \
         *pkt_ram_p++ = *sys_ram_p++;                     \
         *pkt_ram_p++ = *sys_ram_p++;                     \
-    } while (0)
+    } while (false)
 #endif
 
 /*!
@@ -244,7 +250,7 @@ extern "C" {
     {                                                           \
         (cfg_entry)->header.STEP_CFO = (step_cfo);              \
     } /* Entry is full 16 bits wide so no need to mask/shift */ \
-while (0)
+while (false)
 
 /*!
  * @brief Macro to configure the Mode 0/1/3 step payload structure.
@@ -282,7 +288,7 @@ while (0)
         {                                                                                              \
             *payload_ptr++ = *(payload_refl_ptr)++; /* Increments the pointer that is passed in */     \
         }                                                                                              \
-    } while (0)
+    } while (false)
 
 /*!
  * @brief Macro to unpack the NADM portion of Mode 0/1/3 step result structure COM_MODE_013_RES_BODY.
@@ -320,7 +326,7 @@ while (0)
              COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYM_ERR_VALID_SHIFT);                              \
         nadm_pdelta = ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_PDELTA_VALUE_MASK) >> \
                        COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_PDELTA_VALUE_SHIFT);                        \
-    } while (0)
+    } while (false)
 
 /*!
  * @brief Macro to calculate the NADM metric from the FM_CORR value reported in COM_MODE_013_RES_BODY.
@@ -371,7 +377,7 @@ while (0)
                 nadm_metric = (uint8_t)temp_calc;                                                                 \
             }                                                                                                     \
         }                                                                                                         \
-    } while (0)
+    } while (false)
 #else
 #define XCVR_LCL_CalcNadmMetric(fm_corr_value, tgt_fm_corr, div_fm_corr, nadm_metric)                             \
     do                                                                                                            \
@@ -398,7 +404,7 @@ while (0)
                 nadm_metric = (uint8_t)temp_calc;                                                                 \
             }                                                                                                     \
         }                                                                                                         \
-    } while (0)
+    } while (false)
 #endif
 
 /*!
@@ -441,7 +447,7 @@ while (0)
         {                                                                                                   \
             (tgt_fm_corr) = TGT_FM_CORR_1MBPS;                                                              \
         }                                                                                                   \
-    } while (0)
+    } while (false)
 
 /*!
  * @brief Macro to unpack the RTT portion of Mode 0/1/3 step result structure COM_MODE_013_RES_BODY.
@@ -487,7 +493,7 @@ while (0)
         rtt_int_adj = ((int8_t)(temp_adj << 6)) >> 6; /* extend sign */                                                \
         rtt_p_delta = (uint16_t)((rtt_result_packed & COM_MODE_013_RES_BODY_RTT_RESULT_RTT_P_DELTA_MASK) >>            \
                                  COM_MODE_013_RES_BODY_RTT_RESULT_RTT_P_DELTA_SHIFT);                                  \
-    } while (0)
+    } while (false)
 
 /*!
  * @brief Macro to unpack the CFO portion of Mode 0/1/3 step result structure COM_MODE_013_RES_BODY.
@@ -507,7 +513,7 @@ while (0)
             (((temp_cfo & 0x200U) == 0U) ? temp_cfo :                                                               \
                                            temp_cfo | 0xFC00); /* sign extend within the 16bits unsigned storage */ \
         cfo_signed = (int16_t)(temp_cfo);                                                                           \
-    } while (0)
+    } while (false)
 
 #else
 /*!
