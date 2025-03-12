@@ -140,8 +140,10 @@ dmaStatus_t dma_init(const dsb_config_t *dsb_configuration)
             /* Initialize DSB */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 400)
             IPC->IPC_DATA_STREAM_2P4 = IPC_IPC_DATA_STREAM_2P4_RSTB_MASK | IPC_IPC_DATA_STREAM_2P4_CC(1U);
-#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450)
+#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && (NXP_RADIO_GEN < 475)
             MRCC->MRCC_DATA_STREAM_2P4 = MRCC_MRCC_DATA_STREAM_2P4_RSTB_MASK | MRCC_MRCC_DATA_STREAM_2P4_CC(1U);
+#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+            MRCC->MRCC_DATA_STREAM_2P4_CLKSEL = MRCC_MRCC_DATA_STREAM_2P4_CLKSEL_RSTB_MASK | MRCC_MRCC_DATA_STREAM_2P4_CLKSEL_CC(1U);
 #else
             SIM->SCGC5 |= SIM_SCGC5_DSB_MASK;
 #endif
@@ -260,8 +262,10 @@ void dma_release(void)
 {
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 400)
     bool dsb_clk_en = ((IPC->IPC_DATA_STREAM_2P4 & IPC_IPC_DATA_STREAM_2P4_CC_MASK) > 0U);
-#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450)
+#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && (NXP_RADIO_GEN < 475)
     bool dsb_clk_en = ((MRCC->MRCC_DATA_STREAM_2P4 & MRCC_MRCC_DATA_STREAM_2P4_CC_MASK) > 0U);
+#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+    bool dsb_clk_en = ((MRCC->MRCC_DATA_STREAM_2P4_CLKSEL & MRCC_MRCC_DATA_STREAM_2P4_CLKSEL_CC_MASK) > 0U);
 #else
     bool dsb_clk_en = ((SIM->SCGC5 & SIM_SCGC5_DSB_MASK) == SIM_SCGC5_DSB_MASK);
 #endif

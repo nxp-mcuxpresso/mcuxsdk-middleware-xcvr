@@ -198,11 +198,11 @@ typedef struct
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 400)
 #define TX_RX_ON_DELinit \
     (0x00009256UL) /* TX_ON_DELAY defined differently than prior radios, must be 86usec. Used for Mindtree BLE LL */
-#if defined(HDI_MODE) && (HDI_MODE == 1)
+#if defined(FPGA_TARGET) && (FPGA_TARGET == 1)
 #define TX_RX_SYNTH_init       (0x00007056UL) /* HDI MODE tuning */
 #else
 #define TX_RX_SYNTH_init       (0x0000745BUL) /* Used for Mindtree BLE LL */
-#endif /* HDI_MODE */
+#endif /* FPGA_TARGET */
 
 #define TX_PATH_DELAY_2MBPS    (0x1U)       /*!<  Gen 4.0 - TX Path delay for bits from controller to antenna for 1Mbps */
 #define TX_PATH_DELAY_1MBPS    (0x2U)       /*!<  Gen 4.0 - TX Path delay for bits from controller to antenna for 2Mbps */

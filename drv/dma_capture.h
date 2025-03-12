@@ -14,7 +14,12 @@
 #include "nxp2p4_xcvr.h"
 
 #if !defined(_KW45B41Z82_NBU_H_) && !defined(_KW45B41Z83_NBU_H_) /* DSB IRQ name is different on NBU core */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+// TODO: add support for DSB IRQ on Core 0 (check what IRQ is used)
+#define DMA_IRQ DSB0_IRQn
+#else
 #define DMA_IRQ DSB_IRQn
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) */
 #else
 #define DMA_IRQ EXT_CPU_INT12_IRQn
 #endif

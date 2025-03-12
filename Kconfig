@@ -8,14 +8,6 @@ menuconfig MCUX_COMPONENT_middleware.wireless.xcvr
 
 if MCUX_COMPONENT_middleware.wireless.xcvr
 
-  #source other Kconfig
-  #rsource "Common/Kconfig"
-
-  # enable Kconfig required for xcvr : TODO : find the correct component for 
-  # fsl_edma.h and fsl_dmamux.h - these below are not correct
-  # select MCUX_COMPONENT_driver.dma3
-  # select MCUX_COMPONENT_driver.dmamux
-
   choice
       prompt "XCVR platform selection"
 
@@ -28,7 +20,12 @@ if MCUX_COMPONENT_middleware.wireless.xcvr
 
     config MCUX_COMPONENT_middleware.wireless.xcvr.kw47_mcxw72
         bool "KW47x, MCXW72x families"
-        #depends on MCUX_HW_DEVICE_xxx
+        depends on MCUX_HW_DEVICE_KW47B42ZB7 || MCUX_HW_DEVICE_MCXW727C
+        depends on MCUX_HW_DEVICE_KW47B42ZB7_CORE_ID_cm33_core1 || MCUX_HW_DEVICE_MCXW727C_CORE_ID_cm33_core1
+
+    config MCUX_COMPONENT_middleware.wireless.xcvr.gen475
+        bool "Gen4.75 support"
+        # TODO : Add devices supporting this xcvr port
 
   endchoice
 

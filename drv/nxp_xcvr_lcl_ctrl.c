@@ -874,7 +874,7 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         }
 #endif
 
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* KW47 Inline Phase Return */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) && (NXP_RADIO_GEN < 475) /* KW47 Inline Phase Return */
         if (rsm_settings_ptr->enable_inpr)
         {
             /* Inline Phase Return enable - full version */
@@ -892,7 +892,7 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         {
             XCVR_PLL_DIG->LPM_SDM_CTRL2 &=  ~(XCVR_PLL_DIG_LPM_SDM_CTRL2_EN_INPR_MASK); /* Disable Inline Phase Return */
         }
-#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) && ((NXP_RADIO_GEN < 475) */
 
         /* ************** */
         /* Setup TXDIG for ranging */
