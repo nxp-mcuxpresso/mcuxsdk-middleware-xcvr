@@ -624,11 +624,11 @@ uint8_t XCVR_GetCodedDataRate(void)
 {
     uint8_t rate_indicator = 0U;
 #if !defined(FPGA_TARGET) || (FPGA_TARGET == 0)
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-    rate_indicator = (((XCVR_2P4GHZ_PHY->STAT0 & GEN4_PHY_STAT0_DATA_RATE_MASK) >> GEN4_PHY_STAT0_DATA_RATE_SHIFT) == 3U ? 1U : 0U);
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN==350)
+    rate_indicator = (((XCVR_2P4GHZ_PHY->STAT0 & XCVR_2P4GHZ_PHY_STAT0_DATA_RATE_MASK) >> XCVR_2P4GHZ_PHY_STAT0_DATA_RATE_SHIFT) == 3U ? 1U : 0U);
 #else
     rate_indicator = (((XCVR_2P4GHZ_PHY->STAT0 & GEN4PHY_STAT0_DATA_RATE_MASK) >> GEN4PHY_STAT0_DATA_RATE_SHIFT) == 3U ? 1U : 0U);
-#endif  /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) */
+#endif
 #endif
 
     return rate_indicator;
