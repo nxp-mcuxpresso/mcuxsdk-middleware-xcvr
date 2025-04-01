@@ -1458,6 +1458,11 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         }
         RADIO_CTRL->RF_CTRL = temp;
 
+    if (status == gXcvrLclStatusSuccess)
+    {
+        status = XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY ,false); /* Enable PIC feature by default */
+    }
+
     return status;
 }
 
