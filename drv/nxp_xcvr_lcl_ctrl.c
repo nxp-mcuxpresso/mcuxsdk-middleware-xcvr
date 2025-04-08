@@ -3905,6 +3905,152 @@ void XCVR_LCL_EnaDividerSync(bool enable)
 }
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)   */
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN==470)
+#if defined(RTT_DEMOD_ENABLE) && (RTT_DEMOD_ENABLE)
+xcvrLclStatus_t XCVR_LCL_RttPayloadDemodRegBackup(rttdemod_reg_backup_t *reg_backup_ptr)
+{
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    /* Error checking for NULL pointer */
+    if (reg_backup_ptr == NULLPTR)
+    {
+        status = gXcvrLclStatusInvalidArgs;
+    }
+    else
+    {
+#if (defined(BACKUP_RTT_DEMOD_GENLL) && (BACKUP_RTT_DEMOD_GENLL==1))        
+        /* GENFSK */
+        reg_backup_ptr->GENFSK_ENH_FEATURE      = GENFSK->ENH_FEATURE;
+        reg_backup_ptr->GENFSK_PACKET_CFG       = GENFSK->PACKET_CFG;
+        reg_backup_ptr->GENFSK_MULT_PKT_CTRL    = GENFSK->MULT_PKT_CTRL;
+        reg_backup_ptr->GENFSK_LENGTH_ADJ       = GENFSK->LENGTH_ADJ;
+#endif /* (defined(BACKUP_RTT_DEMOD_GENLL) && (BACKUP_RTT_DEMOD_GENLL==1)) */
+        reg_backup_ptr->GEN4PHY_RTT_CTRL        = GEN4PHY->RTT_CTRL;
+        reg_backup_ptr->GEN4PHY_DMD_CTRL1       = GEN4PHY->DMD_CTRL1;
+        reg_backup_ptr->GEN4PHY_DMD_CTRL2       = GEN4PHY->DMD_CTRL2;
+        reg_backup_ptr->RBME_WHITEN_CFG         = RBME->WHITEN_CFG;
+        reg_backup_ptr->RBME_CRCW_CFG3          = RBME->CRCW_CFG3;
+        reg_backup_ptr->XCVR_TSM_CTRL           = XCVR_TSM->CTRL;
+        reg_backup_ptr->RADIO_CTRL_RF_CLK_CTRL  = RADIO_CTRL->RF_CLK_CTRL; 
+    }
+
+    return status;
+}
+
+xcvrLclStatus_t XCVR_LCL_RttPayloadDemodRegRestore(const rttdemod_reg_backup_t *reg_backup_ptr)
+{
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    /* Error checking for NULL pointer */
+    if (reg_backup_ptr == NULLPTR)
+    {
+        status = gXcvrLclStatusInvalidArgs;
+    }
+    else
+    {
+#if (defined(BACKUP_RTT_DEMOD_GENLL) && (BACKUP_RTT_DEMOD_GENLL==1))        
+        /* GENFSK */
+        GENFSK->ENH_FEATURE            = reg_backup_ptr->GENFSK_ENH_FEATURE;
+        GENFSK->PACKET_CFG             = reg_backup_ptr->GENFSK_PACKET_CFG;
+        GENFSK->MULT_PKT_CTRL          = reg_backup_ptr->GENFSK_MULT_PKT_CTRL;
+        GENFSK->LENGTH_ADJ             = reg_backup_ptr->GENFSK_LENGTH_ADJ;
+#endif /* (defined(BACKUP_RTT_DEMOD_GENLL) && (BACKUP_RTT_DEMOD_GENLL==1)) */
+        GEN4PHY->RTT_CTRL              = reg_backup_ptr->GEN4PHY_RTT_CTRL;
+        GEN4PHY->DMD_CTRL1             = reg_backup_ptr->GEN4PHY_DMD_CTRL1;
+        GEN4PHY->DMD_CTRL2             = reg_backup_ptr->GEN4PHY_DMD_CTRL2;
+        RBME->WHITEN_CFG               = reg_backup_ptr->RBME_WHITEN_CFG;
+        RBME->CRCW_CFG3                = reg_backup_ptr->RBME_CRCW_CFG3;
+        XCVR_TSM->CTRL                 = reg_backup_ptr->XCVR_TSM_CTRL;
+        RADIO_CTRL->RF_CLK_CTRL        = reg_backup_ptr->RADIO_CTRL_RF_CLK_CTRL; 
+    }
+
+    return status;
+}
+
+xcvrLclStatus_t XCVR_LCL_InitRttPayloadDemod(void)
+{
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    
+    /* Init GEN-LL to store the RTT payload in rx packet ram */
+    RADIO_CTRL->RF_CLK_CTRL |= RADIO_CTRL_RF_CLK_CTRL_GENLL_CLK_EN_OVRD_MASK; /* enable genll clock */
+
+    XCVR_TSM->CTRL |= XCVR_TSM_CTRL_TSM_LL_INHIBIT(8U);        /* disables GenFSK LL command at TSM level */
+
+    GENFSK->ENH_FEATURE |= GENFSK_ENH_FEATURE_STAY_IN_RX_MASK; /* forces GenFSK LL to stay in Rx state after a correct RX packet */
+    uint32_t packet_cfg = GENFSK->PACKET_CFG;
+    packet_cfg &= ~( GENFSK_PACKET_CFG_LENGTH_SZ_MASK          /* indicates there is no length field in Header */
+                  | GENFSK_PACKET_CFG_H0_SZ_MASK               /* indicates there is no H0 field in Header */
+                  | GENFSK_PACKET_CFG_H1_SZ_MASK               /* indicates there is no H1 field in Header */
+                  | GENFSK_PACKET_CFG_AA_PLAYBACK_CNT_MASK    
+                  | GENFSK_PACKET_CFG_SYNC_ADDR_SZ_MASK);      /* reduces AA size to 1 byte */
+    packet_cfg |= GENFSK_PACKET_CFG_AA_PLAYBACK_CNT(1);        /* indicates that AA is playback to Link Layer */
+    GENFSK->PACKET_CFG = packet_cfg;
+    GENFSK->MULT_PKT_CTRL |= GENFSK_MULT_PKT_CTRL_MULT_PKT_EN_MASK;  /* enables feature “Send and Receive multiple packets” in GENFSK link Layer */
+    GENFSK->MULT_PKT_CTRL &= ~(GENFSK_MULT_PKT_CTRL_SEG_SZ_MASK);    /* reduces the Segment depth to 32 bytes (minimum) */
+
+    RBME->CRCW_CFG3 &= ~RBME_CRCW_CFG3_CRC_SZ_MASK;            /* indicates there is no CRC field in Packet */
+    RBME->WHITEN_CFG &= ~RBME_WHITEN_CFG_WHITEN_START_MASK;    /* Disable Whitening */
+
+    GEN4PHY->DMD_CTRL1 &= ~(GEN4PHY_DMD_CTRL1_TTRK_INT_RANGE_MASK);
+    GEN4PHY->DMD_CTRL1 |= GEN4PHY_DMD_CTRL1_TTRK_INT_RANGE(2U);          /* valid value to ensure correct demodulation of the fist payload bit */
+    GEN4PHY->DMD_CTRL2 &= ~(GEN4PHY_DMD_CTRL2_WAIT_DMD_CLKEN_ADJ_MASK);
+    GEN4PHY->DMD_CTRL2 |= GEN4PHY_DMD_CTRL2_WAIT_DMD_CLKEN_ADJ(0x7U);    /* valid value to ensure correct demodulation of the fist payload bit */
+    
+    return status;
+}
+
+xcvrLclStatus_t XCVR_LCL_ArmRttPayloadDemod(XCVR_RSM_RTT_TYPE_T rtt_type)
+{
+     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    
+#if defined(RTT_DEMOD_RXRAM_CLEAR_EN) && (RTT_DEMOD_RXRAM_CLEAR_EN)
+     /* clear rx ram */
+     uint8_t seg_sz = (GENFSK->MULT_PKT_CTRL & GENFSK_MULT_PKT_CTRL_SEG_SZ_MASK) >> GENFSK_MULT_PKT_CTRL_SEG_SZ_SHIFT;
+     memset((void *) RX_PACKET_RAM_BASE, 0U, RX_PACKET_RAM_PACKET_RAM_COUNT);
+#endif
+     
+     /* re-arm genll for payload sequence */
+     uint8_t genfsk_seqcmd = 5U; /* starts GenFSK LL in Rx mode */
+     uint8_t length_adj = 0;     /* GenLL Length ajust = payload_length -1 (bytes) */
+     switch(rtt_type)
+     {  
+         case XCVR_RSM_RTT_32BIT_SOUNDING:
+         case XCVR_RSM_RTT_32BIT_RANDOM:
+            length_adj = 3; /* 4bytes */
+            break;
+         case XCVR_RSM_RTT_64BIT_RANDOM:
+            length_adj = 7; /* 8bytes */
+            break;
+         case XCVR_RSM_RTT_96BIT_SOUNDING:
+         case XCVR_RSM_RTT_96BIT_RANDOM:
+            length_adj = 11; /* 12bytes */
+            break;
+         case XCVR_RSM_RTT_128BIT_RANDOM:
+            length_adj = 15; /* 16bytes */
+            break;
+         case XCVR_RSM_RTT_NO_PAYLOAD:
+            genfsk_seqcmd = 0U;  /* don't start GenFSK Rx by default */
+         default:
+            status = gXcvrLclStatusInvalidArgs;
+     }
+     if(status == gXcvrLclStatusSuccess)
+     {
+         GEN4PHY->RTT_CTRL &= ~GEN4PHY_RTT_CTRL_RTT_SEQ_LEN_MASK;            /* disable by default payload demod ( enable after mode0s ) */
+         GENFSK->LENGTH_ADJ = GENFSK_LENGTH_ADJ_LENGTH_ADJ(length_adj);      /* Configure Payload Length to demod */
+         GENFSK->XCVR_CTRL = GENFSK_XCVR_CTRL_SEQCMD(0U);                    /* reset genll state to idle for consistancy */
+         while(GENFSK->XCVR_CTRL&GENFSK_XCVR_CTRL_CMDDEC_CS_MASK);           /* Wait for idle to be active */
+         GENFSK->XCVR_CTRL = GENFSK_XCVR_CTRL_SEQCMD(genfsk_seqcmd);         /* Start GenLL Rx sequence ( or stay idle ) */
+         GENFSK->MULT_PKT_CTRL |= GENFSK_MULT_PKT_CTRL_RESET_PKT_IDX_MASK;   /* write to clear pkt index. */
+     }     
+     
+     return status;
+}
+
+void XCVR_LCL_EnableRttPayloadDemod(void)
+{
+    GEN4PHY->RTT_CTRL |= GEN4PHY_RTT_CTRL_RTT_SEQ_LEN_MASK; /* enable RTT payload demod. Must be done after mode0 */
+}
+#endif
+#endif
+
 /* RSM interrupts are only supported on the NBU CPU */
 #if defined(KW45B41Z82_NBU_SERIES) || defined(KW45B41Z83_NBU_SERIES)
 static rsm_sw_handler_t rsm_handler = {NULLPTR, NULLPTR};

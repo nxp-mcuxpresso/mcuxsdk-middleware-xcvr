@@ -724,6 +724,32 @@ typedef struct
     uint32_t RADIO_CTRL_RF_CTRL;
 } rsm_reg_backup_t;
 
+#if (defined(RTT_DEMOD_ENABLE) && (RTT_DEMOD_ENABLE))
+/* RTT payload demod with GenLL-related register backup structure. Stores registers that must be changed */
+typedef struct
+{
+#if (defined(BACKUP_RTT_DEMOD_GENLL) && (BACKUP_RTT_DEMOD_GENLL == 1))
+    /* GENFSK */
+    uint32_t GENFSK_ENH_FEATURE;
+    uint32_t GENFSK_PACKET_CFG;
+    uint32_t GENFSK_MULT_PKT_CTRL;
+    uint32_t GENFSK_LENGTH_ADJ;
+    //uint32_t GENFSK_XCVR_CTRL;
+#endif /* (defined(BACKUP_RTT_DEMOD_GENLL) && (BACKUP_RTT_DEMOD_GENLL == 1)) */
+    /* GEN4PHY */
+    uint32_t GEN4PHY_RTT_CTRL;
+    uint32_t GEN4PHY_DMD_CTRL1;
+    uint32_t GEN4PHY_DMD_CTRL2;
+    /* RBME */
+    uint32_t RBME_WHITEN_CFG;
+    uint32_t RBME_CRCW_CFG3;
+    /* TSM */
+    uint32_t XCVR_TSM_CTRL;
+    /* RADIO CTRL */
+    uint32_t RADIO_CTRL_RF_CLK_CTRL;
+} rttdemod_reg_backup_t;
+#endif /* (defined(RTT_DEMOD_ENABLE) && (RTT_DEMOD_ENABLE)) */
+
 typedef uint32_t
     tsm_u32_backup_array_t[NUM_TSM_U32_REGISTERS]; /*!< Backup array of uint32_t to store entire TSM register set. */
 
@@ -1544,7 +1570,85 @@ xcvrLclStatus_t XCVR_LCL_EnaPic(XCVR_RSM_PIC_MODE_TYPE_T mode, bool slow_bw_redu
 void XCVR_LCL_EnaDividerSync(bool enable);
 #endif
 
-#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450)  && (RF_OSC_26MHZ == 0) */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN==470)
+#if defined(RTT_DEMOD_ENABLE) && (RTT_DEMOD_ENABLE)
+/*!
+ * @brief Function to backup the state of various XCVR registers changed by RTT Payload demod init.
+ *
+ * This function backs up registers in multiple XCVR blocks to store their state before or during RTT Payload
+ * demodulation.
+ *
+ * @param reg_backup_ptr the pointer to a settings structure for register backup.
+ *
+ * @return The status of the backup.
+ *
+ */
+xcvrLclStatus_t XCVR_LCL_RttPayloadDemodRegBackup(rttdemod_reg_backup_t *reg_backup_ptr);
+
+/*!
+ * @brief Function to restore the state of various XCVR registers changed by RTT Payload demod init.
+ *
+ * This function restores registers to multiple XCVR blocks to replace their state to what it was before or during RTT Payload
+ * demodulation.
+ *
+ * @param reg_backup_ptr the pointer to a settings structure for register restore.
+ *
+ * @return The status of the restore.
+ *
+ */
+xcvrLclStatus_t XCVR_LCL_RttPayloadDemodRegRestore(const rttdemod_reg_backup_t *reg_backup_ptr);
+
+/*!
+ * @brief Function to Initialize the GenLL to demodulate the RTT Payload.
+ *
+ * This function enables and configures the gen-ll to run in parallel of the BLE-ll in order to demodulate the CS RTT Payload,
+ * and store it in the RX Packet RAM.  
+ * @note RSM configuration and results circular buffers must be placed on Tx Packet Ram only.
+ * The Rx packet ram size ( 512 words ) allows to capture up to 64 payloads. Indeed the genll uses segment of 8 words min to store the
+ * payload ( 4 words max ). The unused words in the segment is not written by the genll.   
+ * MULT_PKT_CTRL[PKT_INDEX] and MULT_PKT_CTRL[SEG_BASE_ADDR] can be used to monitor the status of the payload buffer in the Rx packet ram. 
+ * The pointer overlaps automatically when reaching the end of the buffer, however PKT_INDEX and SEG_BASE_ADDR overlaps after 128 segments
+ * ( corresponding to twice the rx packet ram size ).
+ * @sa XCVR_LCL_ArmRttPayloadDemod, XCVR_LCL_EnableRttPayloadDemod, XCVR_LCL_RttPayloadDemodRegBackup, XCVR_LCL_RttPayloadDemodRegRestore
+ *
+ * @return The status of the initialization settings.
+ *
+ */
+xcvrLclStatus_t XCVR_LCL_InitRttPayloadDemod(void);
+
+/*!
+ * @brief Function to Prepare the genLL to demodulate the RTT Payload
+ *
+ * This function (re-)arm the genLL to demodulate the RTT Payload.
+ * Rtt Payload demodulation is disabled by default. Must be enabled after the Mode0s only.
+ * This function assume XCVR_LCL_InitRttPayloadDemod previously called once.
+ * define RTT_DEMOD_RXRAM_CLEAR_EN = 1 to clear the Rx Packet RAM.
+ *
+ * @sa XCVR_LCL_InitRttPayloadDemod, XCVR_LCL_EnableRttPayloadDemod
+ * 
+ * @param rtt_type (XCVR_RSM_RTT_TYPE_T)
+ * 
+ * @return The status of the prepare settings
+ *
+ */
+xcvrLclStatus_t XCVR_LCL_ArmRttPayloadDemod(XCVR_RSM_RTT_TYPE_T rtt_type);
+
+/*!
+ * @brief Function to enable the RTT Payload demodulation by genLL
+ *
+ * This function enables the RTT Payload demodulation via genLL. 
+ * This function must be called after Mode0s steps.
+ *
+ * @sa XCVR_LCL_InitRttPayloadDemod, XCVR_LCL_ArmRttPayloadDemod
+ * 
+ */
+void XCVR_LCL_EnableRttPayloadDemod(void);
+#endif /* defined(RTT_DEMOD_ENABLE) && (RTT_DEMOD_ENABLE) */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN==470) */
+
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  && (RF_OSC_26MHZ == 0) */
+
+
 
 /*! @}*/
 
