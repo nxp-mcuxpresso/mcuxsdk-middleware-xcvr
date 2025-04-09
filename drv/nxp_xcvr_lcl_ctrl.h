@@ -750,6 +750,42 @@ typedef struct
 } rttdemod_reg_backup_t;
 #endif /* (defined(RTT_DEMOD_ENABLE) && (RTT_DEMOD_ENABLE)) */
 
+/* BT2-related register backup structure. Stores registers that must be changed in different peripherals for BT2 configuration to
+ * work. */
+typedef struct
+{
+    uint32_t GEN4PHY_DEMOD_WAVE[3*8];
+    uint32_t GEN4PHY_RTT_REF;
+
+    /* Acquisition Channel Filter */
+    uint32_t XCVR_RX_DIG_ACQ_FILT_0_3;
+    uint32_t XCVR_RX_DIG_ACQ_FILT_4_7;
+    uint32_t XCVR_RX_DIG_ACQ_FILT_8_9;
+    uint32_t XCVR_RX_DIG_ACQ_FILT_10_11;
+    uint32_t XCVR_RX_DIG_ACQ_FILT_0_3_DRS;
+    uint32_t XCVR_RX_DIG_ACQ_FILT_4_7_DRS;
+    uint32_t XCVR_RX_DIG_ACQ_FILT_8_9_DRS;
+    uint32_t XCVR_RX_DIG_ACQ_FILT_10_11_DRS;
+
+    /* Demod Channel Filter */
+    uint32_t XCVR_RX_DIG_DEMOD_FILT_0_1;
+    uint32_t XCVR_RX_DIG_DEMOD_FILT_2_4;
+    uint32_t XCVR_RX_DIG_DEMOD_FILT_0_1_DRS;
+    uint32_t XCVR_RX_DIG_DEMOD_FILT_2_4_DRS;
+
+    /* Tx Modulation */
+    uint32_t XCVR_TX_DIG_FSK_CTRL;
+    uint32_t XCVR_TX_DIG_GFSK_COEFF_0_1;
+    uint32_t XCVR_TX_DIG_GFSK_COEFF_2_3;
+    uint32_t XCVR_TX_DIG_GFSK_COEFF_4_5;
+    uint32_t XCVR_TX_DIG_GFSK_COEFF_6_7;
+    uint32_t XCVR_TX_DIG_GFSK_CTRL;
+
+    /* IPS_FO changing GFSK_CTRL*/
+    uint32_t XCVR_MISC_IPS_FO_DRS1_DATA_1;
+    uint32_t XCVR_MISC_IPS_FO_DRS1_DATA_2;
+} bt2_reg_backup_t;
+
 typedef uint32_t
     tsm_u32_backup_array_t[NUM_TSM_U32_REGISTERS]; /*!< Backup array of uint32_t to store entire TSM register set. */
 
@@ -1012,6 +1048,8 @@ extern const uint32_t tsm_fast_descrip_comp[TSM_DESCRIP_COUNT]; /* Make descript
 #endif /* (defined(BACKUP_RSM_LCL) && (BACKUP_RSM_LCL==1))         */
 extern const uint32_t
     pll_rsm_fast_descrip_comp[PLL_DESCRIP_COUNT]; /* Make descriptor visible extenally for validation */
+#define BT2_DESCRIP_COUNT (5U)
+extern const uint32_t ble_phy_bt2_fast_descrip_comp[BT2_DESCRIP_COUNT]; /* Make descriptor visible extenally for validation */
 #endif                                            /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 
 /*!
@@ -1043,6 +1081,54 @@ xcvrLclStatus_t XCVR_LCL_ReprogramTsmTimings(const xcvr_lcl_tsm_config_t *new_ts
  *
  */
 xcvrLclStatus_t XCVR_LCL_Set_TSM_FastStart(XCVR_RSM_RXTX_MODE_T role, const xcvr_lcl_rsm_config_t *rsm_settings_ptr);
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+/*!
+ * @brief Function to backup all register values that need to be changed to setup BT2 configuration.
+ *
+ * This function stores into the given structure all registers linked to BT2 configuration. It needs to be called
+ * before @ref XCVR_LCL_BlePhyBT2Config . 
+ * 
+ * @note FDEV field is not backup/restored ( GFSK_CTRL and IPS_FO )
+ * 
+ * @param bt2_reg bt2_reg_backup_t BT2 linked registers to backup
+ *
+ * @return The status of the function (xcvrLclStatus_t).
+ */
+xcvrLclStatus_t XCVR_LCL_BlePhyBT2RegBackUp(bt2_reg_backup_t *bt2_reg);
+
+/*!
+ * @brief Function to restore all register values that has been changed to setup BT2 configuration.
+ *
+ * This function restores, from the given structure, all registers linked to BT2 configuration. It needs to be called
+ * after @ref XCVR_LCL_BlePhyBT2RegBackUp . 
+ * 
+ * @note FDEV field is not backup/restored ( GFSK_CTRL and IPS_FO )
+ * 
+ * @param bt2_reg bt2_reg_backup_t BT2 linked registers to restore
+ *
+ * @return The status of the function (xcvrLclStatus_t).
+ */
+xcvrLclStatus_t XCVR_LCL_BlePhyBT2RegRestore(bt2_reg_backup_t *bt2_reg);
+
+/*!
+ * @brief Function to configure BT=2.0 modulation settings on top of BLE configuration.
+ *
+ * This function configures the radio modulation to change BT product. It configures acquisition
+ * channel filter, Demod wave, Demod filter, RTT ref for Rx. And FSK,GFSK control and GFSK Coeffs for Tx.
+ * IPS_FO used to update GFSK_CTRL is also updated.   
+ * This function is intended to configures BT=2.0 on top of BLE CS configuration (BT=0.5).   
+ * Use @ref XCVR_LCL_BlePhyBT2RegBackUp to save initial register values before to call this function.   
+ * Use @ref XCVR_LCL_BlePhyBT2RegRestore to restore the initial register state and go back to BT=0.5
+ * 
+ * @note FDEV is not overidden ( GFSK_CTRL and IPS_FO )
+ * 
+ * @param config xcvr_config_t radio configuration : 
+ *
+ * @return The status of the function (xcvrLclStatus_t).
+ */
+xcvrLclStatus_t XCVR_LCL_BlePhyBT2Config(const xcvr_config_t *  config);
+#endif
 
 /*!
  * @brief Function to backup the state of various XCVR registers changed by RSM init.

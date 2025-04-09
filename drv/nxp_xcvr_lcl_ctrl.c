@@ -1863,6 +1863,170 @@ xcvrLclStatus_t XCVR_LCL_ReprogramTsmTimings(const xcvr_lcl_tsm_config_t *new_ts
     return status;
 }
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+const uint32_t ble_phy_bt2_fast_descrip_comp[BT2_DESCRIP_COUNT] = {
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 3U*8U, &(GEN4PHY->DEMOD_WAVE[0U])),       /* Demod Wave */
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(GEN4PHY->RTT_REF)),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 12U, &(XCVR_RX_DIG->ACQ_FILT_0_3)),      /* Rx Dig: Axq Filter + Acq DRS + demod + demod DRS */
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 6U, &(XCVR_TX_DIG->FSK_CTRL)),           /* Tx Dig: FSK_CTRL + GFSK_CTRL + GFSK_COEFF */
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 2U, &(XCVR_MISC->IPS_FO_DRS1_DATA[1U])),  /* XCVR_MISC: IPS FO reconfiguring GFSK_CTRL */
+};
+
+xcvrLclStatus_t XCVR_LCL_BlePhyBT2RegBackUp(bt2_reg_backup_t *bt2_reg)
+{
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    if( bt2_reg == NULLPTR) {
+        return gXcvrLclStatusInvalidArgs;
+    }
+
+    for( uint8_t i=0U; i<8U; i++) {
+        bt2_reg->GEN4PHY_DEMOD_WAVE[i*3U]   = GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG0;
+        bt2_reg->GEN4PHY_DEMOD_WAVE[i*3U+1U] = GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG1;
+        bt2_reg->GEN4PHY_DEMOD_WAVE[i*3U+2U] = GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG2;
+    }
+    bt2_reg->GEN4PHY_RTT_REF = GEN4PHY->RTT_REF;
+
+    /* Acquisition Channel Filter */
+    bt2_reg->XCVR_RX_DIG_ACQ_FILT_0_3 = XCVR_RX_DIG->ACQ_FILT_0_3;
+    bt2_reg->XCVR_RX_DIG_ACQ_FILT_4_7 = XCVR_RX_DIG->ACQ_FILT_4_7;
+    bt2_reg->XCVR_RX_DIG_ACQ_FILT_8_9 = XCVR_RX_DIG->ACQ_FILT_8_9;
+    bt2_reg->XCVR_RX_DIG_ACQ_FILT_10_11 = XCVR_RX_DIG->ACQ_FILT_10_11;
+    bt2_reg->XCVR_RX_DIG_ACQ_FILT_0_3_DRS = XCVR_RX_DIG->ACQ_FILT_0_3_DRS;
+    bt2_reg->XCVR_RX_DIG_ACQ_FILT_4_7_DRS = XCVR_RX_DIG->ACQ_FILT_4_7_DRS;
+    bt2_reg->XCVR_RX_DIG_ACQ_FILT_8_9_DRS = XCVR_RX_DIG->ACQ_FILT_8_9_DRS;
+    bt2_reg->XCVR_RX_DIG_ACQ_FILT_10_11_DRS = XCVR_RX_DIG->ACQ_FILT_10_11_DRS;
+
+    /* Demod Channel Filter */
+    bt2_reg->XCVR_RX_DIG_DEMOD_FILT_0_1 = XCVR_RX_DIG->DEMOD_FILT_0_1;
+    bt2_reg->XCVR_RX_DIG_DEMOD_FILT_2_4 = XCVR_RX_DIG->DEMOD_FILT_2_4;
+    bt2_reg->XCVR_RX_DIG_DEMOD_FILT_0_1_DRS = XCVR_RX_DIG->DEMOD_FILT_0_1_DRS;
+    bt2_reg->XCVR_RX_DIG_DEMOD_FILT_2_4_DRS = XCVR_RX_DIG->DEMOD_FILT_2_4_DRS;
+
+    /* Tx Modulation */
+    bt2_reg->XCVR_TX_DIG_FSK_CTRL = XCVR_TX_DIG->FSK_CTRL;
+    bt2_reg->XCVR_TX_DIG_GFSK_COEFF_0_1 = XCVR_TX_DIG->GFSK_COEFF_0_1;
+    bt2_reg->XCVR_TX_DIG_GFSK_COEFF_2_3 = XCVR_TX_DIG->GFSK_COEFF_2_3;
+    bt2_reg->XCVR_TX_DIG_GFSK_COEFF_4_5 = XCVR_TX_DIG->GFSK_COEFF_4_5;
+    bt2_reg->XCVR_TX_DIG_GFSK_COEFF_6_7 = XCVR_TX_DIG->GFSK_COEFF_6_7 ;
+    bt2_reg->XCVR_TX_DIG_GFSK_CTRL = XCVR_TX_DIG->GFSK_CTRL & ~XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* do not store FDEV field */
+
+    /* IPS_FO changing GFSK_CTRL*/
+    bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_1 = XCVR_MISC->IPS_FO_DRS1_DATA[1U] & ~XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* do not store FDEV field */
+    bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_2 = XCVR_MISC->IPS_FO_DRS1_DATA[2U] & ~XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* do not store FDEV field */
+        
+    return status;
+}
+
+xcvrLclStatus_t XCVR_LCL_BlePhyBT2RegRestore(bt2_reg_backup_t *bt2_reg)
+{
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    if( bt2_reg == NULLPTR) {
+        return gXcvrLclStatusInvalidArgs;
+    }
+
+    for( uint8_t i=0U; i<8U; i++) {
+        GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG0 = bt2_reg->GEN4PHY_DEMOD_WAVE[i*3U];
+        GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG1 = bt2_reg->GEN4PHY_DEMOD_WAVE[i*3U+1U];
+        GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG2 = bt2_reg->GEN4PHY_DEMOD_WAVE[i*3U+2U];
+    }
+    GEN4PHY->RTT_REF = bt2_reg->GEN4PHY_RTT_REF;
+
+    /* Acquisition Channel Filter */
+    XCVR_RX_DIG->ACQ_FILT_0_3 = bt2_reg->XCVR_RX_DIG_ACQ_FILT_0_3;
+    XCVR_RX_DIG->ACQ_FILT_4_7 = bt2_reg->XCVR_RX_DIG_ACQ_FILT_4_7;
+    XCVR_RX_DIG->ACQ_FILT_8_9 = bt2_reg->XCVR_RX_DIG_ACQ_FILT_8_9;
+    XCVR_RX_DIG->ACQ_FILT_10_11 = bt2_reg->XCVR_RX_DIG_ACQ_FILT_10_11;
+    XCVR_RX_DIG->ACQ_FILT_0_3_DRS = bt2_reg->XCVR_RX_DIG_ACQ_FILT_0_3_DRS;
+    XCVR_RX_DIG->ACQ_FILT_4_7_DRS = bt2_reg->XCVR_RX_DIG_ACQ_FILT_4_7_DRS;
+    XCVR_RX_DIG->ACQ_FILT_8_9_DRS = bt2_reg->XCVR_RX_DIG_ACQ_FILT_8_9_DRS;
+    XCVR_RX_DIG->ACQ_FILT_10_11_DRS = bt2_reg->XCVR_RX_DIG_ACQ_FILT_10_11_DRS;
+
+    /* Demod Channel Filter */
+    XCVR_RX_DIG->DEMOD_FILT_0_1 = bt2_reg->XCVR_RX_DIG_DEMOD_FILT_0_1;
+    XCVR_RX_DIG->DEMOD_FILT_2_4 = bt2_reg->XCVR_RX_DIG_DEMOD_FILT_2_4;
+    XCVR_RX_DIG->DEMOD_FILT_0_1_DRS = bt2_reg->XCVR_RX_DIG_DEMOD_FILT_0_1_DRS;
+    XCVR_RX_DIG->DEMOD_FILT_2_4_DRS = bt2_reg->XCVR_RX_DIG_DEMOD_FILT_2_4_DRS;
+
+    /* Tx Modulation */
+    XCVR_TX_DIG->FSK_CTRL = bt2_reg->XCVR_TX_DIG_FSK_CTRL;
+    XCVR_TX_DIG->GFSK_COEFF_0_1 = bt2_reg->XCVR_TX_DIG_GFSK_COEFF_0_1;
+    XCVR_TX_DIG->GFSK_COEFF_2_3 = bt2_reg->XCVR_TX_DIG_GFSK_COEFF_2_3;
+    XCVR_TX_DIG->GFSK_COEFF_4_5 = bt2_reg->XCVR_TX_DIG_GFSK_COEFF_4_5;
+    XCVR_TX_DIG->GFSK_COEFF_6_7  = bt2_reg->XCVR_TX_DIG_GFSK_COEFF_6_7;
+    /* FDEV field is not backup and restored */
+    uint16_t fdev = (uint16_t)XCVR_TX_DIG->GFSK_CTRL & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;
+    XCVR_TX_DIG->GFSK_CTRL = (bt2_reg->XCVR_TX_DIG_GFSK_CTRL & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)) | (uint32_t)fdev;
+
+    /* IPS_FO changing GFSK_CTRL*/
+    fdev = (uint16_t)XCVR_MISC->IPS_FO_DRS1_DATA[1] & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;  /* reset every other bits except FDEV */
+    XCVR_MISC->IPS_FO_DRS1_DATA[1] = bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_1 | (uint32_t)fdev; /* FDEV field = 0 in bt2_reg*/
+    fdev = (uint16_t)XCVR_MISC->IPS_FO_DRS1_DATA[2] & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;  /* reset every other bits except FDEV */
+    XCVR_MISC->IPS_FO_DRS1_DATA[2] = bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_2 | (uint32_t)fdev; /* FDEV field = 0 in bt2_reg*/
+
+    return status;
+}
+
+xcvrLclStatus_t XCVR_LCL_BlePhyBT2Config(const xcvr_config_t *  config)
+{
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+
+    if (config == NULLPTR)
+    {
+        return gXcvrLclStatusInvalidArgs;
+    }
+
+    /* Copy GEN4PHY demod_wave table */
+    for( uint8_t i=0U; i<8U; i++) {
+        GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG0 = config->mode_data_rate_cfg->demod_wave[i].dmd_wave_reg0;
+        GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG1 = config->mode_data_rate_cfg->demod_wave[i].dmd_wave_reg1;
+        GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG2 = config->mode_data_rate_cfg->demod_wave[i].dmd_wave_reg2;
+    }
+
+    /* Rtt ref */
+    // Note : RTT_REF present in rsm config backup structure, but not used on KW47
+    GEN4PHY->RTT_REF = config->mode_data_rate_cfg->rtt_ref;
+
+    /* Acquisition Channel Filter */
+    XCVR_RX_DIG->ACQ_FILT_0_3 = config->mode_data_rate_cfg->acq_filt_0_3;
+    XCVR_RX_DIG->ACQ_FILT_4_7 = config->mode_data_rate_cfg->acq_filt_4_7;
+    XCVR_RX_DIG->ACQ_FILT_8_9 = config->mode_data_rate_cfg->acq_filt_8_9;
+    XCVR_RX_DIG->ACQ_FILT_10_11 = config->mode_data_rate_cfg->acq_filt_10_11;
+    
+    // Note : Acq filter DRS is overriden for NADM overdroop, not compatible with this API (NADM_WA_OVERDROOP)
+    XCVR_RX_DIG->ACQ_FILT_0_3_DRS = config->mode_data_rate_cfg->acq_filt_0_3_drs;
+    XCVR_RX_DIG->ACQ_FILT_4_7_DRS = config->mode_data_rate_cfg->acq_filt_4_7_drs;
+    XCVR_RX_DIG->ACQ_FILT_8_9_DRS = config->mode_data_rate_cfg->acq_filt_8_9_drs;
+    XCVR_RX_DIG->ACQ_FILT_10_11_DRS = config->mode_data_rate_cfg->acq_filt_10_11_drs;
+
+    /* Demod Channel Filter */
+    XCVR_RX_DIG->DEMOD_FILT_0_1 = config->mode_data_rate_cfg->demod_filt_0_1;
+    XCVR_RX_DIG->DEMOD_FILT_2_4 = config->mode_data_rate_cfg->demod_filt_2_4;
+
+    XCVR_RX_DIG->DEMOD_FILT_0_1_DRS = config->mode_data_rate_cfg->demod_filt_0_1_drs;
+    XCVR_RX_DIG->DEMOD_FILT_2_4_DRS = config->mode_data_rate_cfg->demod_filt_2_4_drs;
+    
+    /* Tx Modulation */
+    XCVR_TX_DIG->FSK_CTRL = config->mode_data_rate_cfg->fsk_ctrl;
+    XCVR_TX_DIG->GFSK_COEFF_0_1 = config->mode_data_rate_cfg->gfsk_coeff_0_1;
+    XCVR_TX_DIG->GFSK_COEFF_2_3 = config->mode_data_rate_cfg->gfsk_coeff_2_3;
+    XCVR_TX_DIG->GFSK_COEFF_4_5 = config->mode_data_rate_cfg->gfsk_coeff_4_5;
+    XCVR_TX_DIG->GFSK_COEFF_6_7 = config->mode_data_rate_cfg->gfsk_coeff_6_7;
+
+    /* Note: GFSK_CTRL and DATARATE_CONFIG_GFSK_CTRL (FDEV) is overriden by rsmInit.
+             keep GFSK_FDEV from ble rsm setting  */
+    uint16_t fdev = (uint16_t)XCVR_TX_DIG->GFSK_CTRL & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;
+    XCVR_TX_DIG->GFSK_CTRL = (config->mode_data_rate_cfg->gfsk_ctrl & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)) | (uint32_t)fdev;
+
+    /* Disable IPS_FO changing GFSK_CTRL not needed for 2Mbps case (DRS1) */
+    XCVR_MISC->IPS_FO_DRS1_DATA[1U] &= XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* reset every other bits except FDEV */
+    XCVR_MISC->IPS_FO_DRS1_DATA[1U] |= (config->mode_data_rate_cfg->gfsk_ctrl & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)); 
+    XCVR_MISC->IPS_FO_DRS1_DATA[2U] &= XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* reset every other bits except FDEV */
+    XCVR_MISC->IPS_FO_DRS1_DATA[2U] |= (config->mode_data_rate_cfg->gfsk_ctrl & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)); 
+    
+    return status;
+}
+#endif
+
 xcvrLclStatus_t XCVR_LCL_RsmRegBackup(rsm_reg_backup_t *reg_backup_ptr)
 {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
