@@ -171,13 +171,6 @@ void RFMC_nbu_enter_reset(void)
     RFMC->RF2P4GHZ_CTRL |= RFMC_RF2P4GHZ_CTRL_CPU_RST_MASK;
 }
 
-void RFMC_nbu_release_reset(void)
-{
-    /* Release NBU CPU reset  */
-    RFMC->RF2P4GHZ_CTRL &= ~(RFMC_RF2P4GHZ_CTRL_CPU_RST_MASK); /* Release NBU CPU reset */
-    CIU2->CIU2_CPU_CPU2_CTRL = CIU2_CIU2_CPU_CPU2_CTRL_VINITHI_MASK;
-}
-
 #endif /* defined(RADIO_IS_GEN_4P5) && !defined(KW45B41Z82_NBU_SERIES) && !defined(KW45B41Z83_NBU_SERIES) */
 
 void RFMC_GetUniqueId(rfmc_uid_t *uid)
