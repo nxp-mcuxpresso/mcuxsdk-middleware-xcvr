@@ -807,14 +807,19 @@ typedef struct
  * @param value Value of the bit field.
  * @return Masked and shifted value.
  */
+#ifndef NXP_VAL2FLD
 #define NXP_VAL2FLD(field, value) (((value) << (field##_SHIFT)) & (field##_MASK))
+#endif
+
 /**
  * @brief Mask and right-shift a register value to extract a bit field value.
  * @param field Name of the register bit field.
  * @param value Value of the register.
  * @return Masked and shifted bit field value.
  */
+#ifndef NXP_FLD2VAL
 #define NXP_FLD2VAL(field, value) (((value) & (field##_MASK)) >> (field##_SHIFT))
+#endif
 
 /*!
  * @}
