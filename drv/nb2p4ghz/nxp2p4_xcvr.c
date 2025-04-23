@@ -769,7 +769,7 @@ uint8_t XCVR_GetXtalTrim(void)
     return temp_xtal;
 }
 
-xcvrStatus_t XCVR_SetXtalTempComp(const xcvr_temp_comp_lut_t *temp_comp_lut, int8_t temp_deg_c)
+xcvrStatus_t XCVR_SetXtalTempComp(const xcvr_temp_comp_lut_t *temp_comp_lut, int16_t temp_deg_c)
 {
     xcvrStatus_t status = gXcvrInvalidParameters_c;
     uint8_t cdac_trim_val;

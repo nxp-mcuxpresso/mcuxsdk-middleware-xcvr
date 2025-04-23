@@ -253,7 +253,7 @@ typedef struct
 
 #ifndef XTAL_TEMP_COMP_LUT_SIZE
 #define XTAL_TEMP_COMP_LUT_SIZE \
-    (20) /*!< Default LUT size for temp compensation of XTAL trim (signed, but must be positive) */
+    (17) /*!< Default LUT size for temp compensation of XTAL trim (signed, but must be positive) */
 #endif
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
@@ -533,8 +533,8 @@ typedef struct
  */
 typedef struct
 {
-    int8_t min_temp_degc;        /*!< The temperature corresponding to the first LUT entry, in deg C */
-    int8_t max_temp_degc;        /*!< The temperature corresponding to the last LUT entry, in deg C */
+    int16_t min_temp_degc;        /*!< The temperature corresponding to the first LUT entry, in deg C */
+    int16_t max_temp_degc;        /*!< The temperature corresponding to the last LUT entry, in deg C */
     uint8_t trim_below_min_temp; /*!< The CDAC value to use when temp is below the min temp for the LUT */
     uint8_t trim_above_max_temp; /*!< The CDAC value to use when temp is above the max temp for the LUT */
     int8_t temp_step_degc;      /*!< The temperature step between each LUT entry, in deg C */
@@ -910,7 +910,7 @@ uint8_t  XCVR_GetXtalTrim(void);
  * @param[in] temp_deg_c  The temperature in degrees C.
  * @return The status of the trim process.
  */
-xcvrStatus_t XCVR_SetXtalTempComp(const xcvr_temp_comp_lut_t * temp_comp_lut, int8_t temp_deg_c);
+xcvrStatus_t XCVR_SetXtalTempComp(const xcvr_temp_comp_lut_t * temp_comp_lut, int16_t temp_deg_c);
 
 
 /*!
