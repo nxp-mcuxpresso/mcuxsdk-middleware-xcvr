@@ -1547,6 +1547,52 @@ bool XCVR_FastPeriph_WaitComplete(void);
  */
 bool XCVR_FastPeriph_CheckErrorComplete(void);
 
+/*!
+ * @brief Function to snapshot or restore XCVR registers to a storage structure in PKT RAM using fast IPS
+ * DMA.
+ *
+ * This function captures or restores the state of the XCVR registers with a fast DMA block storing to one of the
+ * PKT RAM banks. It is used to quickly backup and restore XCVR registers without the slow access time penalty for normal
+ * XCVR register accesses.
+ *
+ * @param desc_ptr pointer to the descriptor structure describing the sequences of registers to backup to PKT RAM.
+ * @param num_entries Number of entries in the desciptor structure, not including the zero ending descriptor.
+ * @param pkt_ram_bank Selects the TX or RX packet RAM bank to use for storage of the download.
+ * @param pkt_ram_index_offset The word offset into the PKT RAM bank where the descriptors should be loaded and the
+ * register backup stored.
+ * @param restore If set to true then restore from PKT RAM is done. Otherwise, backup is to PKT RAM done.
+ *
+ * @return The status of the XCVR fast backup process.
+ *
+ * @pre The caller must have called the XCVR_ValidateFastPeriphDescrip() routine to validate the descriptor structure is
+ * correct and PKT RAM limits are not exceeded. The function XCVR_FastPeriphDescrip_WordCount() can be used to get the
+ * word count that will be used in the PKT RAM for storage of the data.
+ *
+ */
+xcvrStatus_t XCVR_FastBackupRestore(uint32_t *desc_ptr,
+                                    uint8_t num_entries,
+                                    PKT_RAM_BANK_SEL_T pkt_ram_bank,
+                                    uint16_t pkt_ram_index_offset,
+                                    bool restore);
+
+/*!
+ * @brief Function to backup the XCVR LIF and RBME registers to the TX_PACKET_RAM using the fast IPS DMA.
+ *
+ * The function XCVR_FastPeriph_WaitComplete() can be used to ensure the DMA transfer is complete.
+ *
+ * @return The status of the XCVR fast backup process.
+ */
+xcvrStatus_t XCVR_LIF_RBME_Backup(void);
+
+/*!
+ * @brief Function to restore the XCVR LIF and RBME registers from the TX_PACKET_RAM using the fast IPS DMA.
+ *
+ * The function XCVR_FastPeriph_WaitComplete() can be used to ensure the DMA transfer is complete.
+ *
+ * @return The status of the XCVR fast backup process.
+ */
+xcvrStatus_t XCVR_LIF_RBME_Restore(void);
+
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
 
 

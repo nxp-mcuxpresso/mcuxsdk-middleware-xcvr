@@ -2434,4 +2434,65 @@ bool XCVR_FastPeriph_CheckErrorComplete(void)
     return status_ok;  /* True means no error, False indicates an error occurred */
 }
 
+xcvrStatus_t XCVR_FastBackupRestore(uint32_t *desc_ptr,
+                                    uint8_t num_entries,
+                                    PKT_RAM_BANK_SEL_T pkt_ram_bank,
+                                    uint16_t pkt_ram_index_offset,
+                                    bool restore)
+{
+    xcvrStatus_t status = gXcvrSuccess_c;
+
+    /* Error checking for NULL pointer */
+    if (desc_ptr == NULLPTR)
+    {
+        status = gXcvrInvalidParameters_c;
+    }
+    else
+    {
+        if (!restore)
+        {
+            /* Performing backup, need to prepare the PKT RAM with uncompressed descriptor entries */
+            uint32_t *load_ptr =
+                (uint32_t *)(pkt_ram_bank == TX_PKT_RAM_SEL ? (TX_PACKET_RAM_BASE) : (RX_PACKET_RAM_BASE));
+            status = XCVR_FastPeriphDescrip_Load( desc_ptr, num_entries, &(load_ptr[pkt_ram_index_offset]));
+        }
+        XCVR_FastPeriphReg_UpDownload_Go(pkt_ram_bank, pkt_ram_index_offset, restore);
+    }
+    return status;
+}
+
+const uint32_t xcvr_backup_descriptor[8] = {
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, sizeof(XCVR_MISC_Type) >> 2, XCVR_MISC),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, sizeof(GEN4PHY_Type) >> 2, XCVR_2P4GHZ_PHY),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, sizeof(XCVR_PLL_DIG_Type) >> 2, XCVR_PLL_DIG),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, sizeof(XCVR_RX_DIG_Type) >> 2, XCVR_RX_DIG),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, sizeof(XCVR_TSM_Type) >> 2, XCVR_TSM),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, sizeof(XCVR_TX_DIG_Type) >> 2, XCVR_TX_DIG),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, sizeof(XCVR_ANALOG_Type) >> 2, XCVR_ANALOG),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, sizeof(RBME_Type) >> 2, RBME),
+};
+
+static void XCVR_LIF_RBME_PrepareBackup(void)
+{
+    /* TODO: We may want to look a little deeper into the state of the XCVR when this backup is being performed in
+     * order to ensure that the restored registers don't cause unexpected behaviors. For example, "enable" or "go"
+     * bits need to be cleared before backup so that restoring registers doesn't start some XCVR activity unexpectedly.
+     * */
+}
+
+xcvrStatus_t XCVR_LIF_RBME_Backup(void)
+{
+    /* TODO: */
+    XCVR_LIF_RBME_PrepareBackup();
+
+    /* Backup XCVR and RBME registers to TX PKT RAM */
+    return XCVR_FastBackupRestore((uint32_t *)xcvr_backup_descriptor, 8, TX_PKT_RAM_SEL, 0, false);
+}
+
+xcvrStatus_t XCVR_LIF_RBME_Restore(void)
+{
+    /* Restore XCVR and RBME registers from TX PKT RAM */
+    return XCVR_FastBackupRestore((uint32_t *)xcvr_backup_descriptor, 8, TX_PKT_RAM_SEL, 0, true);
+}
+
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
