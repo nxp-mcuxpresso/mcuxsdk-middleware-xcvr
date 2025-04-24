@@ -597,7 +597,6 @@ typedef struct
     uint16_t t_ip1_usec;                /*!< RSM_T_IP1 duration in us (IP1_RX2TX and IP1_TX2RX) */
     uint16_t t_ip2_usec;                /*!< RSM_T_IP2 duration in us (IP2_RX2TX and IP2_TX2RX) */
     uint16_t t_s_usec;                   /*!< RSM_TS duration in us (S_TX2TX and S_RX2RX) */
-    uint16_t t_fm_usec[T_FM_FLD_COUNT]; /*!< RSM_T_FM[0..n] durations in us (FM_TX and FM_RX) */
     uint16_t t_pm_usec[T_PM_FLD_COUNT]; /*!< RSM_T_PM[0..n] durations in us (PM_TX and PM_RX) */
     uint16_t t_dt0_usec;    /*!< Mode0 T_DT (sync packet) duration in us ( first DT_TX only. DT_RX_SYNC duration can't be
                               known )*/

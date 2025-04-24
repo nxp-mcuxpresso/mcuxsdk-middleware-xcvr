@@ -3454,19 +3454,6 @@ xcvrLclStatus_t XCVR_LCL_GetRsmStateTimings(XCVR_RSM_RXTX_MODE_T role, xcvr_lcl_
     state_duration->t_s_usec =
         (uint16_t)(T_S_INCMT * ((rsm_ctrl1 & XCVR_MISC_RSM_CTRL1_RSM_T_S_MASK) >> XCVR_MISC_RSM_CTRL1_RSM_T_S_SHIFT));
 
-    /* Get T_FM state timings */
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)
-    state_duration->t_fm_usec[0] = (uint16_t)(10U * (1U + ((rsm_ctrl1 & XCVR_MISC_RSM_CTRL1_RSM_T_FM0_MASK) >>
-                                                           XCVR_MISC_RSM_CTRL1_RSM_T_FM0_SHIFT)));
-    state_duration->t_fm_usec[1] = (uint16_t)(10U * (1U + ((rsm_ctrl1 & XCVR_MISC_RSM_CTRL1_RSM_T_FM1_MASK) >>
-                                                           XCVR_MISC_RSM_CTRL1_RSM_T_FM1_SHIFT)));
-    state_duration->t_fm_usec[2] = (uint16_t)(0U);
-    state_duration->t_fm_usec[3] = (uint16_t)(0U);
-#else
-    state_duration->t_fm_usec[0] =
-        (uint16_t)(((XCVR_MISC->RSM_CTRL5 & XCVR_MISC_RSM_CTRL5_RSM_T_FM_MASK) >> XCVR_MISC_RSM_CTRL5_RSM_T_FM_SHIFT));
-#endif
-
     /* Get T_DT states timings */
 #if defined(SUPPORT_RSM_LONG_PN) && (SUPPORT_RSM_LONG_PN == 1)
 #define PN_len (64U)
@@ -3760,7 +3747,7 @@ xcvrLclStatus_t XCVR_LCL_GetRSMCaptureBufferSize(xcvr_lcl_fstep_t *fstep_setting
                             if (0U != (dma_config.dma_signal_valid_mask_sel & RSM_DMA_SIGNAL_VALID_MASK_SEL_FM_RX))
                             {   /* fm_rx state mask capture */
                                 /* add additionnal samples with no averaging */
-                                dma_samples += ((state_duration.t_fm_usec[t_pm_sel] - dma_config.dma_fm_dur +
+                                dma_samples += ((T_FM_USEC - dma_config.dma_fm_dur +
                                                  rx_settling_latency) *
                                                 dma_config.sample_rate_per_usec);
                             }
@@ -3769,7 +3756,7 @@ xcvrLclStatus_t XCVR_LCL_GetRSMCaptureBufferSize(xcvr_lcl_fstep_t *fstep_setting
                     /* Seq Len = T_FC+2*T_DT+T_IP1+T_S+T_FM */
                     step_length_us = state_duration.t_fc_usec + (2U * state_duration.t_dt0_usec) +
                                      state_duration.t_ip1_usec + state_duration.t_s_usec +
-                                     state_duration.t_fm_usec[t_pm_sel];
+                                     T_FM_USEC;
                     break;
                 case XCVR_RSM_STEP_PK_PK:
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)

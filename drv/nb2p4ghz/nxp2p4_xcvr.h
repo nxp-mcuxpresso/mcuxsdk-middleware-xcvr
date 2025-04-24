@@ -143,6 +143,10 @@ typedef struct
 #endif /* ifndef IQMC_TRIM_DOWNLOAD_SUPPORT */
 
 /* Error check compile flags */
+#if !defined(RF_OSC_26MHZ)
+#define RF_OSC_26MHZ (0)
+#endif
+
 #if !((RF_OSC_26MHZ == 1U) || (RF_OSC_26MHZ == 0U))
 /* Code requires this flag to strictly be 0 or 1 */
 #error "Invalid flag setting for RF OSC 26MHz selection. Only 0 or 1 is permitted."
