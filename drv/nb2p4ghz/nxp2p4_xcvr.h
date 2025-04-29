@@ -381,14 +381,6 @@ typedef enum
   LPPS_ENABLED = 2
 } FAD_LPPS_CTRL_T;
 
-/*! @brief  XCVR Panic codes for indicating panic reason. */
-typedef enum
-{
-  WRONG_RADIO_ID_DETECTED = 1,
-  CALIBRATION_INVALID = 2,
-  RADIO_INIT_FAILURE = 3,
-} XCVR_PANIC_ID_T;
-
 /*! @brief  Initialization or mode change selection for config routine. */
 typedef enum
 {
@@ -546,14 +538,6 @@ typedef struct
                                                        from min to max with temp_step increments */
 } xcvr_temp_comp_lut_t;
 
-
-/*!
- * @brief Panic callback function type
- *
- * The panic callback function is defined by system if system need to be informed of XCVR fatal errors.
- * refer to #XCVR_RegisterPanicCb
- */
-typedef void (*panic_fptr)(uint32_t panic_id, uint32_t location, uint32_t extra1, uint32_t extra2);
 
 /**
  * @brief 32-bit floating-point type definition.
@@ -736,27 +720,6 @@ void XCVR_SetCRCWConfig(const rbme_crc_config_t * crc_config, const rbme_whiten_
  */
 void XCVR_EnaNBRSSIMeas(bool IIRnbEnable);
 
-
-/*!
- * @brief Register a callback from upper layers.
- *
- * This function registers a callback from the upper layers for the radio to call in case of fatal errors.
- *
- * @param[in] fptr  The function pointer to a panic callback.
- */
-void XCVR_RegisterPanicCb ( panic_fptr fptr ); /* allow upper layers to provide PANIC callback */
-
-
-/*!
- * @brief Panic function for XCVR related fatal errors.
- *
- * This function executes a callback to the upper layers in case of fatal errors. It enters an endless loop if no
- * callback function has been registered by ::XCVR_RegisterPanicCb().
- *
- * @param[in] panic_id  The ID for the failure.
- * @param[in] panic_address  The address of the routine calling the panic.
- */
-void XcvrPanic(XCVR_PANIC_ID_T panic_id, uint32_t panic_address);
 
 #if defined(RADIO_IS_GEN_3P5) /* Gen 4 and later radios don't include DAC trims */
 /*!

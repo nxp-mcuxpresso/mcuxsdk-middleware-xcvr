@@ -208,18 +208,6 @@ void RFMC_DispatchIRQ(uint32_t temp_register_rf, uint32_t temp_register_xo);
  *
  */
 void RFMC_nbu_enter_reset(void);
-
-/*!
- * @brief Function to release the NBU CPU from reset state.
- *
- * This function releases the NBU CPU from it's reset state from the RFMC.
- *
- * @note After releasing NBU CPU from reset there should be some mechanism for waiting for NBU to
- * complete startup before continuing with RF operations from the CM33 side. Otherwise, CM3 (NBU) and
- * CM33 may issue conflicting RFMC or XCVR operations.
- */
-void RFMC_nbu_release_reset(void);
-
 #endif /* defined(RADIO_IS_GEN_4P5) && !defined(KW45B41Z82_NBU_SERIES) && !defined(KW45B41Z83_NBU_SERIES) */
 
 #if defined(__cplusplus)

@@ -31,7 +31,6 @@ uint16_t XCVR_IdentifyRadioVer(uint32_t radio_ver);
 /*******************************************************************************
  * Variables
  ******************************************************************************/
-static panic_fptr s_PanicFunctionPtr = NULLPTR;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN < 450)
 const uint16_t tx_rx_on_delay = (uint16_t)TX_RX_ON_DELinit;
 #if defined(RADIO_IS_GEN_3P5)
@@ -387,34 +386,6 @@ void XCVR_EnaNBRSSIMeas(bool IIRnbEnable)
 #endif /* defined(RADIO_IS_GEN_4P0) */
 }
 
-void XCVR_RegisterPanicCb(panic_fptr fptr) /* Allow upper layers to provide PANIC callback */
-{
-    /* Set the pointer to a panic function for the XCVR to use */
-    s_PanicFunctionPtr = fptr;
-}
-
-void XcvrPanic(XCVR_PANIC_ID_T panic_id, uint32_t panic_address)
-{
-    /* Wrap the panic function pointer into the upper layers in a module for XCVR to use locally */
-    /* enters a while(1) loop if the function pointer is NULLpointer */
-    if (s_PanicFunctionPtr != NULLPTR)
-    {
-        s_PanicFunctionPtr(panic_id, panic_address, 0, 0);
-    }
-    else
-    {
-#ifdef GCOV_DO_COVERAGE /* drop out of the Panic when testing code coverage, normally it is an infinite loop */
-        uint8_t dummy = 1U;
-#else
-        uint8_t dummy = 0U;
-#endif
-        while (dummy == 0U)
-        {
-            dummy = dummy;
-        }
-    }
-}
-
 link_layer_t map_mode_to_ll(radio_mode_t mode)
 {
     link_layer_t llret = UNASSIGNED_LL;
@@ -613,9 +584,11 @@ XCVR_ACTIVE_LL_SEL_T XCVR_GetActiveLL(void)
         case 3:
             temp_lle = XCVR_ACTIVE_LL_ALL_DISABLED;
             break;
+        /* coco begin validated: This default can never be encountered due to all possible variants covered above (hardware register contents) */
         default:
             temp_lle = XCVR_ACTIVE_LL_MAX; /* This is an error! */
             break;
+        /* coco end */    
     }
     return temp_lle;
 }
@@ -697,9 +670,11 @@ XCVR_BAND_SEL_T XCVR_GetPLLBand(void)
         case (uint32_t)XCVR_BAND_SEL_GENERIC:
             temp_band_e = XCVR_BAND_SEL_GENERIC;
             break;
+        /* coco begin validated: This default can never be encountered due to all possible variants covered above (hardware register contents) */
         default:
             temp_band_e = XCVR_BAND_SEL_MAX; /* Error! */
             break;
+        /* coco end */    
     }
     return temp_band_e;
 }
@@ -1358,9 +1333,11 @@ xcvrStatus_t XCVR_OverrideChannel(uint8_t channel)
                     status = gXcvrInvalidParameters_c;
                 }
                 break;
+            /* coco begin validated: This default can never be encountered due to all possible variants covered above (hardware register contents) */
             default:
                 status = gXcvrInvalidParameters_c;
                 break;
+            /* coco end */    
         }
 
         if (status == gXcvrSuccess_c)
@@ -1669,9 +1646,11 @@ xcvrStatus_t XCVR_DftTxPatternReg(uint8_t channel_num,
                 case DR_250KBPS:
                     dft_clk_sel = 2U;
                     break;
+                /* coco begin validated: This default can never be encountered due to all possible variants covered above (hardware register contents) */
                 default:
                     status = gXcvrInvalidParameters_c;
                     break;
+                /* coco end */    
             }
 
             /* First shut everything off */
@@ -1741,10 +1720,12 @@ xcvrStatus_t XCVR_DftTxLfsrReg(uint8_t channel_num,
             /* Select the RF Channel, using the Channel Number register */
             status = XCVR_OverrideChannel(channel_num);
         }
+        /* coco begin validated: This error case cannot be triggered in testing, it depends on a hardware error.  */
         else
         {
           status = gXcvrInvalidParameters_c;
         }
+        /* coco end */
 
         /* DFT modulation is determined by radio mode */
         switch (cfgptr->mode_data_rate_cfg->radio_mode)
@@ -1807,9 +1788,11 @@ xcvrStatus_t XCVR_DftTxLfsrReg(uint8_t channel_num,
             case DR_250KBPS:
                 dft_clk_sel = 2U;
                 break;
+            /* coco begin validated: This default can never be encountered due to all possible variants covered above (hardware register contents) */
             default:
                 status = gXcvrInvalidParameters_c;
                 break;
+            /* coco end */    
         }
 
         /* First shut everything off */
@@ -1848,7 +1831,9 @@ void XCVR_DftTxOff(void)
     XCVR_ReleasePLLOverride();           /* releases manual PLL programming */
     status = XCVR_OverrideChannel(0xFF); /* 0xFF is the release override code */
     (void)status;                        /* Workaround unused variable warnings in GCC */
+    /* coco begin validated: This error cannot be encountered in testing, it depends on a hardware error.  */
     assert(status == gXcvrSuccess_c); /* Check the status */
+    /* coco end */
     /* First shut everything off */
     XCVR_setDftMode(0U);
     /* Clear DFT features */
@@ -2362,10 +2347,6 @@ xcvrStatus_t XCVR_ValidateFastPeriphDescrip(PKT_RAM_BANK_SEL_T pkt_ram_sel,
     {
         /* Check that offset_in_pkt_ram is < the ***PACKET_RAM_COUNT value for the desired PKT_RAM */
         temp = XCVR_FastPeriphDescrip_WordCount(descriptor_data_list, num_descrips, compressed_list);
-        if (temp == 0U)
-        {
-            status = gXcvrInvalidConfiguration_c;
-        }
         switch (pkt_ram_sel)
         {
             case TX_PKT_RAM_SEL:
