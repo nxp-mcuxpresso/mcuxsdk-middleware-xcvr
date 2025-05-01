@@ -1066,6 +1066,31 @@ extern const uint32_t ble_phy_bt2_fast_descrip_comp[BT2_DESCRIP_COUNT]; /* Make 
  */
 xcvrLclStatus_t XCVR_LCL_ReprogramTsmTimings(const xcvr_lcl_tsm_config_t *new_tsm_timings);
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+/*!
+ * @brief Function to reset TSM timings to Bluetooth LE settings
+ * .
+ *
+ * This function uses TSM_CTRL2 reset bits plus a small number of individual register writes to reset the TSM registers to 
+ * the settings needed for Bluetooth LE operation. It is intended to replace ::XCVR_LCL_ReprogramTsmTimings() with a faster
+ * implementation.
+ *
+ */
+void XCVR_LCL_ResetTsmTimingsBt(void);
+
+/*!
+ * @brief Function to reset TSM timings to Bluetooth Channel Sounding settings
+ * .
+ *
+ * This function uses TSM_CTRL2 reset bits plus a small number of individual register writes to reset the TSM registers to 
+ * the settings needed for Bluetooth Channel Sounding operation. It is intended to replace ::XCVR_LCL_ReprogramTsmTimings() with a faster
+ * implementation.
+ *
+ */
+void XCVR_LCL_ResetTsmTimingsCs(void);
+#endif /* NXP_RADIO_GEN >= 470 */
+
+
 /*!
  * @brief Function to compute FAST Start rx and tx jump point to achieve desired T_FC/T_IP.
  *

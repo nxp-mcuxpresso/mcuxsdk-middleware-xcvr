@@ -7,6 +7,7 @@
 #include "nxp_xcvr_lcl_ctrl.h"
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
 #include "nxp_xcvr_lcl_step_mgr.h"  /* Support for PKT RAM based CONFIG and RESULT circular buffers only on KW47 */
+#include "nxp_xcvr_common_config.h" /* Support TSM reset to BLE configuration */
 #endif
 #include "nxp_xcvr_common_config.h"
 
@@ -1864,6 +1865,79 @@ xcvrLclStatus_t XCVR_LCL_ReprogramTsmTimings(const xcvr_lcl_tsm_config_t *new_ts
 }
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+void XCVR_LCL_ResetTsmTimingsBt(void)
+{
+    uint32_t temp;
+    /* Assert the TSM_CTRL2 bit to reset to Bluetooth LE settings */
+    XCVR_TSM->CTRL2 &= ~(XCVR_TSM_CTRL2_RST_CSR_SW2_EN_MASK);
+    temp = XCVR_TSM->CTRL2;
+  //  XCVR_TSM->CTRL2 |= (XCVR_TSM_CTRL2_RST_CSR_SW2_EN_MASK);
+
+    /* Update any register that needs special values different from the reset values */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
+    temp = 0xFFFFFFFFU;
+    uint32_t * write_ptr = (uint32_t *) &(XCVR_TSM->TIMING53);
+    /* Clears TIMING53..61 to disabled values */
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+#endif /* NXP_RADIO_GEN == 470 */    
+    /* WU_LATENCY */
+    XCVR_TSM->WU_LATENCY = xcvr_common_config.wu_latency;
+    /* RECYCLE_COUNT */
+    XCVR_TSM->RECYCLE_COUNT = xcvr_common_config.recycle_count;
+    /* FAST_CTRL1 */
+    XCVR_TSM->FAST_CTRL1 = xcvr_common_config.fast_ctrl1;
+    /* FAST_CTRL2 */
+    XCVR_TSM->FAST_CTRL2 = xcvr_common_config.fast_ctrl2;
+    /* FAST_CTRL3 */
+    XCVR_TSM->FAST_CTRL3 = xcvr_common_config.fast_ctrl3;
+    /* TIMING23 */
+    XCVR_TSM->TIMING23 = xcvr_common_config.timing23;
+}
+
+void XCVR_LCL_ResetTsmTimingsCs(void)
+{
+    uint32_t temp;
+    /* Assert the TSM_CTRL2 bit to reset to Bluetooth Channel Sounding settings */
+    XCVR_TSM->CTRL2 &= ~(XCVR_TSM_CTRL2_RST_CSR_SW_EN_MASK);
+    temp = XCVR_TSM->CTRL2;
+    // XCVR_TSM->CTRL2 |= (XCVR_TSM_CTRL2_RST_CSR_SW_EN_MASK);
+
+    /* Update any register that needs special values different from the reset values */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
+    temp = 0xFFFFFFFFU;
+    uint32_t * write_ptr = (uint32_t *) &(XCVR_TSM->TIMING53);
+    /* Clears TIMING53..61 to disabled values */
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+    *write_ptr = temp; write_ptr++;
+#endif /* NXP_RADIO_GEN == 470 */    
+    /* TIMING16 */
+    XCVR_TSM->TIMING16 = xcvr_lcl_tsm_generic_config.TIMING16;
+    /* TIMING17 */
+    XCVR_TSM->TIMING17 = xcvr_lcl_tsm_generic_config.TIMING17;
+    /* TIMING18 */
+    XCVR_TSM->TIMING18 = xcvr_lcl_tsm_generic_config.TIMING18;
+    /* TIMING30 */
+    XCVR_TSM->TIMING30 = xcvr_lcl_tsm_generic_config.TIMING30;
+   /*  TIMING44 */
+    XCVR_TSM->TIMING44 = xcvr_lcl_tsm_generic_config.TIMING44;
+
+}
+
 const uint32_t ble_phy_bt2_fast_descrip_comp[BT2_DESCRIP_COUNT] = {
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 3U*8U, &(GEN4PHY->DEMOD_WAVE[0U])),       /* Demod Wave */
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(GEN4PHY->RTT_REF)),
