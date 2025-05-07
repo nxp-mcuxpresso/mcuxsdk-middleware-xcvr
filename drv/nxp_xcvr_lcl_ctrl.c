@@ -1871,7 +1871,6 @@ void XCVR_LCL_ResetTsmTimingsBt(void)
     /* Assert the TSM_CTRL2 bit to reset to Bluetooth LE settings */
     XCVR_TSM->CTRL2 &= ~(XCVR_TSM_CTRL2_RST_CSR_SW2_EN_MASK);
     temp = XCVR_TSM->CTRL2;
-  //  XCVR_TSM->CTRL2 |= (XCVR_TSM_CTRL2_RST_CSR_SW2_EN_MASK);
 
     /* Update any register that needs special values different from the reset values */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
@@ -1908,10 +1907,16 @@ void XCVR_LCL_ResetTsmTimingsCs(void)
     /* Assert the TSM_CTRL2 bit to reset to Bluetooth Channel Sounding settings */
     XCVR_TSM->CTRL2 &= ~(XCVR_TSM_CTRL2_RST_CSR_SW_EN_MASK);
     temp = XCVR_TSM->CTRL2;
-    // XCVR_TSM->CTRL2 |= (XCVR_TSM_CTRL2_RST_CSR_SW_EN_MASK);
 
     /* Update any register that needs special values different from the reset values */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
+    XCVR_TSM->CTRL = 0xFF000000U; /* BKPT disabled */
+    XCVR_TSM->END_OF_SEQ = xcvr_lcl_tsm_generic_config.END_OF_SEQ;
+    XCVR_TSM->WU_LATENCY = xcvr_lcl_tsm_generic_config.WU_LATENCY;
+    XCVR_TSM->RECYCLE_COUNT = xcvr_lcl_tsm_generic_config.RECYCLE_COUNT;
+    XCVR_TSM->FAST_CTRL1 = xcvr_lcl_tsm_generic_config.FAST_CTRL1;
+    /* FAST_CTRL2 completely written by XCVR_LCL_Set_TSM_FastStart */
+    XCVR_TSM->FAST_CTRL3 = xcvr_lcl_tsm_generic_config.FAST_CTRL3;
     temp = 0xFFFFFFFFU;
     uint32_t * write_ptr = (uint32_t *) &(XCVR_TSM->TIMING53);
     /* Clears TIMING53..61 to disabled values */
