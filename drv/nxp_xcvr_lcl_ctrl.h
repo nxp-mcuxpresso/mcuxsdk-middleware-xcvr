@@ -158,23 +158,41 @@ extern "C" {
 #define ZERO_BASIS (0U) /*!< A zero value in this register actually means 0 of whatever timing is being programmed */
 #endif                  /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)  */
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+#define NUM_ANT_PATH_MAX (16U)
+#define MODE0_TIMEOUT_USEC_MAX  (0xFFFFU)
+#else
+#define NUM_ANT_PATH_MAX (4u)
+#define MODE0_TIMEOUT_USEC_MAX  (0x0FFFU)
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) */
+
 #define SAMPLING_RATE_FACTOR_2MBPS (2U) /* Sampling rate x 2 @2Mbps */
 #define RX_SAMPLING_RATE (4U)           /* 4 MHz @1Mbps */
 #define TX_SAMPLING_RATE (8U)           /* 8 MHz @1Mbps */
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+#if defined(FPGA_TARGET) && (FPGA_TARGET==1)
+#define TX_DATA_FLUSH_DLY_1MBPS (3U)
+#define TX_DATA_FLUSH_DLY_2MBPS (3U)
+#define RX_SYNC_DLY_1MBPS (8U) 
+#define RX_SYNC_DLY_2MBPS (6U) 
+#define RX_SETTLING_LATENCY_1MBPS (7U)
+#define RX_SETTLING_LATENCY_2MBPS (4U)
+#else /* (FPGA_TARGET==0) */
 #define TX_DATA_FLUSH_DLY_1MBPS (3U)
 #define TX_DATA_FLUSH_DLY_2MBPS (3U)
 #define RX_SYNC_DLY_1MBPS (6U) /* Must change when RX_SETTLING_LATENCY_1MBPS changes */
-#define RX_SYNC_DLY_2MBPS (4U) /* Must change when RX_SETTLING_LATENCY_2MBPS changes */
+#define RX_SYNC_DLY_2MBPS (4U) /* Must change when RX_SETTLING_LATENCY_2MBPS changes */   
 #define RX_SETTLING_LATENCY_1MBPS (7U)
 #define RX_SETTLING_LATENCY_2MBPS (4U)
-#else
+#endif /* defined(FPGA_TARGET) && (FPGA_TARGET==1) */
+      
+#else /* (NXP_RADIO_GEN < 470) */
 #define TX_DATA_FLUSH_DLY_1MBPS (2U)
 #define TX_DATA_FLUSH_DLY_2MBPS (1U)
 #define RX_SYNC_DLY_1MBPS (6U)
 #define RX_SYNC_DLY_2MBPS (7U)
-#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN > 450)   */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)   */
 
 /* DMA_MASK_CTRL Signal valid mask sel options */
 #define RSM_DMA_SIGNAL_VALID_MASK_SEL_DMA_MASK (1U << 0U) /*!< Enable capture using rsm or lcl dma mask */
@@ -388,7 +406,7 @@ typedef struct
     XCVR_RSM_TRIG_T trig_sel; /*!< Selects the trigger mode for the RSM module. */
     uint16_t trig_delay;  /*!< Max value = 2047. SQTE mode: delay from trigger to when rx_en or tx_en is asserted. PDE
                              mode: delay from trigger to when the first rx2tx or tx2rx occurs. */
-    uint8_t num_ant_path; /*!< Number of antenna paths, must range from 1 to 4. */
+    uint8_t num_ant_path; /*!< Number of antenna paths, must range from 1 to (4 for KW47, 16 for KW43). */
     lclTSw_t
         t_sw; /*!< The antenna switching time to be used when num_ant_path > 1. Zero is used when num_ant_path ==1 */
     rsm_int_callback user_callback; /*!< User defined callback to be called to handle interrupts. */
@@ -425,6 +443,7 @@ typedef struct
     XCVR_RSM_PA_RAMP_TIME_T pa_ramp_time; /*!< PA ramp time in usec, 0, 1, 2, 4, & 3 are valid values */
     bool enable_inpr;                     /*!< Choose whether Inline Phase Return feature should be enabled. */
     uint16_t hpm_cal_manual_val;  /*!< The value for HPM_CAL_FACTOR_MANUAL to be used when ::hpm_cal_mode uses the manual value (alone or in combination with PKT RAM values. */
+    bool ant_permut_mode;  /* when set, antenna permutation is provided by RSM config in packet RAM and allow support up to 16 paths. Use False for radio_gen 4.70 */
 #endif                                    /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 } xcvr_lcl_rsm_config_t;
 

@@ -450,7 +450,7 @@ xcvrLclStatus_t XCVR_LCL_ValidateRsmSettings(const xcvr_lcl_rsm_config_t *rsm_se
         /* KW47 settings check */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
         /* Mode 0 timeout setting limit */
-        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->mode0_timeout_usec >= 4096U);
+        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->mode0_timeout_usec >= MODE0_TIMEOUT_USEC_MAX);
         /* PCT averaging win */
         tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->pct_averaging_win >= XCVR_RSM_PCT_AVG_WIN_ERROR);
         /* PA ramp time */
@@ -2562,6 +2562,8 @@ xcvrLclStatus_t XCVR_LCL_ValidateLclSettings(xcvr_lcl_rsm_config_t *rsm_settings
                                 lclTSw_10usec); /* 10usec T_SW works with any valid PA ramp value (checked above) */
             tmp_logic_sum += (uint32_t)(!valid_combo); /* Evaluate to false when params are ok */
         }
+
+        tmp_logic_sum += (uint32_t)(rsm_settings_ptr->num_ant_path > NUM_ANT_PATH_MAX);
     
         if (tmp_logic_sum != 0U)  /* If any of the above logic statements is true then the argument is invalid */
         {
@@ -2606,17 +2608,24 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
         /* Configure SPINT to 1 interval per usec */
         spint_us = 1;
 
+        uint32_t lcl_cfg1 = XCVR_MISC->LCL_CFG1;
         /* LCL basic config - enable PA ramping if requested and num antenna path > 1 */
         if ((ena_antsw_pa_ramping) && (rsm_settings_ptr->num_ant_path > 1U))
         {
-            XCVR_MISC->LCL_CFG1 |= (XCVR_MISC_LCL_CFG1_ANT_SW_RF_MASK | XCVR_MISC_LCL_CFG1_ANT_SW_MODE3_MASK);
+            lcl_cfg1 |= (XCVR_MISC_LCL_CFG1_ANT_SW_RF_MASK | XCVR_MISC_LCL_CFG1_ANT_SW_MODE3_MASK);
             temp_tx_sw_ena = 1U;
         }
         else
         {
-            XCVR_MISC->LCL_CFG1 &= ~(XCVR_MISC_LCL_CFG1_ANT_SW_RF_MASK | XCVR_MISC_LCL_CFG1_ANT_SW_MODE3_MASK);
+            lcl_cfg1 &= ~(XCVR_MISC_LCL_CFG1_ANT_SW_RF_MASK | XCVR_MISC_LCL_CFG1_ANT_SW_MODE3_MASK);
             temp_tx_sw_ena = 0U;
         }
+        /* LCL basic config - enable ant permutation from packet ram */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=475)
+        lcl_cfg1 &= ~XCVR_MISC_LCL_CFG1_ANT_MULTI_PERMUT_MODE_MASK;
+        lcl_cfg1 |= XCVR_MISC_LCL_CFG1_ANT_MULTI_PERMUT_MODE(rsm_settings_ptr->ant_permut_mode);
+ #endif
+        XCVR_MISC->LCL_CFG1 = lcl_cfg1;
 
         /* PA ramp down/up feature calculations */
         uint8_t t_ramp_usec =
@@ -2687,7 +2696,7 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
                 XCVR_MISC_LCL_CFG0_CTE_DUR(rsm_settings_ptr->num_ant_path) | XCVR_MISC_LCL_CFG0_LCL_ADJ_ENDMASK_MASK |
                 XCVR_MISC_LCL_CFG0_LCL_ANT_PERMUT_EN_MASK | XCVR_MISC_LCL_CFG0_DELAY_SIGNED_MASK |
                 XCVR_MISC_LCL_CFG0_ANT_SYNC(temp_u8) |
-                XCVR_MISC_LCL_CFG0_AP_MAX(temp_u8) | /* AP_MAX is a zero based register representing values 1 to 4 */
+                XCVR_MISC_LCL_CFG0_AP_MAX(temp_u8) | /* AP_MAX is a zero based register representing values 1 to (4 for KW47, 16 for KW43) */
                 XCVR_MISC_LCL_CFG0_RX_LCL_EN_MASK | XCVR_MISC_LCL_CFG0_TX_LCL_EN_MASK | XCVR_MISC_LCL_CFG0_LCL_EN_MASK;
 
             XCVR_MISC->LCL_GPIO_CTRL4 = XCVR_MISC_LCL_GPIO_CTRL4_LUT_WRAP_PTR(rsm_settings_ptr->num_ant_path);

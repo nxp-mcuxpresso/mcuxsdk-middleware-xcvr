@@ -50,6 +50,9 @@ typedef struct
 typedef struct
 {
     COM_MODE_CFG_HDR_Type header; /*!< The header describing a Mode 2 step. */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) 
+    MODE2_3_CFG_BODY_Type cfg_body; /*!< The multi-antenna config. body for use in Mode 2/3 steps */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
 } xcvr_lcl_mode_2_cfg_t;
 
 /* ***** Structures to define step response types ***** */
@@ -278,7 +281,7 @@ while (false)
     do                                                                                                 \
     {                                                                                                  \
         (cfg_entry)->payload_body.AA_INIT = (aa_init);                                                 \
-        (cfg_entry)->payload_body.AA_REFL = (aa_refl);                                                 \
+        (cfg_entry)->payload_body.AA_REF = (aa_refl);                                                 \
         volatile uint32_t *payload_ptr    = &((cfg_entry)->payload_body.PAYLOAD[0].INIT);              \
         for (uint8_t words = 0U; words < (num_payload_words); words++)                                 \
         {                                                                                              \
@@ -291,12 +294,112 @@ while (false)
     } while (false)
 
 /*!
+ * @brief Macro to configure the Mode 2/3 step Body structure ( antenna permutation and phase part ).
+ *
+ * This macro configures the phase contents for radio gen >= 475: multi_ant_permut if ant_permut_mode is set and 
+ * phase_add_ap fields for HW PCT rotation.    
+ * When ant_permut_mode is false, ant_permut_ptr is not used and can be set to NULLPTR. Also max number of supported
+ * antenna path is 4 (1<= num_ant <= 4) and only one phase_add_ptr value is needed.     
+ * When ant_permut_mode is set, up to 16 antenna path is supported ( 1<= num_ant <= 16 ). ant_permut_ptr is used 
+ * (one word stores setting up to 8 antennas). Max 4 phase_add_ptr words ( storing 4 antenna config ) is used, that results
+ * into 8 half-words from phase_add_ptr uint16_t pointer with each half-word coding for 2 antennas ( 1 antenna phase_add is int8_t ).
+ *
+ * @param[out] (MODE2_3_CFG_BODY_Type *)cfg_entry Pointer to the location to store the configuration structure
+ * (typically in PKT RAM).
+ * @param[in] uint16_t phase_add_ptr Pointer to an array of phase_add_ap half-words ( each includes values for 2 antennas ) to be use.
+ * phase_add_apX is the phase rotation to apply on Rx tones ( PCT ) for the antenna X.
+ * @param[in] uint32_t ant_permut_ptr Pointer to an array of multi_ant_permut words ( each includes values for up to 8 antennas ) to be use.
+ * mutl_ant_permut is the antenna index (4bits) to use for antenna X during tones (multi_ant_permut[4*X+4:4*X])
+ * @param[in] uint8_t num_ant number of antenna paths.
+ * @param[in] bool ant_permut_mode Multi anttena permut mode, used to support up to 16 antennas.
+ *
+ * @note This macro should be used in with cfg_entry pointer pointing to the location in PKT RAM where the base of the
+ * configuration header is located. This is the identical pointer that would be used in XCVR_LCL_MakeCommonHeader or
+ * XCVR_LCL_WriteCommonHeader macros. If ant_permut_mode is true, this macro writes one or two ant_permut words depending on num_ant.
+ * This macro always writes at least one phase_add word ( others are added depending on num_ant).
+ */
+#define XCVR_LCL_MakeMode23_Phase(cfg_entry, phase_add_ptr, ant_permut_ptr, num_ant, ant_permut_mode)                    \
+    do                                                                                                                   \
+    {                                                                                                                    \
+        uint8_t words=0U;                                                                                                \
+        uint8_t incr=0U;                                                                                                 \
+        volatile uint32_t *cfg_body_ptr = (volatile uint32_t *) cfg_entry ;                                              \
+        if(ant_permut_mode) {                                                                                            \
+              *cfg_body_ptr++ = (ant_permut_ptr!=NULLPTR)? *(ant_permut_ptr)++ : 0U;                                     \
+                if(num_ant > 8) {                                                                                        \
+                  *cfg_body_ptr++ = (ant_permut_ptr!=NULLPTR)? *(ant_permut_ptr)++ : 0U;                                 \
+                }                                                                                                        \
+        }                                                                                                                \
+        do {                                                                                                             \
+            uint32_t temp_phase_add = (*(phase_add_ptr)++) & 0x0000FFFF; /* increments the pointer that is passed in */  \
+            incr++;                                                                                                      \
+            if(incr <= ((num_ant-1)>>1)) {                                                                               \
+                temp_phase_add |= (*(phase_add_ptr)++)<<16;                                                              \
+                incr++;                                                                                                  \
+            }                                                                                                            \
+            *cfg_body_ptr++ = temp_phase_add;                                                                            \
+        } while (words++ < ((num_ant-1)>>2));                                                                            \
+    } while (false)
+    
+/*!
+ * @brief Macro to unpack the Common header portion of step result COM_RES_HDR_Type structure.
+ *
+ * This macro unpacks the common header result contents for a step COM_RES_HDR_Type structure.
+ *
+ * @param[in] uint32_t com_result_header_packed The 32bit word from the Common header result.
+ * @param[out] uint8_t step_id The step id for this step.
+ * @param[out] uint8_t agc_idx AGC index applied during the RX part of this step.
+ * @param[out] uint8_t result_size The result length in words of this step.
+ * @param[out] uint8_t pbcd_ctune Coarse tune best diff or vco ctune value depending on RSM_PCBD_CTUNE_SEL for this step
+ * if PLL performs coarse tune during RSM operation.
+ * @param[out] uint8_t time_drift timing drift delta value for this step. ( 2 signed bit ).
+ * @param[out] uint8_t aa_det 1 indicates the AA of a sync packet has been detected, else 0. 
+ */
+#if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475))
+#define XCVR_LCL_Unpack_Common_Header_Result(com_res_hdr_ptr, step_id, agc_idx, result_size,                     \
+                                             pbcd_ctune, time_drift, aa_det)                                     \
+    do                                                                                                           \
+    {                                                                                                            \
+        step_id = ((com_res_hdr_ptr->STEP_ID & COM_RES_HDR_STEP_ID_STEP_ID_MASK) >>                              \
+                    COM_RES_HDR_STEP_ID_STEP_ID_SHIFT );                                                         \
+        agc_idx = ((com_res_hdr_ptr->SIZE_AGC_IDX & COM_RES_HDR_SIZE_AGC_IDX_AGC_IDX_MASK) >>                    \
+                    COM_RES_HDR_SIZE_AGC_IDX_AGC_IDX_SHIFT);                                                     \
+        result_size = ((com_res_hdr_ptr->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_RESULT_SIZE_MASK) >>  \
+                       COM_RES_HDR_PBCD_CTUNE_AA_DET_RESULT_SIZE_SHIFT);                                         \
+        pbcd_ctune = ((com_res_hdr_ptr->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_PBCD_CTUNE_MASK) >>    \
+                      COM_RES_HDR_PBCD_CTUNE_AA_DET_PBCD_CTUNE_SHIFT);                                           \
+        time_drift = ((com_res_hdr_ptr->SIZE_AGC_IDX & COM_RES_HDR_SIZE_AGC_IDX_TIME_DRIFT_MASK) >>              \
+                      COM_RES_HDR_SIZE_AGC_IDX_TIME_DRIFT_SHIFT);                                                \
+        aa_det = ((com_res_hdr_ptr->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_AA_DET_MASK) >>            \
+                  COM_RES_HDR_PBCD_CTUNE_AA_DET_AA_DET_SHIFT);                                                   \
+    } while (false)
+#else
+#define XCVR_LCL_Unpack_Common_Header_Result(com_res_hdr_ptr, step_id, agc_idx, result_size,                     \
+                                             pbcd_ctune, time_drift, aa_det)                                     \
+    do                                                                                                           \
+    {                                                                                                            \
+        step_id = ((com_res_hdr_ptr->STEP_ID & COM_RES_HDR_STEP_ID_STEP_ID_MASK) >>                              \
+                    COM_RES_HDR_STEP_ID_STEP_ID_SHIFT );                                                         \
+        agc_idx = ((com_res_hdr_ptr->SIZE_AGC_IDX & COM_RES_HDR_SIZE_AGC_IDX_AGC_IDX_MASK) >>                    \
+                    COM_RES_HDR_SIZE_AGC_IDX_AGC_IDX_SHIFT);                                                     \
+        result_size = ((com_res_hdr_ptr->SIZE_AGC_IDX & COM_RES_HDR_SIZE_AGC_IDX_RESULT_SIZE_MASK) >>            \
+                        COM_RES_HDR_SIZE_AGC_IDX_RESULT_SIZE_SHIFT);                                             \
+        pbcd_ctune = ((com_res_hdr_ptr->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_PBCD_CTUNE_MASK) >>    \
+                      COM_RES_HDR_PBCD_CTUNE_AA_DET_PBCD_CTUNE_SHIFT);                                           \
+        time_drift = ((com_res_hdr_ptr->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_TIME_DRIFT_MASK) >>    \
+                      COM_RES_HDR_PBCD_CTUNE_AA_DET_TIME_DRIFT_SHIFT);                                           \
+        aa_det = ((com_res_hdr_ptr->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_AA_DET_MASK) >>            \
+                  COM_RES_HDR_PBCD_CTUNE_AA_DET_AA_DET_SHIFT);                                                   \
+    } while (false)
+#endif
+
+#if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475))                                                           
+/*!
  * @brief Macro to unpack the NADM portion of Mode 0/1/3 step result structure COM_MODE_013_RES_BODY.
  *
  * This macro unpacks the NADM result contents for a COM_MODE_013_RES_BODY structure NADM_ERROR_RSSI field.
  *
  * @param[in] uint32_t nadm_result_packed The 32bit word from the NADM_ERROR_RSSI result field.
- * @param[out] uint8_t rssi_nb The narrowband RSSI value from this step.
  * @param[out] uint8_t nadm_fm_corr_value The FM correlation value from this step.
  * @param[out] uint8_t nadm_fm_corr_valid 1 indicates the FM correlation is valid; 0 indicates invalid.
  * @param[out] uint8_t nadm_fm_symb_err_value Count of symbol errors detected in the RTT payload.
@@ -306,27 +409,65 @@ while (false)
  * @note This macro should be used with res_entry pointer pointing to the location in PKT RAM where the base of the
  * result header is located.
  */
-#define XCVR_LCL_Unpack013_NADM_Result(nadm_result_packed, rssi_nb, nadm_fm_corr_value, nadm_fm_corr_valid,       \
-                                       nadm_fm_symb_err_value, nadm_fm_symb_err_valid, nadm_pdelta)               \
-    do                                                                                                            \
-    {                                                                                                             \
-        rssi_nb = ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >>                   \
-                   COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_SHIFT);                                          \
-        nadm_fm_corr_value =                                                                                      \
-            ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_MASK) >>          \
-             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_SHIFT);                                 \
-        nadm_fm_corr_valid =                                                                                      \
-            ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALID_MASK) >>          \
-             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALID_SHIFT);                                 \
-        nadm_fm_symb_err_value =                                                                                  \
-            ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYM_ERR_VALUE_MASK) >>       \
-             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYM_ERR_VALUE_SHIFT);                              \
-        nadm_fm_symb_err_valid =                                                                                  \
-            ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYM_ERR_VALID_MASK) >>       \
-             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYM_ERR_VALID_SHIFT);                              \
-        nadm_pdelta = ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_PDELTA_VALUE_MASK) >> \
-                       COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_PDELTA_VALUE_SHIFT);                        \
+#define XCVR_LCL_Unpack013_NADM_Result(nadm_result_packed, nadm_fm_corr_value, nadm_fm_corr_valid,              \
+    nadm_fm_symb_err_value, nadm_fm_symb_err_valid, nadm_pdelta)                                                \
+    do                                                                                                          \
+    {                                                                                                           \
+        nadm_fm_corr_value =                                                                                    \
+            ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_CORR_VALUE_MASK) >>            \
+            COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_CORR_VALUE_SHIFT);                                    \
+        nadm_fm_corr_valid =                                                                                    \
+            ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_CORR_VALID_MASK) >>            \
+            COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_CORR_VALID_SHIFT);                                    \
+        nadm_fm_symb_err_value =                                                                                \
+            ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_SYMB_ERR_VALUE_MASK) >>        \
+            COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_SYMB_ERR_VALUE_SHIFT);                                \
+        nadm_fm_symb_err_valid =                                                                                \
+            ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_SYMB_ERR_VALID_MASK) >>        \
+            COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_SYMB_ERR_VALID_SHIFT);                                \
+        nadm_pdelta = ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_PDELTA_MASK) >>         \
+            COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_PDELTA_SHIFT);                                           \
     } while (false)
+#else
+/*!
+ * @brief Macro to unpack the NADM portion of Mode 0/1/3 step result structure COM_MODE_013_RES_BODY.
+ *
+ * This macro unpacks the NADM result contents for a COM_MODE_013_RES_BODY structure NADM_ERROR_RSSI field.
+ *
+ * @param[in] uint32_t nadm_result_packed The 32bit word from the NADM_ERROR_RSSI result field.
+ * @param[out] int8_t rssi_nb Rssi narrow band measured during access address reception for the step.
+ * @param[out] uint8_t nadm_fm_corr_value The FM correlation value from this step.
+ * @param[out] uint8_t nadm_fm_corr_valid 1 indicates the FM correlation is valid; 0 indicates invalid.
+ * @param[out] uint8_t nadm_fm_symb_err_value Count of symbol errors detected in the RTT payload.
+ * @param[out] uint8_t nadm_fm_symb_err_valid 1 indicates the symbol error count is valid; 0 indicates invalid.
+ * @param[out] uint16_t nadm_pdelta difference in correlations around the max correlator instance.
+ *
+ * @note This macro should be used with res_entry pointer pointing to the location in PKT RAM where the base of the
+ * result header is located.
+ */
+#define XCVR_LCL_Unpack013_NADM_Result(nadm_result_packed, rssi_nb, nadm_fm_corr_value, nadm_fm_corr_valid,     \
+    nadm_fm_symb_err_value, nadm_fm_symb_err_valid, nadm_pdelta)                                                \
+    do                                                                                                          \
+    {                                                                                                           \
+        rssi_nb = ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >>                 \
+                  COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_SHIFT);                                         \
+        nadm_fm_corr_value =                                                                                    \
+            ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_CORR_VALUE_MASK) >>            \
+            COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_CORR_VALUE_SHIFT);                                    \
+        nadm_fm_corr_valid =                                                                                    \
+            ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_CORR_VALID_MASK) >>            \
+            COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_CORR_VALID_SHIFT);                                    \
+        nadm_fm_symb_err_value =                                                                                \
+            ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_SYMB_ERR_VALUE_MASK) >>        \
+            COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_SYMB_ERR_VALUE_SHIFT);                                \
+        nadm_fm_symb_err_valid =                                                                                \
+            ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_SYMB_ERR_VALID_MASK) >>        \
+            COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_FM_SYMB_ERR_VALID_SHIFT);                                \
+        nadm_pdelta =                                                                                           \
+            ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_PDELTA_MASK) >>                   \
+            COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_NADM_PDELTA_SHIFT);                                           \
+    } while (false)
+#endif                                                                                                                                                                                                               \
 
 /*!
  * @brief Macro to calculate the NADM metric from the FM_CORR value reported in COM_MODE_013_RES_BODY.
@@ -495,6 +636,36 @@ while (false)
                                  COM_MODE_013_RES_BODY_RTT_RESULT_RTT_P_DELTA_SHIFT);                                  \
     } while (false)
 
+
+#if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>= 475))
+/*!
+ * @brief Macro to unpack the CFO  portion of Mode 0/1/3 step result structure COM_MODE_013_RES_BODY.
+ *
+ * This macro unpacks the CFO, rssi and snr result contents for a COM_MODE_013_RES_BODY structure CFO_EST field.
+ *
+ * @param[in] uint32_t cfo_est The 32bit word from the CFO_EST result field.
+ * @param[out] int16_t cfo_signed Signed representation of CFO_EST.
+ * @param[out] uint8 rssi_vld 1 indicates the rssi_nb value for the step is relevant.
+ * @param[out] int8_t rssi_nb narrow band rssi measured during the access address reception for the step.
+ * @param[out] uint8_t snr_nb snr narrow band measured during the access address reception for the step.
+ *
+ */
+#define XCVR_LCL_Unpack013_CFO_Result(cfo_est, cfo_signed, rssi_vld, rssi_nb, snr_nb)                               \
+    do                                                                                                              \
+    {                                                                                                               \
+        uint16_t temp_cfo = (uint16_t)((cfo_est & COM_MODE_013_RES_BODY_CFO_EST_CFO_EST_MASK) >>                    \
+                                       COM_MODE_013_RES_BODY_CFO_EST_CFO_EST_SHIFT);                                \
+        temp_cfo =                                                                                                  \
+            (((temp_cfo & 0x200U) == 0U) ? temp_cfo :                                                               \
+                                           temp_cfo | 0xFC00); /* sign extend within the 16bits unsigned storage */ \
+        cfo_signed = (int16_t)(temp_cfo);                                                                           \
+        rssi_nb = ((cfo_est & COM_MODE_013_RES_BODY_CFO_EST_RSSI_NB_MASK) >>                                        \
+                  COM_MODE_013_RES_BODY_CFO_EST_RSSI_NB_SHIFT);                                                     \
+        rssi_vld = ((cfo_est & COM_MODE_013_RES_BODY_CFO_EST_RSSI_VLD_MASK) >>                                      \
+                    COM_MODE_013_RES_BODY_CFO_EST_RSSI_VLD_SHIFT);                                                  \
+        snr_nb = ((cfo_est & COM_MODE_013_RES_BODY_CFO_EST_SNR_MASK) >> COM_MODE_013_RES_BODY_CFO_EST_SNR_SHIFT);   \
+    } while (false)
+#else
 /*!
  * @brief Macro to unpack the CFO portion of Mode 0/1/3 step result structure COM_MODE_013_RES_BODY.
  *
@@ -514,7 +685,7 @@ while (false)
                                            temp_cfo | 0xFC00); /* sign extend within the 16bits unsigned storage */ \
         cfo_signed = (int16_t)(temp_cfo);                                                                           \
     } while (false)
-
+#endif
 #else
 /*!
  * @brief Function to configure (partially) settings for a Channel Sounding step.
@@ -616,31 +787,78 @@ xcvrLclStatus_t XCVR_LCL_MakeMode2CfgHeader(xcvr_lcl_mode_2_cfg_t *cfg_entry,
                                             uint32_t step_cfg);
 #endif /* defined(USE_LCL_STEP_MACROS) && (USE_LCL_STEP_MACROS==1) */
 
-    /*!
-     * @brief Function to calculate config and result sizes for a single Channel Sounding step.
-     *
-     * This function takes in information about a single Channel Sounding step and calculates the number of 32bit words
-     * in both the config and the result steps. This information is used to update the PKT RAM index and determine when
-     * double buffers roll over.
-     *
-     * @param[in] step_format The format of the step.
-     * @param[in] rtt_type The RTT type for the step (must be constant throughout an entire sequence).
-     * @param[in] num_ap The number of antenna paths in use.
-     * @param[out] config_size_words The number of 32bit words in the config for the step.
-     * @param[out] result_size_words The number of 32bit words in the result for the step.
-     *
-     * @return The status of the calculation (not the result but any error in input values).
-     *
-     * @note For a particular RTT Type and number of antenna paths combination, this routine can be called once for each
-     * step_format (0, 1, 2, 3) and the results stored in arrays locally at the caller. This can optimize time when the
-     * same configuration is being used for a large number of steps.
-     *
-     */
-    xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format,
-                                                   XCVR_RSM_RTT_TYPE_T rtt_type,
-                                                   uint8_t num_ap,
-                                                   uint8_t *config_size_words,
-                                                   uint8_t *result_size_words);
+/*!
+ * @brief Function to calculate config sizes for a single Channel Sounding step.
+ *
+ * This function takes in information about a single Channel Sounding step and calculates the number of 32bit words
+ * in the config steps. This function returns also the payload and phase body size. This information is used to update
+ * the PKT RAM index and determine when double buffers roll over.
+ *
+ * @param[in] step_format The format of the step.
+ * @param[in] rtt_type The RTT type for the step (must be constant throughout an entire sequence).
+ * @param[in] num_ap The number of antenna paths in use.
+ * @param[in] ant_permut_mode when set, antenna permutation is probided by RSM config (Packet RAM)
+ * @param[out] config_size_words The number of 32bit words in the config for the step.
+ * @param[out] payload_size_words The number of 32bit words used for the packet payload for the step. 0 is no payload ( access address only)
+ * @param[out] phase_size_words The number of 32bit words used for additionnal phase configuration ( antenna permutation and phase offset ) for the step.
+ *
+ * @return The status of the calculation (not the result but any error in input values).
+ *
+ * @note For a particular RTT Type and number of antenna paths combination, this routine can be called once for each
+ * step_format (0, 1, 2, 3) and the results stored in arrays locally at the caller. This can optimize time when the
+ * same configuration is being used for a large number of steps.
+ */
+xcvrLclStatus_t XCVR_LCL_CalcConfig_Size(XCVR_RSM_FSTEP_TYPE_T step_format, XCVR_RSM_RTT_TYPE_T rtt_type, uint8_t num_ap, bool ant_permut_mode,
+                                        uint8_t * config_size_words, uint8_t * payload_size_words, uint8_t * phase_size_words);
+
+/*!
+ * @brief Function to calculate result sizes for a single Channel Sounding step.
+ *
+ * This function takes in information about a single Channel Sounding step and calculates the number of 32bit words
+ * in the result steps. This function returns also the phase body size (PCTs). This information is used to update
+ * the PKT RAM index and determine when double buffers roll over.
+ *
+ * @param[in] step_format The format of the step.
+ * @param[in] rtt_type The RTT type for the step (must be constant throughout an entire sequence).
+ * @param[in] num_ap The number of antenna paths in use.
+ * @param[in] ant_permut_mode when set, antenna permutation is probided by RSM config (Packet RAM)
+ * @param[out] result_size_words The number of 32bit words in the results for the step.
+ * @param[out] pct_size_words The number of 32bit words used for pct results for the step
+ *
+ * @return The status of the calculation (not the result but any error in input values).
+ *
+ * @note For a particular RTT Type and number of antenna paths combination, this routine can be called once for each
+ * step_format (0, 1, 2, 3) and the results stored in arrays locally at the caller. This can optimize time when the
+ * same configuration is being used for a large number of steps.
+ */
+xcvrLclStatus_t XCVR_LCL_CalcResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format, XCVR_RSM_RTT_TYPE_T rtt_type, uint8_t num_ap, bool ant_permut_mode,
+                                         uint8_t * result_size_words, uint8_t * pct_size_words);
+
+/*!
+ * @brief Function to calculate config and result sizes for a single Channel Sounding step.
+ *
+ * This function takes in information about a single Channel Sounding step and calculates the number of 32bit words
+ * in both the config and the result steps. This information is used to update the PKT RAM index and determine when
+ * double buffers roll over.
+ *
+ * @param[in] step_format The format of the step.
+ * @param[in] rtt_type The RTT type for the step (must be constant throughout an entire sequence).
+ * @param[in] num_ap The number of antenna paths in use.
+ * @param[in] ant_permut_mode when set, antenna permutation is probided by RSM config (Packet RAM)
+ * @param[out] config_size_words The number of 32bit words in the config for the step.
+ * @param[out] result_size_words The number of 32bit words in the result for the step.
+ *
+ * @return The status of the calculation (not the result but any error in input values).
+ *
+ * @note For a particular RTT Type and number of antenna paths combination, this routine can be called once for each
+ * step_format (0, 1, 2, 3) and the results stored in arrays locally at the caller. This can optimize time when the
+ * same configuration is being used for a large number of steps.
+ */
+xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format,
+                                                XCVR_RSM_RTT_TYPE_T rtt_type,
+                                                uint8_t num_ap,
+                                                uint8_t *config_size_words,
+                                                uint8_t *result_size_words);
 
 /*!
  * @brief Function to validate the information defined for a Channel Sounding subevent.

@@ -15,7 +15,7 @@
  * Variables
  ******************************************************************************/
 const uint8_t rtt_payload_sizes[8] = {0U,2U,6U,2U,4U,6U,8U,0U};  /* Last value is dummy value to allow indexing the array by RTT_TYPE */
-// cs_subevent_info_t subevent_info;
+const uint8_t permut_step_size_words_offset[] = {1,2,4,5};       /* For radio gen >= 475: step word size offset when including T_PM. index is (num_ap-1)/4 */
 
 /* Circular buffer related static data - supports setup of buffer state and IRQ operation */
 static uint8_t total_step_count; 
@@ -257,17 +257,24 @@ xcvrLclStatus_t XCVR_LCL_MakeMode13CfgPayload(xcvr_lcl_mode_1_3_cfg_t *cfg_entry
 }
 #endif /* defined(USE_LCL_STEP_MACROS) && (USE_LCL_STEP_MACROS==1) */
 
-xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format, XCVR_RSM_RTT_TYPE_T rtt_type, uint8_t num_ap, uint8_t * config_size_words, uint8_t * result_size_words)
+xcvrLclStatus_t XCVR_LCL_CalcConfig_Size(XCVR_RSM_FSTEP_TYPE_T step_format, XCVR_RSM_RTT_TYPE_T rtt_type, uint8_t num_ap, bool ant_permut_mode,
+                                         uint8_t * config_size_words, uint8_t * payload_size_words, uint8_t * phase_size_words)
 {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    uint8_t header_size_words = 0;
+
     /* Error checking for NULL pointer */
-    if ((config_size_words == NULLPTR) || (result_size_words == NULLPTR))
+    if ((config_size_words == NULLPTR) || (payload_size_words == NULLPTR) || (phase_size_words == NULLPTR) )
     {
         status = gXcvrLclStatusInvalidArgs;
     }
     /* Support disabling error checking for code which has been tested */
 #if defined(CHECK_FSTEP_ERRORS)
-    if (num_ap > 4U)
+    if (num_ap > NUM_ANT_PATH_MAX)
+    { 
+        status = gXcvrLclStatusInvalidArgs;
+    }
+    if( !ant_permut_mode && (num_ap>4 ) )
     {
         status = gXcvrLclStatusInvalidArgs;
     }
@@ -280,35 +287,128 @@ xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format
         status = gXcvrLclStatusInvalidArgs;
     }
 #endif /* defined(CHECK_FSTEP_ERRORS) */
+
     if (status == gXcvrLclStatusSuccess)
     {
         /* Calculate configuration and result sizes for combination of step type and RTT selection */
         switch (step_format)
         {
             case XCVR_RSM_STEP_FCS:
-                *config_size_words = (uint8_t)5U;
-                *result_size_words = (uint8_t)5U;
+                header_size_words = (uint8_t)5U;
+                *payload_size_words = (uint8_t)0U;
+                *phase_size_words = (uint8_t)0U;
                 break;
             case XCVR_RSM_STEP_PK_PK:
-                *config_size_words = (uint8_t)5U+rtt_payload_sizes[rtt_type];
-                *result_size_words = (uint8_t)5U;
+                header_size_words = (uint8_t)5U;
+                *payload_size_words = (uint8_t)rtt_payload_sizes[rtt_type];
+                *phase_size_words = (uint8_t)0U;
                 break;
             case XCVR_RSM_STEP_TN_TN:
-                *config_size_words = (uint8_t)3U;
-                *result_size_words = (uint8_t)1U+num_ap+(uint8_t)1U;
+                header_size_words = (uint8_t)3U;
+                *phase_size_words = (uint8_t)(0U
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+                                    + 1U + ((ant_permut_mode)? permut_step_size_words_offset[(num_ap-1)>>2] : 0U)
+#endif
+                );
+                *payload_size_words = 0;
                 break;
             case XCVR_RSM_STEP_PK_TN_TN_PK:
-                *config_size_words = (uint8_t)5U+rtt_payload_sizes[rtt_type];
-                *result_size_words = (uint8_t)5U+num_ap+1U;
+                header_size_words = (uint8_t)5U;
+                *payload_size_words = rtt_payload_sizes[rtt_type];
+                *phase_size_words = (uint8_t)(0U
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+                                    + 1U + ((ant_permut_mode)? permut_step_size_words_offset[(num_ap-1)>>2] : 0U)
+#endif
+                );
                 break;
             default:
-                *config_size_words = (uint8_t)0U;
-                *result_size_words = (uint8_t)0U;
+                header_size_words = (uint8_t)0U;
+                *payload_size_words = (uint8_t)0U;
+                *phase_size_words = (uint8_t)0U;
                 status = gXcvrLclStatusInvalidArgs;
                 break;
         }
-
+        *config_size_words = header_size_words + *payload_size_words + *phase_size_words;
     }
+
+    return status;
+}
+
+xcvrLclStatus_t XCVR_LCL_CalcResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format, XCVR_RSM_RTT_TYPE_T rtt_type, uint8_t num_ap, bool ant_permut_mode,
+                                         uint8_t * result_size_words, uint8_t * pct_size_words)
+{
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    uint8_t header_size_words = 0;
+
+    /* Error checking for NULL pointer */
+    if ((result_size_words == NULLPTR) || (pct_size_words == NULLPTR) )
+    {
+        status = gXcvrLclStatusInvalidArgs;
+    }
+    /* Support disabling error checking for code which has been tested */
+#if defined(CHECK_FSTEP_ERRORS)
+    if (num_ap > NUM_ANT_PATH_MAX)
+    { 
+        status = gXcvrLclStatusInvalidArgs;
+    }
+    if( !ant_permut_mode && (num_ap>4 ) )
+    {
+        status = gXcvrLclStatusInvalidArgs;
+    }
+    if (step_format >= XCVR_RSM_STEP_ERROR) /* invalid step format */
+    {
+        status = gXcvrLclStatusInvalidArgs;
+    }
+    if (rtt_type > XCVR_RSM_RTT_MAX) /* invalid RTT type */
+    {
+        status = gXcvrLclStatusInvalidArgs;
+    }
+#endif /* defined(CHECK_FSTEP_ERRORS) */
+
+    if (status == gXcvrLclStatusSuccess)
+    {
+        /* Calculate configuration and result sizes for combination of step type and RTT selection */
+        switch (step_format)
+        {
+            case XCVR_RSM_STEP_FCS:
+            case XCVR_RSM_STEP_PK_PK:
+                header_size_words = (uint8_t)5U;
+                *pct_size_words = (uint8_t)0U;
+                break;
+            case XCVR_RSM_STEP_TN_TN:
+                header_size_words = (uint8_t)1U;
+                *pct_size_words = (uint8_t)(num_ap + 1U);
+                break;
+            case XCVR_RSM_STEP_PK_TN_TN_PK:
+                header_size_words = (uint8_t)5U;
+                *pct_size_words = (uint8_t)(num_ap + 1U);
+                break;
+            default:
+                header_size_words = (uint8_t)0U;
+                *pct_size_words = (uint8_t)0U;
+                status = gXcvrLclStatusInvalidArgs;
+                break;
+        }
+        *result_size_words = header_size_words + *pct_size_words;
+    }
+
+    return status;
+}
+
+xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format, XCVR_RSM_RTT_TYPE_T rtt_type, uint8_t num_ap, uint8_t * config_size_words, uint8_t * result_size_words)
+{
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    /* Error checking for NULL pointer */
+    if ((config_size_words == NULLPTR) || (result_size_words == NULLPTR))
+    {
+        status = gXcvrLclStatusInvalidArgs;
+    }
+    uint8_t rtt_size;
+    uint8_t phase_size;
+
+    status = XCVR_LCL_CalcConfig_Size(step_format, rtt_type, num_ap, false, config_size_words, &rtt_size, &phase_size);
+    status |= XCVR_LCL_CalcResult_Size(step_format, rtt_type, num_ap, false, result_size_words, &phase_size);
+
     return status;
 }
 
@@ -408,136 +508,72 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
         uint32_t ram_address = 0U;
         static COM_MODE_CFG_HDR_UNION_Type step_header; /* Used to assemble header structures for write to PKT RAM */
         COM_MODE_CFG_HDR_UNION_Type * step_hdr_ptr = &step_header;
+        
         for (i=0;i<(subevent_info_ptr->num_steps);i++)
         {
                 uint8_t cfg_sz = 0U;
-                uint8_t res_sz = 0U;
-                /* Calculate the size of the config and result (only need the config now) */
-                xcvrLclStatus_t temp_status = XCVR_LCL_CalcConfigResult_Size(*step_type_ptr, subevent_info_ptr->rtt_type, subevent_info_ptr->num_ap, &cfg_sz, &res_sz) ;
+                uint8_t payload_sz = 0U;
+                uint8_t phase_sz = 0U;
+                /* Calculate the size of the config */
+                xcvrLclStatus_t temp_status = XCVR_LCL_CalcConfig_Size(*step_type_ptr, subevent_info_ptr->rtt_type, subevent_info_ptr->num_ap, false, &cfg_sz, &payload_sz, &phase_sz);
                 if (temp_status == gXcvrLclStatusSuccess)
                 {
                     /* Fill out the configuration header & payload based on the step type */
-                    volatile xcvr_lcl_mode_0_1_3_cfg_t * mode1_3_step_ptr = NULLPTR;
-                    volatile xcvr_lcl_mode_2_cfg_t * mode2_step_ptr = NULLPTR;
-                    switch (*step_type_ptr)
+                    if( *step_type_ptr >= XCVR_RSM_STEP_ERROR)
                     {
-                        case XCVR_RSM_STEP_FCS:
-                            /* Cast a structure onto the PKT RAM or system RAM */
-                            if (load_directly_to_pkt_ram)
-                            {
-                                ram_address = (uint32_t)GET_PKT_RAM_PTR(pkt_ram_info_ptr->config_pkt_ram_bank, (pkt_ram_info_ptr->config_base_addr_word)+curr_addr);
-                                mode1_3_step_ptr = (volatile xcvr_lcl_mode_0_1_3_cfg_t *)ram_address;
-                            }
-                            else
-                            {
-                                ram_address = (uint32_t)sys_ram_ptr;
-                                mode1_3_step_ptr = (xcvr_lcl_mode_0_1_3_cfg_t *)ram_address;
-                                sys_ram_ptr = sys_ram_ptr + cfg_sz; /* Update the system RAM pointer */
-                            }
-                            /* Mode 0 steps have no payload */
-#if (USE_LCL_STEP_MACROS)
-                            /* Generate data in local struct and write */
-                            XCVR_LCL_MakeCommonHeader(step_hdr_ptr, *channel_list_ptr,(uint16_t)(0U), *step_cfo_ptr, *hpm_cal_list_ptr, *phase_add_ptr, *step_cfg_list_ptr);
-                            XCVR_LCL_WriteCommonHeader(&(mode1_3_step_ptr->header), step_hdr_ptr);
-                            XCVR_LCL_MakeMode013_Payload(mode1_3_step_ptr, aa_list_ptr[0], aa_list_ptr[1], (cfg_sz-5U), payload_list_init_ptr, payload_list_refl_ptr); /* Zero payload words */
-#else
-                            temp_status |= XCVR_LCL_MakeMode013CfgHeader(mode1_3_step_ptr, 
-                                                                                                            *channel_list_ptr,
-                                                                                                            0U, /* CTUNE not used */
-                                                                                                            *step_cfo_ptr,
-                                                                                                            *hpm_cal_list_ptr,
-                                                                                                            *phase_add_ptr,
-                                                                                                            *step_cfg_list_ptr,
-                                                                                                            aa_list_ptr);
-#endif
-                            if (!subevent_info_ptr->phy_test_mode) /* In PHY test mode we always use the first pair of AA so never increment */
-                            {
-                            aa_list_ptr++;
-                            aa_list_ptr++;
-                            }
-                            /* There is never a payload on Mode 0 steps so no need to increment payload pointers */
-                            phase_add_ptr++;
-                            break;
-                        case XCVR_RSM_STEP_PK_PK:
-                        case XCVR_RSM_STEP_PK_TN_TN_PK:
-                            /* Mode 1 & 3 steps have identical configurations */
-                            if (load_directly_to_pkt_ram)
-                            {
-                                ram_address = (uint32_t)GET_PKT_RAM_PTR(pkt_ram_info_ptr->config_pkt_ram_bank, (pkt_ram_info_ptr->config_base_addr_word)+curr_addr);
-                                mode1_3_step_ptr = (volatile xcvr_lcl_mode_0_1_3_cfg_t *)ram_address;
-                            }
-                            else
-                            {
-                                ram_address = (uint32_t)sys_ram_ptr;
-                                mode1_3_step_ptr = (xcvr_lcl_mode_0_1_3_cfg_t *)ram_address;
-                                sys_ram_ptr = sys_ram_ptr + cfg_sz; /* Update the system RAM pointer */
-                            }
-#if (USE_LCL_STEP_MACROS)
-                            /* Generate data in local struct and write to PKT RAM*/
-                            XCVR_LCL_MakeCommonHeader(step_hdr_ptr, *channel_list_ptr,(uint16_t)(0U), *step_cfo_ptr, *hpm_cal_list_ptr, *phase_add_ptr, *step_cfg_list_ptr);
-                            XCVR_LCL_WriteCommonHeader(&(mode1_3_step_ptr->header), step_hdr_ptr);
-                            XCVR_LCL_MakeMode013_Payload(mode1_3_step_ptr ,aa_list_ptr[0], aa_list_ptr[1], (cfg_sz-5U)>>1, payload_list_init_ptr, payload_list_refl_ptr); /* (cfg_sz-5) payload words, both payload list pointers are incremented inside the macro  */
-#else
-                            temp_status |= XCVR_LCL_MakeMode013CfgHeader((xcvr_lcl_mode_0_cfg_t *)mode1_3_step_ptr,  /* Mode 0/1/3 are identical for the header*/
-                                                                                                            *channel_list_ptr,
-                                                                                                            0U, /* CTUNE not used */
-                                                                                                            *step_cfo_ptr,
-                                                                                                            *hpm_cal_list_ptr,
-                                                                                                            *phase_add_ptr,
-                                                                                                            *step_cfg_list_ptr,
-                                                                                                            aa_list_ptr);
-                            temp_status |= XCVR_LCL_MakeMode13CfgPayload(mode1_3_step_ptr,
-                                                                                                            subevent_info_ptr->rtt_type, 
-                                                                                                            payload_list_init_ptr,
-                                                                                                            payload_list_refl_ptr);
-
-#endif
-                            if (!subevent_info_ptr->phy_test_mode) /* In PHY test mode we always use the first pair of AA so never increment */
-                            {
-                            aa_list_ptr++;
-                            aa_list_ptr++;
-                            }
-                            else
-                            {
-                                /* Because payload pointers are incremented inside the macro, we need to undo that increment when in test mode */
-                                payload_list_init_ptr -= ((cfg_sz-5U)>>1); 
-                                payload_list_refl_ptr -= ((cfg_sz-5U)>>1);
-                            }
-                            phase_add_ptr++;
-                            break;
-                        case XCVR_RSM_STEP_TN_TN:
-                            /* Cast a structure onto the PKT RAM */
-                            if (load_directly_to_pkt_ram)
-                            {
-                                ram_address = (uint32_t)GET_PKT_RAM_PTR(pkt_ram_info_ptr->config_pkt_ram_bank, (pkt_ram_info_ptr->config_base_addr_word)+curr_addr);
-                                mode2_step_ptr = (volatile xcvr_lcl_mode_2_cfg_t *)ram_address;
-                            }
-                            else
-                            {
-                                ram_address = (uint32_t)sys_ram_ptr;
-                                mode2_step_ptr = (xcvr_lcl_mode_2_cfg_t *)ram_address;
-                                sys_ram_ptr = sys_ram_ptr + cfg_sz; /* Update the system RAM pointer */
-                            }
-#if (USE_LCL_STEP_MACROS)
-                            /* Generate data in local struct and write to PKT RAM*/
-                            XCVR_LCL_MakeCommonHeader(step_hdr_ptr, *channel_list_ptr,(uint16_t)(0U), *step_cfo_ptr, *hpm_cal_list_ptr, *phase_add_ptr, *step_cfg_list_ptr);
-                            XCVR_LCL_WriteCommonHeader(&(mode2_step_ptr->header), step_hdr_ptr);
-#else
-                            temp_status |= XCVR_LCL_MakeMode2CfgHeader(mode2_step_ptr, 
-                                                                                                            *channel_list_ptr,
-                                                                                                            0U, /* CTUNE not used */
-                                                                                                            *step_cfo_ptr,
-                                                                                                            *hpm_cal_list_ptr,
-                                                                                                            *step_cfg_list_ptr);
-
-#endif
-
-                            /* Mode 2 steps have no payload */
-                            break;
-                        default:
-                            status = gXcvrLclStatusInvalidArgs;
-                            break;
+                        status = gXcvrLclStatusInvalidArgs;
                     }
+                    else
+                    {
+                        /* Cast a structure onto the PKT RAM or system RAM */
+                        if (load_directly_to_pkt_ram)
+                        {
+                            ram_address = (uint32_t)GET_PKT_RAM_PTR(pkt_ram_info_ptr->config_pkt_ram_bank, (pkt_ram_info_ptr->config_base_addr_word)+curr_addr);
+                        }
+                        else
+                        {
+                            ram_address = (uint32_t)sys_ram_ptr;
+                            sys_ram_ptr = sys_ram_ptr + cfg_sz; /* Update the system RAM pointer */
+                        }
+                        
+                        /* Cast Step Header */
+                        volatile COM_MODE_CFG_HDR_Type * step_header_ptr = (volatile COM_MODE_CFG_HDR_Type *)ram_address;
+                        XCVR_LCL_MakeCommonHeader(step_hdr_ptr, *channel_list_ptr,(uint16_t)(0U), *step_cfo_ptr, *hpm_cal_list_ptr, *phase_add_ptr, *step_cfg_list_ptr);
+                        XCVR_LCL_WriteCommonHeader(step_header_ptr, step_hdr_ptr);
+                        phase_add_ptr++;
+
+                        /* Cast Payload Config: for FCS, Mode1 and Mode3 */
+                        volatile xcvr_lcl_mode_0_1_3_cfg_t * mode1_3_step_ptr = (volatile xcvr_lcl_mode_0_1_3_cfg_t *)ram_address;
+                        if(*step_type_ptr != XCVR_RSM_STEP_TN_TN)
+                        {
+                            XCVR_LCL_MakeMode013_Payload(mode1_3_step_ptr, aa_list_ptr[0], aa_list_ptr[1], payload_sz>>1, payload_list_init_ptr, payload_list_refl_ptr); /* payload_sz payload words, both payload list pointers are incremented inside the macro  */
+                           
+                            /* incremment aa ptr to position it to the first aa to use in next step */
+                            if (!subevent_info_ptr->phy_test_mode) /* In PHY test mode we always use the first pair of AA so never increment */
+                            {
+                                aa_list_ptr++;
+                                aa_list_ptr++;
+                            }
+                            else if(*step_type_ptr != XCVR_RSM_STEP_FCS) /* for other modes using packets ( mode1 and mode3 ) */
+                            {
+                                /* case RTT ( mode1 and Mode3 ) in phy test mode */
+                                /* Because payload pointers are incremented inside the macro, we need to undo that increment when in test mode */
+                                payload_list_init_ptr -= (payload_sz>>1); 
+                                payload_list_refl_ptr -= (payload_sz>>1);
+                            }
+                        }
+
+                        /* Cast Phase Config: for Mode2 and Mode3 */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+                        uint32_t* dummy_ptr = NULLPTR;
+                        volatile MODE2_3_CFG_BODY_Type* mode2_3_cfg_body_ptr = (volatile MODE2_3_CFG_BODY_Type *)((uint32_t*)ram_address + cfg_sz - phase_sz);
+                        if((*step_type_ptr == XCVR_RSM_STEP_TN_TN) || (*step_type_ptr == XCVR_RSM_STEP_PK_TN_TN_PK ))
+                        {
+                            XCVR_LCL_MakeMode23_Phase(mode2_3_cfg_body_ptr, phase_add_ptr, dummy_ptr, subevent_info_ptr->num_ap, false);
+                        }
+#endif
+                    }
+
                     /* Common pointer updates that apply to all step types (step specific types should be updated above */
                     channel_list_ptr++;
                     step_cfo_ptr++;
@@ -551,7 +587,6 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
                     status = gXcvrLclStatusFail;
                     break;
                 }
-
         }
     }
 
@@ -734,7 +769,11 @@ xcvrLclStatus_t XCVR_LCL_ReadResultSteps(uint32_t ** current_res_ptr)
         }
         /* Read step data (header) and calculate length in words */
         uint32_t step_data = (result_pkt_ram_buffer[result_index])>>8U; /* First word always includes RESULT_SIZE in second byte */
+#if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475))
+        uint8_t length = (uint8_t)((step_data&COM_RES_HDR_PBCD_CTUNE_AA_DET_RESULT_SIZE_MASK) >> COM_RES_HDR_PBCD_CTUNE_AA_DET_RESULT_SIZE_SHIFT);
+#else
         uint8_t length = (uint8_t)((step_data&COM_RES_HDR_SIZE_AGC_IDX_RESULT_SIZE_MASK)>>COM_RES_HDR_SIZE_AGC_IDX_RESULT_SIZE_SHIFT);
+#endif
 #if defined(DEBUG_CIRCULAR_BUFF) && (DEBUG_CIRCULAR_BUFF == 1)
         assert(length <21); /* make sure length is correct */
 #endif
