@@ -149,7 +149,7 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_2p0_h_0p5_1mbps_config = {
         GEN4PHY_DMD_WAVE_REG2_SMPL10(0x14) | GEN4PHY_DMD_WAVE_REG2_SMPL11(0x18) | GEN4PHY_DMD_WAVE_REG2_SMPL12(0x1C),
 
     /* FSK_CFG0 configuration, dependencies: ['MD+DR', 'MD+DR', 'COM', 'COM', 'COM', 'COM', 'MD', 'MD'] */
-    .fsk_cfg0 = GEN4PHY_FSK_CFG0_AA_ACQ_1_2_3_THRESH_1M(0x0F) | GEN4PHY_FSK_CFG0_AA_ACQ_1_2_3_THRESH_2M(0x11) |
+    .fsk_cfg0 = GEN4PHY_FSK_CFG0_AA_ACQ_1_2_3_THRESH_1M(0x15) | GEN4PHY_FSK_CFG0_AA_ACQ_1_2_3_THRESH_2M(0x15) |
                 GEN4PHY_FSK_CFG0_MSK2FSK_SEED(0) | GEN4PHY_FSK_CFG0_MSK_EN(0),
 
     /* FSK_CFG1 configuration, dependencies: ['MD', 'MD', 'MD'] */
@@ -162,41 +162,41 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_2p0_h_0p5_1mbps_config = {
     .fsk_pd_cfg1 = GEN4PHY_FSK_PD_CFG1_PREAMBLE_PATTERN(0x55),
 
     /* FSK_PD_CFG2 configuration, dependencies: ['MD+DR', 'MD+DR'] */
-    .fsk_pd_cfg2 = GEN4PHY_FSK_PD_CFG2_PD_THRESH_ACQ_1_3_1M(0xEB) | GEN4PHY_FSK_PD_CFG2_PD_THRESH_ACQ_1_3_2M(0xF6),
+    .fsk_pd_cfg2 = GEN4PHY_FSK_PD_CFG2_PD_THRESH_ACQ_1_3_1M(0xF6) | GEN4PHY_FSK_PD_CFG2_PD_THRESH_ACQ_1_3_2M(0xF6),
 
     /* FSK_PD_PH configuration, dependencies: ['MD', 'MD', 'MD', 'MD'] */
-    .fsk_pd_ph[0] = GEN4PHY_FSK_PD_PH_REF0(0x04) | GEN4PHY_FSK_PD_PH_REF1(0x06) | GEN4PHY_FSK_PD_PH_REF2(0x04) |
+    .fsk_pd_ph[0] = GEN4PHY_FSK_PD_PH_REF0(0x03) | GEN4PHY_FSK_PD_PH_REF1(0x05) | GEN4PHY_FSK_PD_PH_REF2(0x03) |
                     GEN4PHY_FSK_PD_PH_REF3(0x00),
 
     /* FSK_PD_PH configuration, dependencies: ['MD', 'MD', 'MD', 'MD'] */
-    .fsk_pd_ph[1] = GEN4PHY_FSK_PD_PH_REF0(0x3C) | GEN4PHY_FSK_PD_PH_REF1(0x3A) | GEN4PHY_FSK_PD_PH_REF2(0x3C) |
+    .fsk_pd_ph[1] = GEN4PHY_FSK_PD_PH_REF0(0x3D) | GEN4PHY_FSK_PD_PH_REF1(0x3B) | GEN4PHY_FSK_PD_PH_REF2(0x3D) |
                     GEN4PHY_FSK_PD_PH_REF3(0x00),
 
     /* FSK_PT configuration, dependencies: ['MD+DR', 'COM', 'COM', 'COM'] */
     .fsk_pt = GEN4PHY_FSK_PT_AGC_TIMEOUT(0x0048),
 
     /* LR_AA_CFG configuration, dependencies: ['MD', 'MD', 'MD', 'MD'] */
-    .lr_aa_cfg = GEN4PHY_LR_AA_CFG_AA_COR_THRESH(0x00) | GEN4PHY_LR_AA_CFG_AA_HAM_THRESH(0x00) |
-                 GEN4PHY_LR_AA_CFG_AA_LR_CORR_GAIN(0x00) | GEN4PHY_LR_AA_CFG_ACCESS_ADDR_HAM(0x00),
+    .lr_aa_cfg = GEN4PHY_LR_AA_CFG_AA_COR_THRESH(0x96) | GEN4PHY_LR_AA_CFG_AA_HAM_THRESH(0x06) |
+                 GEN4PHY_LR_AA_CFG_AA_LR_CORR_GAIN(0x06) | GEN4PHY_LR_AA_CFG_ACCESS_ADDR_HAM(0x02),
 
     /* LR_PD_CFG configuration, dependencies: ['MD', 'MD', 'MD'] */
-    .lr_pd_cfg = GEN4PHY_LR_PD_CFG_CORR_TH(0x00) | GEN4PHY_LR_PD_CFG_FREQ_TH(0x00) | GEN4PHY_LR_PD_CFG_NO_PEAKS(0),
+    .lr_pd_cfg = GEN4PHY_LR_PD_CFG_CORR_TH(0x9a) | GEN4PHY_LR_PD_CFG_FREQ_TH(0x01) | GEN4PHY_LR_PD_CFG_NO_PEAKS(1),
 
     /* LR_PD_PH configuration, dependencies: ['MD', 'MD', 'MD', 'MD'] */
-    .lr_pd_ph[0] = GEN4PHY_LR_PD_PH_REF0(0x00) | GEN4PHY_LR_PD_PH_REF1(0x00) | GEN4PHY_LR_PD_PH_REF2(0x00) |
-                   GEN4PHY_LR_PD_PH_REF3(0x00),
+    .lr_pd_ph[0] = GEN4PHY_LR_PD_PH_REF0(0x28) | GEN4PHY_LR_PD_PH_REF1(0x30) | GEN4PHY_LR_PD_PH_REF2(0x38) |
+                   GEN4PHY_LR_PD_PH_REF3(0x3D),
 
     /* LR_PD_PH configuration, dependencies: ['MD', 'MD', 'MD', 'MD'] */
-    .lr_pd_ph[1] = GEN4PHY_LR_PD_PH_REF0(0x00) | GEN4PHY_LR_PD_PH_REF1(0x00) | GEN4PHY_LR_PD_PH_REF2(0x00) |
-                   GEN4PHY_LR_PD_PH_REF3(0x00),
+    .lr_pd_ph[1] = GEN4PHY_LR_PD_PH_REF0(0x38) | GEN4PHY_LR_PD_PH_REF1(0x30) | GEN4PHY_LR_PD_PH_REF2(0x28) |
+                   GEN4PHY_LR_PD_PH_REF3(0x20),
 
     /* LR_PD_PH configuration, dependencies: ['MD', 'MD', 'MD', 'MD'] */
-    .lr_pd_ph[2] = GEN4PHY_LR_PD_PH_REF0(0x00) | GEN4PHY_LR_PD_PH_REF1(0x00) | GEN4PHY_LR_PD_PH_REF2(0x00) |
-                   GEN4PHY_LR_PD_PH_REF3(0x00),
+    .lr_pd_ph[2] = GEN4PHY_LR_PD_PH_REF0(0x18) | GEN4PHY_LR_PD_PH_REF1(0x10) | GEN4PHY_LR_PD_PH_REF2(0x08) |
+                   GEN4PHY_LR_PD_PH_REF3(0x03),
 
     /* LR_PD_PH configuration, dependencies: ['MD', 'MD', 'MD', 'MD'] */
-    .lr_pd_ph[3] = GEN4PHY_LR_PD_PH_REF0(0x00) | GEN4PHY_LR_PD_PH_REF1(0x00) | GEN4PHY_LR_PD_PH_REF2(0x00) |
-                   GEN4PHY_LR_PD_PH_REF3(0x00),
+    .lr_pd_ph[3] = GEN4PHY_LR_PD_PH_REF0(0x08) | GEN4PHY_LR_PD_PH_REF1(0x10) | GEN4PHY_LR_PD_PH_REF2(0x18) |
+                   GEN4PHY_LR_PD_PH_REF3(0x20),
 
     /* RTT_REF configuration, dependencies: ['MD', 'MD', 'MD'] */
     .rtt_ref = GEN4PHY_RTT_REF_FM_REF_010(0x5e) | GEN4PHY_RTT_REF_FM_REF_110(0x6e) | GEN4PHY_RTT_REF_FM_REF_111(0x80),
@@ -208,12 +208,12 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_2p0_h_0p5_1mbps_config = {
     /**********************/
 
     /* LL_CTRL configuration, dependencies: ['MD'] */
-    .ll_ctrl = RADIO_CTRL_LL_CTRL_ACTIVE_LL(2),
+    .ll_ctrl = RADIO_CTRL_LL_CTRL_ACTIVE_LL(0),
 
     /* XCVR_ANALOG configs */
     /***********************/
 
-    /* TX_DAC_PA configuration, dependencies: ['COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM', 'COM'] */
+    /* TX_DAC_PA configuration, dependencies: ['COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM'] */
     .tx_dac_pa = XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_CFBK_DRS(0),
 
     /* XCVR_MISC configs */
@@ -221,33 +221,13 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_2p0_h_0p5_1mbps_config = {
 
     /* IPS_FO_ADDR configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR'] */
     .ips_fo_addr[0] =
-        XCVR_MISC_IPS_FO_ADDR_ADDR(0x370) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0),
-
-    /* IPS_FO_ADDR configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR'] */
-    .ips_fo_addr[1] =
-        XCVR_MISC_IPS_FO_ADDR_ADDR(0x214) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0),
-
-    /* IPS_FO_ADDR configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR'] */
-    .ips_fo_addr[2] =
-        XCVR_MISC_IPS_FO_ADDR_ADDR(0x214) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0),
+        XCVR_MISC_IPS_FO_ADDR_ADDR(0x32C) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(1) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(1),
 
     /* IPS_FO_DRS0_DATA configuration, dependencies: ['MD+DR'] */
-    .ips_fo_drs0_data[0] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(0x00000000),
-
-    /* IPS_FO_DRS0_DATA configuration, dependencies: ['MD+DR'] */
-    .ips_fo_drs0_data[1] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(0x00000400),
-
-    /* IPS_FO_DRS0_DATA configuration, dependencies: ['MD+DR'] */
-    .ips_fo_drs0_data[2] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(0x00000200),
+    .ips_fo_drs0_data[0] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(0x20FF0000),
 
     /* IPS_FO_DRS1_DATA configuration, dependencies: ['MD+DR'] */
-    .ips_fo_drs1_data[0] = XCVR_MISC_IPS_FO_DRS1_DATA_DRS1_DATA(0x00000000),
-
-    /* IPS_FO_DRS1_DATA configuration, dependencies: ['MD+DR'] */
-    .ips_fo_drs1_data[1] = XCVR_MISC_IPS_FO_DRS1_DATA_DRS1_DATA(0x00000400),
-
-    /* IPS_FO_DRS1_DATA configuration, dependencies: ['MD+DR'] */
-    .ips_fo_drs1_data[2] = XCVR_MISC_IPS_FO_DRS1_DATA_DRS1_DATA(0x00000400),
+    .ips_fo_drs1_data[0] = XCVR_MISC_IPS_FO_DRS1_DATA_DRS1_DATA(0x10FF0000),
 
     /* XCVR_CTRL configuration, dependencies: ['COM', 'MD+DR', 'MD+DR', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM',
        'COM', 'COM', 'COM'] */
@@ -360,32 +340,32 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_2p0_h_0p5_1mbps_config = {
 
     /* AGC_IDX11_GAIN_CFG configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'MD+DR',
        'MD+DR'] */
-    .agc_idx11_gain_cfg = XCVR_RX_DIG_AGC_IDX11_GAIN_CFG_MAG_THR_11_DRS_OFS(0x00) |
-                          XCVR_RX_DIG_AGC_IDX11_GAIN_CFG_MAG_THR_HI_11_DRS_OFS(0x00),
+    .agc_idx11_gain_cfg = XCVR_RX_DIG_AGC_IDX11_GAIN_CFG_MAG_THR_11_DRS_OFS(0x02) |
+                          XCVR_RX_DIG_AGC_IDX11_GAIN_CFG_MAG_THR_HI_11_DRS_OFS(0x04),
 
     /* AGC_IDX11_GAIN_VAL configuration, dependencies: ['COM', 'MD+DR', 'MD+DR'] */
     .agc_idx11_gain_val =
-        XCVR_RX_DIG_AGC_IDX11_GAIN_VAL_MAG_THR_11(0x000) | XCVR_RX_DIG_AGC_IDX11_GAIN_VAL_MAG_THR_HI_11(0x000),
+        XCVR_RX_DIG_AGC_IDX11_GAIN_VAL_MAG_THR_11(0x003) | XCVR_RX_DIG_AGC_IDX11_GAIN_VAL_MAG_THR_HI_11(0x005),
 
     /* AGC_TIMING0 configuration, dependencies: ['COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
-    .agc_timing0 = XCVR_RX_DIG_AGC_TIMING0_AGC_GAIN_STEP_WAIT(0x10),
+    .agc_timing0 = XCVR_RX_DIG_AGC_TIMING0_AGC_GAIN_STEP_WAIT(0x08),
 
     /* AGC_TIMING0_DRS configuration, dependencies: ['MD+DR', 'COM'] */
-    .agc_timing0_drs = XCVR_RX_DIG_AGC_TIMING0_DRS_AGC_GAIN_STEP_WAIT(0x10),
+    .agc_timing0_drs = XCVR_RX_DIG_AGC_TIMING0_DRS_AGC_GAIN_STEP_WAIT(0x08),
 
     /* AGC_TIMING1 configuration, dependencies: ['MD+DR', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
-    .agc_timing1 = XCVR_RX_DIG_AGC_TIMING1_AGC_FREEZE_TIMEOUT(0x0A) | XCVR_RX_DIG_AGC_TIMING1_AGC_HOLD_TIMEOUT(0x08),
+    .agc_timing1 = XCVR_RX_DIG_AGC_TIMING1_AGC_FREEZE_TIMEOUT(0x27) | XCVR_RX_DIG_AGC_TIMING1_AGC_HOLD_TIMEOUT(0x05),
 
     /* AGC_TIMING1_DRS configuration, dependencies: ['MD+DR', 'MD+DR'] */
     .agc_timing1_drs =
-        XCVR_RX_DIG_AGC_TIMING1_DRS_AGC_FREEZE_TIMEOUT(0x0A) | XCVR_RX_DIG_AGC_TIMING1_DRS_AGC_HOLD_TIMEOUT(0x08),
+        XCVR_RX_DIG_AGC_TIMING1_DRS_AGC_FREEZE_TIMEOUT(0x27) | XCVR_RX_DIG_AGC_TIMING1_DRS_AGC_HOLD_TIMEOUT(0x05),
 
     /* AGC_TIMING2 configuration, dependencies: ['MD+DR', 'MD+DR', 'COM', 'COM', 'COM'] */
-    .agc_timing2 = XCVR_RX_DIG_AGC_TIMING2_AGC_UNFREEZE_FEAT_TIMEOUT(0x000) |
+    .agc_timing2 = XCVR_RX_DIG_AGC_TIMING2_AGC_UNFREEZE_FEAT_TIMEOUT(0x07F) |
                    XCVR_RX_DIG_AGC_TIMING2_AGC_UNHOLD_FEAT_TIMEOUT(0x000),
 
     /* AGC_TIMING2_DRS configuration, dependencies: ['MD+DR', 'MD+DR'] */
-    .agc_timing2_drs = XCVR_RX_DIG_AGC_TIMING2_DRS_AGC_UNFREEZE_FEAT_TIMEOUT(0x000) |
+    .agc_timing2_drs = XCVR_RX_DIG_AGC_TIMING2_DRS_AGC_UNFREEZE_FEAT_TIMEOUT(0x07F) |
                        XCVR_RX_DIG_AGC_TIMING2_DRS_AGC_UNHOLD_FEAT_TIMEOUT(0x000),
 
 /* CTRL0 configuration, dependencies: ['COM', 'COM', 'MD+DR', 'MD+DR', 'MD+DR', 'COM', 'COM', 'MD+DR', 'COM', 'COM',
@@ -539,19 +519,18 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_2p0_h_0p5_1mbps_config = {
     .gfsk_coeff_6_7 = XCVR_TX_DIG_GFSK_COEFF_6_7_GFSK_COEFF_6(0x00E) | XCVR_TX_DIG_GFSK_COEFF_6_7_GFSK_COEFF_7(0x1F1),
 #endif /* RF_OSC_26MHZ == 1 */
 
-    /* GFSK_CTRL configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR', 'MD+DR'] */
+    /* GFSK_CTRL configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR'] */
     .gfsk_ctrl = XCVR_TX_DIG_GFSK_CTRL_BT_EQ_OR_GTR_ONE(1) | XCVR_TX_DIG_GFSK_CTRL_GFSK_COEFF_MAN(1) |
 #if RF_OSC_26MHZ == 1
-                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x4E4) |
+                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x4E4),
 #else
-                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x400) |
+                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x400),
 #endif /* RF_OSC_26MHZ == 1 */
-                 XCVR_TX_DIG_GFSK_CTRL_GFSK_ZERO_FDEV_EN(1),
 
     /* IMAGE_FILTER_CTRL configuration, dependencies: ['COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .image_filter_ctrl = XCVR_TX_DIG_IMAGE_FILTER_CTRL_IMAGE_FILTER_OVRD_EN(0),
 
-    /* PA_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
+    /* PA_CTRL configuration, dependencies: ['COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .pa_ctrl = XCVR_TX_DIG_PA_CTRL_PA_RAMP_SEL(1),
 
     /* TXDIG_CTRL configuration, dependencies: ['MD+DR', 'COM', 'MD+DR', 'MD+DR'] */
