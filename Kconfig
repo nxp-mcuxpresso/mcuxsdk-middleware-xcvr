@@ -21,11 +21,12 @@ if MCUX_COMPONENT_middleware.wireless.xcvr
     config MCUX_COMPONENT_middleware.wireless.xcvr.kw47_mcxw72
         bool "KW47x, MCXW72x families"
         depends on MCUX_HW_DEVICE_KW47B42ZB7 || MCUX_HW_DEVICE_MCXW727C
-        depends on MCUX_HW_DEVICE_KW47B42ZB7_CORE_ID_cm33_core1 || MCUX_HW_DEVICE_MCXW727C_CORE_ID_cm33_core1
+        depends on MCUX_HW_DEVICE_KW47B42ZB7_CORE_ID_cm33_core1 || MCUX_HW_DEVICE_MCXW727C_CORE_ID_cm33_core1 || \
+                   MCUX_HW_DEVICE_KW47B42ZB7_CORE_ID_cm33_core0 || MCUX_HW_DEVICE_MCXW727C_CORE_ID_cm33_core0 
 
     config MCUX_COMPONENT_middleware.wireless.xcvr.gen475
         bool "Gen4.75 support"
-        # TODO : Add devices supporting this xcvr port
+        depends on MCUX_HW_DEVICE_KW43B43ZC7 || MCUX_HW_DEVICE_KW43B43ZC7_NBU
 
   endchoice
 
