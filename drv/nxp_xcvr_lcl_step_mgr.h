@@ -449,8 +449,8 @@ while (false)
     nadm_fm_symb_err_value, nadm_fm_symb_err_valid, nadm_pdelta)                                                \
     do                                                                                                          \
     {                                                                                                           \
-        rssi_nb = ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_RSSI_NB_MASK) >>                 \
-                  COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_RSSI_NB_SHIFT);                                         \
+        rssi_nb = ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >>                 \
+                  COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_SHIFT);                                         \
         nadm_fm_corr_value =                                                                                    \
             ((nadm_result_packed & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_MASK) >>            \
             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_SHIFT);                                    \
