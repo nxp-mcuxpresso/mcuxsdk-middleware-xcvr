@@ -540,6 +540,9 @@ xcvrStatus_t XCVR_SetActiveLL(XCVR_ACTIVE_LL_SEL_T active_ll)
         if (active_ll == XCVR_ACTIVE_LL_BTLE)
         {
             temp |= XCVR_PLL_DIG_CHAN_MAP_BAND_SELECT(0U); /* Select BTLE channel map */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+            XCVR_MISC->XCVR_CTRL |= XCVR_MISC_XCVR_CTRL_LL_CFG_CAPT_DIS_MASK;
+#endif  /* NXP_RADIO_GEN >= 475 */ 
         }
         else
         {
@@ -555,6 +558,9 @@ xcvrStatus_t XCVR_SetActiveLL(XCVR_ACTIVE_LL_SEL_T active_ll)
 #else
             temp |= XCVR_PLL_DIG_CHAN_MAP_BAND_SELECT(7U); /* Select GENFSK 0-127 channel map */
 #endif /* defined(RADIO_IS_GEN_4P5) */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+            XCVR_MISC->XCVR_CTRL &= ~(XCVR_MISC_XCVR_CTRL_LL_CFG_CAPT_DIS_MASK);
+#endif  /* NXP_RADIO_GEN >= 475 */
         }
         XCVR_PLL_DIG->CHAN_MAP = temp;
     }
