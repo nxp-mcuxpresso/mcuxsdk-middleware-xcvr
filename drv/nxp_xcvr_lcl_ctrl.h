@@ -208,6 +208,9 @@ extern "C" {
 #define CS_TEST_AA_INIT (0x36B25785U)
 #define CS_TEST_AA_REFL (0xA1E16E78U)
 #endif
+
+#define HPM_CAL_REPETITIONS  (16U)   /* Repetition count for HPM CAL averaging CONNRF-1460 */
+
 /*! @brief  RSM control mode settings. */
 typedef enum
 {
