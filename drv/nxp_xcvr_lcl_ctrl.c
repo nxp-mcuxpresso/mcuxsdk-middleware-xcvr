@@ -2998,13 +2998,16 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
                 temp_count--;
             }
 #else
-            XCVR_ForceTxWu();
-            XCVR_WaitTxWu();
+            /* CONNRF-1460: calibrate HPM_CAL_REPETITIONS times and keep the averaged for better hpm cal accuracy*/
+            uint32_t cal_avg=0;
+            for(uint16_t j=0; j<HPM_CAL_REPETITIONS; j++)
+            {
+              XCVR_ForceTxWu();
+              XCVR_WaitTxWu();
 #endif /* HPM_CAL_IN_RX */
-            /* Capture calibrated values & warmdown */
-            results_ptr[i].hpm_cal_val =
-                (uint16_t)((XCVR_PLL_DIG->HPMCAL_CTRL & XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_MASK) >>
+              cal_avg += (uint16_t)((XCVR_PLL_DIG->HPMCAL_CTRL & XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_MASK) >>
                            XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_SHIFT);
+                
 #if (defined(CTUNE_MANUAL_CAL) && (CTUNE_MANUAL_CAL == 1))
             results_ptr[i].ctune_cal_val =
                 (uint8_t)((XCVR_PLL_DIG->CTUNE_RES & XCVR_PLL_DIG_CTUNE_RES_CTUNE_SELECTED_MASK) >>
@@ -3031,6 +3034,9 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
             /* Wait for completion of warmdown (until TSM goes to idle) */
 #if (1)
             XCVR_WaitRxTxWd();
+            }
+            /* Capture calibrated values & warmdown */
+            results_ptr[i].hpm_cal_val = cal_avg/HPM_CAL_REPETITIONS; 
 #else
             temp_count = 10000U;
             while (temp_count > 0U)
@@ -3038,6 +3044,8 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
                 temp_count--;
             }
 #endif
+
+            
             while (((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_TSM_COUNT_MASK) >>
                     XCVR_MISC_XCVR_STATUS_TSM_COUNT_SHIFT) != 0U)
             {
