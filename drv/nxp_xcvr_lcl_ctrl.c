@@ -3418,6 +3418,7 @@ xcvrLclStatus_t XCVR_LCL_ProcessPhaseMeasure(int8_t *i_resid, int8_t *q_resid, u
     return status;
 }
 
+#if (0)
 xcvrLclStatus_t XCVR_LCL_RsmCompCfo(int32_t cfo_in_hz)
 {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
@@ -3437,6 +3438,34 @@ xcvrLclStatus_t XCVR_LCL_RsmCompCfo(int32_t cfo_in_hz)
 
     return status;
 }
+#else
+xcvrLclStatus_t XCVR_LCL_RsmCompCfo(int32_t cfo_in_hz) 
+{ 
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess; 
+    if ((cfo_in_hz > 262143) || (cfo_in_hz < -262143)) /* Test CFO limitation */ 
+    {
+         status = gXcvrLclStatusInvalidArgs; 
+    } 
+    else 
+    {
+        int32_t itemp; 
+        if (cfo_in_hz < 0) 
+        { /* Compensation is in the opposite direction of the CFO value, so we negate on the way in but not the way out */ 
+            itemp = (((uint32_t)(-cfo_in_hz) * 16384) / 15625); 
+        } 
+        else 
+        { 
+            /* Compensation is in the opposite direction of the CFO value, so we negate on the way out but not on the way in */ 
+            itemp = -(int32_t)(((uint32_t)cfo_in_hz * 16384) / 15625); 
+        } 
+        XCVR_PLL_DIG->PLL_OFFSET_CTRL = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(itemp); 
+    } 
+    
+return status; 
+
+}
+
+#endif
 
 int32_t XCVR_LCL_RsmReadCfoComp(void)
 {
