@@ -113,10 +113,12 @@ const xcvr_common_config_t xcvr_common_config = {
     .ldo_1 = XCVR_ANALOG_LDO_1_LDO_ANT_BYPASS(0) | XCVR_ANALOG_LDO_1_LDO_ANT_HIZ(0) |
              XCVR_ANALOG_LDO_1_LDO_ANT_REF_SEL(0) | XCVR_ANALOG_LDO_1_LDO_ANT_TRIM(5),
 
-    /* PLL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM'] */
-    .pll = XCVR_ANALOG_PLL_PLL_FCAL_EN_STATIC_RES(0) | XCVR_ANALOG_PLL_PLL_PD_EN_VPD_PULLDN(0) |
+    /* PLL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM'] */
+    .pll = XCVR_ANALOG_PLL_LODIV_SYNC_SPARE(0) | XCVR_ANALOG_PLL_PIC_RINT1_HVAL_SM_EN(1) |
+           XCVR_ANALOG_PLL_PIC_RINT2_VAL_SLOW_MODE(3) | XCVR_ANALOG_PLL_PIC_SPARE(0) |
+           XCVR_ANALOG_PLL_PLL_FCAL_EN_STATIC_RES(0) | XCVR_ANALOG_PLL_PLL_PD_EN_VPD_PULLDN(0) |
            XCVR_ANALOG_PLL_PLL_PD_EN_VPD_PULLUP(0) | XCVR_ANALOG_PLL_PLL_PD_TRIM_FCAL_BIAS(0) |
-           XCVR_ANALOG_PLL_PLL_VCO_EN_PKDET(0) |
+           XCVR_ANALOG_PLL_PLL_VCO_EN_PKDET(0) | XCVR_ANALOG_PLL_PLL_VCO_PIC_INPUT_EN(0) |
 #if RF_OSC_26MHZ == 1
            XCVR_ANALOG_PLL_PLL_VCO_TRIM_KVT(7),
 #else
@@ -132,9 +134,10 @@ const xcvr_common_config_t xcvr_common_config = {
             XCVR_ANALOG_RX_1_CBPF_TRIM_SHORT_DCBIAS(2) | XCVR_ANALOG_RX_1_CBPF_TYPE(1) |
             XCVR_ANALOG_RX_1_CBPF_VCM_TRIM(2),
 
-    /* TX_DAC_PA configuration, dependencies: ['COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM'] */
+    /* TX_DAC_PA configuration, dependencies: ['COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM', 'COM'] */
     .tx_dac_pa = XCVR_ANALOG_TX_DAC_PA_DAC_INVERT_CLK(0) | XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_CFBK(1) |
                  XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_IBIAS(0) | XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_RLOAD(0) |
+                 XCVR_ANALOG_TX_DAC_PA_PA_SMOOTHER_CUR(6) | XCVR_ANALOG_TX_DAC_PA_PA_SMOOTHER_EN(1) |
                  XCVR_ANALOG_TX_DAC_PA_TX_PA_VBIAS(0),
 
     /* XO_DIST configuration, dependencies: ['COM', 'COM', 'COM'] */
@@ -217,10 +220,11 @@ const xcvr_common_config_t xcvr_common_config = {
     /* HPM_SDM_RES configuration, dependencies: ['MD+DR', 'COM'] */
     .hpm_sdm_res = XCVR_PLL_DIG_HPM_SDM_RES_HPM_DENOM(0x00FF),
 
-    /* LOCK_DETECT configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM'] */
-    .lock_detect = XCVR_PLL_DIG_LOCK_DETECT_FCAL_HOLD_EN(0) | XCVR_PLL_DIG_LOCK_DETECT_FREQ_COUNT_GO(0) |
-                   XCVR_PLL_DIG_LOCK_DETECT_FREQ_COUNT_TIME(0) | XCVR_PLL_DIG_LOCK_DETECT_FTF_RX_THRSH(0x21) |
-                   XCVR_PLL_DIG_LOCK_DETECT_FTF_TX_THRSH(0x06) | XCVR_PLL_DIG_LOCK_DETECT_FTW_TXRX(7),
+    /* LOCK_DETECT configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM'] */
+    .lock_detect = XCVR_PLL_DIG_LOCK_DETECT_CTUNE_LDF_LEV(0x02) | XCVR_PLL_DIG_LOCK_DETECT_FCAL_HOLD_EN(0) |
+                   XCVR_PLL_DIG_LOCK_DETECT_FREQ_COUNT_GO(0) | XCVR_PLL_DIG_LOCK_DETECT_FREQ_COUNT_TIME(0) |
+                   XCVR_PLL_DIG_LOCK_DETECT_FTF_RX_THRSH(0x21) | XCVR_PLL_DIG_LOCK_DETECT_FTF_TX_THRSH(0x06) |
+                   XCVR_PLL_DIG_LOCK_DETECT_FTW_TXRX(7),
 
     /* LPM_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM'] */
     .lpm_ctrl = XCVR_PLL_DIG_LPM_CTRL_HPM_CAL_SCALE(0x0A) | XCVR_PLL_DIG_LPM_CTRL_LPM_DISABLE(0) |
@@ -253,6 +257,13 @@ const xcvr_common_config_t xcvr_common_config = {
         XCVR_PLL_DIG_TUNING_CAP_RX_CTRL_TUNING_RANGE_4(0) | XCVR_PLL_DIG_TUNING_CAP_RX_CTRL_TUNING_RANGE_5(0) |
         XCVR_PLL_DIG_TUNING_CAP_RX_CTRL_TUNING_RANGE_6(0) | XCVR_PLL_DIG_TUNING_CAP_RX_CTRL_TUNING_RANGE_7(0),
 
+    /* TUNING_CAP_TX_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM'] */
+    .tuning_cap_tx_ctrl =
+        XCVR_PLL_DIG_TUNING_CAP_TX_CTRL_TUNING_RANGE_0(1) | XCVR_PLL_DIG_TUNING_CAP_TX_CTRL_TUNING_RANGE_1(2) |
+        XCVR_PLL_DIG_TUNING_CAP_TX_CTRL_TUNING_RANGE_2(2) | XCVR_PLL_DIG_TUNING_CAP_TX_CTRL_TUNING_RANGE_3(2) |
+        XCVR_PLL_DIG_TUNING_CAP_TX_CTRL_TUNING_RANGE_4(2) | XCVR_PLL_DIG_TUNING_CAP_TX_CTRL_TUNING_RANGE_5(2) |
+        XCVR_PLL_DIG_TUNING_CAP_TX_CTRL_TUNING_RANGE_6(3) | XCVR_PLL_DIG_TUNING_CAP_TX_CTRL_TUNING_RANGE_7(4),
+
     /* XCVR_RX_DIG configs */
     /***********************/
 
@@ -267,13 +278,14 @@ const xcvr_common_config_t xcvr_common_config = {
                 XCVR_RX_DIG_AGC_CTRL_AGC_WBD_STEP2_DUAL_CLIP_EN(0) | XCVR_RX_DIG_AGC_CTRL_AGC_WBD_STEP2_SZ(1) |
                 XCVR_RX_DIG_AGC_CTRL_AGC_WBD_THR1(0x3) | XCVR_RX_DIG_AGC_CTRL_AGC_WBD_THR2(0xE),
 
-    /* AGC_CTRL_STAT configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM'] */
+    /* AGC_CTRL_STAT configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM']
+     */
     .agc_ctrl_stat =
         XCVR_RX_DIG_AGC_CTRL_STAT_AGC_CALC_MAG_IN_FRZ(1) | XCVR_RX_DIG_AGC_CTRL_STAT_AGC_FREEZE_EN(1) |
         XCVR_RX_DIG_AGC_CTRL_STAT_AGC_GAIN_IDX_STORE(0) | XCVR_RX_DIG_AGC_CTRL_STAT_AGC_INIT_IDX(0xB) |
-        XCVR_RX_DIG_AGC_CTRL_STAT_AGC_PHY_FREEZE_TRIG_SEL(0) | XCVR_RX_DIG_AGC_CTRL_STAT_AGC_PHY_HOLD_TRIG_SEL(0) |
-        XCVR_RX_DIG_AGC_CTRL_STAT_AGC_SOFT_RST_GAIN_SEL(0) | XCVR_RX_DIG_AGC_CTRL_STAT_AGC_SOFT_RST_SRC_SEL(1) |
-        XCVR_RX_DIG_AGC_CTRL_STAT_AGC_UNFREEZE_FEAT_EN(1),
+        XCVR_RX_DIG_AGC_CTRL_STAT_AGC_MAX_IDX(1) | XCVR_RX_DIG_AGC_CTRL_STAT_AGC_PHY_FREEZE_TRIG_SEL(0) |
+        XCVR_RX_DIG_AGC_CTRL_STAT_AGC_PHY_HOLD_TRIG_SEL(0) | XCVR_RX_DIG_AGC_CTRL_STAT_AGC_SOFT_RST_GAIN_SEL(0) |
+        XCVR_RX_DIG_AGC_CTRL_STAT_AGC_SOFT_RST_SRC_SEL(1) | XCVR_RX_DIG_AGC_CTRL_STAT_AGC_UNFREEZE_FEAT_EN(1),
 
     /* AGC_IDX0_GAIN_CFG configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM'] */
     .agc_idx0_gain_cfg =
@@ -534,15 +546,19 @@ const xcvr_common_config_t xcvr_common_config = {
 #endif /* RF_OSC_26MHZ == 1 */
 
     /* CTRL1 configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM',
-       'COM', 'COM', 'COM', 'COM'] */
+       'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM'] */
     .ctrl1 = XCVR_RX_DIG_CTRL1_DC_RESID_EN(0) | XCVR_RX_DIG_CTRL1_DIS_WB_NORM_AA_FOUND(1) |
              XCVR_RX_DIG_CTRL1_RX_CFO_EST_OVRD(0x000) | XCVR_RX_DIG_CTRL1_RX_CFO_EST_OVRD_EN(0) |
-             XCVR_RX_DIG_CTRL1_RX_DEMOD_FILT_BYPASS(0) | XCVR_RX_DIG_CTRL1_RX_FRAC_CORR_OVRD(0) |
+             XCVR_RX_DIG_CTRL1_RX_DC_RES_AFTER_IF_MIX(0) | XCVR_RX_DIG_CTRL1_RX_DEMOD_FILT_BYPASS(0) |
+             XCVR_RX_DIG_CTRL1_RX_DFT_IQ_OUT_AVERAGED(0) | XCVR_RX_DIG_CTRL1_RX_FRAC_CORR_OVRD(0) |
              XCVR_RX_DIG_CTRL1_RX_FRAC_CORR_OVRD_EN(0) | XCVR_RX_DIG_CTRL1_RX_HIGH_RES_NORM_SEL(0) |
-             XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN(0) | XCVR_RX_DIG_CTRL1_RX_IQ_PH_OUTPUT_COND(0) |
-             XCVR_RX_DIG_CTRL1_RX_MIXER_IDX_OUT_MODE(0) | XCVR_RX_DIG_CTRL1_RX_NB_NORM_EN(1) |
-             XCVR_RX_DIG_CTRL1_RX_SAMPLE_BUF_AUTO_GATE(0) | XCVR_RX_DIG_CTRL1_RX_SAMPLE_BUF_BYPASS(0) |
-             XCVR_RX_DIG_CTRL1_RX_SAMPLE_BUF_BYPASS_IN_CTE(0),
+             XCVR_RX_DIG_CTRL1_RX_IQ_AVG_WIN_PCT(0) | XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN(0) |
+             XCVR_RX_DIG_CTRL1_RX_IQ_PH_OUTPUT_COND(0) | XCVR_RX_DIG_CTRL1_RX_MIXER_IDX_OUT_MODE(0) |
+             XCVR_RX_DIG_CTRL1_RX_NB_NORM_EN(1) | XCVR_RX_DIG_CTRL1_RX_SAMPLE_BUF_AUTO_GATE(0) |
+             XCVR_RX_DIG_CTRL1_RX_SAMPLE_BUF_BYPASS(0) | XCVR_RX_DIG_CTRL1_RX_SAMPLE_BUF_BYPASS_IN_CTE(0),
+
+    /* CTRL2 configuration, dependencies: ['COM', 'COM'] */
+    .ctrl2 = XCVR_RX_DIG_CTRL2_RX_SAMPLE_ADJ(0) | XCVR_RX_DIG_CTRL2_SN_AGC_INIT_IDX2(0XB),
 
     /* DCOC_CTRL0 configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM',
        'COM', 'COM', 'COM', 'COM', 'MD+DR', 'MD+DR', 'COM', 'COM', 'MD+DR', 'MD+DR'] */
@@ -558,6 +574,10 @@ const xcvr_common_config_t xcvr_common_config = {
     /* DCOC_CTRL1 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
     .dcoc_ctrl1 = XCVR_RX_DIG_DCOC_CTRL1_DCOC_ICBPF_OFFSET(0x00) | XCVR_RX_DIG_DCOC_CTRL1_DCOC_ILNA_OFFSET(0x00) |
                   XCVR_RX_DIG_DCOC_CTRL1_DCOC_QCBPF_OFFSET(0x00) | XCVR_RX_DIG_DCOC_CTRL1_DCOC_QLNA_OFFSET(0x00),
+
+    /* IQMC_CTRL1_DRS configuration, dependencies: ['COM', 'COM'] */
+    .iqmc_ctrl1_drs =
+        XCVR_RX_DIG_IQMC_CTRL1_DRS_IQMC_GAIN_ADJ(0x400) | XCVR_RX_DIG_IQMC_CTRL1_DRS_IQMC_PHASE_ADJ(0x000),
 
     /* NADM_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM'] */
     .nadm_ctrl = XCVR_RX_DIG_NADM_CTRL_NADM_DLY(4) | XCVR_RX_DIG_NADM_CTRL_NADM_DMD_LATENCY(0xC) |
@@ -585,6 +605,12 @@ const xcvr_common_config_t xcvr_common_config = {
         XCVR_RX_DIG_RSSI_GLOBAL_CTRL_WB_CONT_MEAS_OVRD(0) | XCVR_RX_DIG_RSSI_GLOBAL_CTRL_WB_CONT_MEAS_OVRD_EN(0) |
         XCVR_RX_DIG_RSSI_GLOBAL_CTRL_WB_RSSI_EN(1) | XCVR_RX_DIG_RSSI_GLOBAL_CTRL_WB_RSSI_INPUT_SEL(0),
 
+    /* TQI_CTRL configuration, dependencies: ['COM', 'COM'] */
+    .tqi_ctrl = XCVR_RX_DIG_TQI_CTRL_IQ_AVG_DPTH(4) | XCVR_RX_DIG_TQI_CTRL_MAG_AVG_DPTH(3),
+
+    /* TQI_THR configuration, dependencies: ['COM', 'COM'] */
+    .tqi_thr = XCVR_RX_DIG_TQI_THR_T1(0x009) | XCVR_RX_DIG_TQI_THR_T2(0x009),
+
     /* WB_RSSI_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM'] */
     .wb_rssi_ctrl = XCVR_RX_DIG_WB_RSSI_CTRL_KEEP_RSSI_RESULT_WB(1) | XCVR_RX_DIG_WB_RSSI_CTRL_RSSI_ADJ_WB(0x00) |
                     XCVR_RX_DIG_WB_RSSI_CTRL_RSSI_DB_EN_WB(1) | XCVR_RX_DIG_WB_RSSI_CTRL_RSSI_F_WINDOW_WB(3) |
@@ -595,11 +621,12 @@ const xcvr_common_config_t xcvr_common_config = {
     /********************/
 
     /* CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM',
-       'COM'] */
+       'COM', 'COM'] */
     .ctrl = XCVR_TSM_CTRL_ABORT_ON_CTUNE(0) | XCVR_TSM_CTRL_ABORT_ON_FREQ_TARG(0) | XCVR_TSM_CTRL_BKPT(0xFF) |
             XCVR_TSM_CTRL_FORCE_RX_EN(0) | XCVR_TSM_CTRL_FORCE_TX_EN(0) | XCVR_TSM_CTRL_PLL_UNLOCK_IRQ_EN(0) |
-            XCVR_TSM_CTRL_RX_ABORT_DIS(0) | XCVR_TSM_CTRL_TSM_IRQ0_EN(0) | XCVR_TSM_CTRL_TSM_IRQ1_EN(0) |
-            XCVR_TSM_CTRL_TSM_LL_INHIBIT(0) | XCVR_TSM_CTRL_TSM_SOFT_RESET(0) | XCVR_TSM_CTRL_TX_ABORT_DIS(0),
+            XCVR_TSM_CTRL_RF_ACTIVE_EXTEND(0x00) | XCVR_TSM_CTRL_RX_ABORT_DIS(0) | XCVR_TSM_CTRL_TSM_IRQ0_EN(0) |
+            XCVR_TSM_CTRL_TSM_IRQ1_EN(0) | XCVR_TSM_CTRL_TSM_LL_INHIBIT(0) | XCVR_TSM_CTRL_TSM_SOFT_RESET(0) |
+            XCVR_TSM_CTRL_TX_ABORT_DIS(0),
 
 /* END_OF_SEQ configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
 #if RF_OSC_26MHZ == 1
@@ -761,11 +788,13 @@ const xcvr_common_config_t xcvr_common_config = {
                 XCVR_TSM_TIMING22_SEQ_BG_FC_TX_HI(0x00) | XCVR_TSM_TIMING22_SEQ_BG_FC_TX_LO(0x6F),
 #endif /* RF_OSC_26MHZ == 1 */
 
-/* TIMING23 configuration, dependencies: ['COM', 'COM'] */
+/* TIMING23 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
 #if RF_OSC_26MHZ == 1
-    .timing23 = XCVR_TSM_TIMING23_SEQ_LDO_GANG_FC_RX_HI(0x00) | XCVR_TSM_TIMING23_SEQ_LDO_GANG_FC_TX_HI(0x00),
+    .timing23 = XCVR_TSM_TIMING23_SEQ_LDO_GANG_FC_RX_HI(0x00) | XCVR_TSM_TIMING23_SEQ_LDO_GANG_FC_RX_LO(0x19) |
+                XCVR_TSM_TIMING23_SEQ_LDO_GANG_FC_TX_HI(0x00) | XCVR_TSM_TIMING23_SEQ_LDO_GANG_FC_TX_LO(0x16),
 #else
-    .timing23 = XCVR_TSM_TIMING23_SEQ_LDO_GANG_FC_RX_HI(0x00) | XCVR_TSM_TIMING23_SEQ_LDO_GANG_FC_TX_HI(0x00),
+    .timing23 = XCVR_TSM_TIMING23_SEQ_LDO_GANG_FC_RX_HI(0x00) | XCVR_TSM_TIMING23_SEQ_LDO_GANG_FC_RX_LO(0x19) |
+                XCVR_TSM_TIMING23_SEQ_LDO_GANG_FC_TX_HI(0x00) | XCVR_TSM_TIMING23_SEQ_LDO_GANG_FC_TX_LO(0x16),
 #endif /* RF_OSC_26MHZ == 1 */
 
 /* TIMING24 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
@@ -1002,6 +1031,51 @@ const xcvr_common_config_t xcvr_common_config = {
     .timing52 = XCVR_TSM_TIMING52_SEQ_SPARE3_RX_HI(0xFF) | XCVR_TSM_TIMING52_SEQ_SPARE3_RX_LO(0xFF) |
                 XCVR_TSM_TIMING52_SEQ_SPARE3_TX_HI(0xFF) | XCVR_TSM_TIMING52_SEQ_SPARE3_TX_LO(0xFF),
 
+    /* TIMING53 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
+    .timing53 = XCVR_TSM_TIMING53_GEAR_SHIFT_RX_HI(0xFF) | XCVR_TSM_TIMING53_GEAR_SHIFT_RX_LO(0xFF) |
+                XCVR_TSM_TIMING53_GEAR_SHIFT_TX_HI(0xFF) | XCVR_TSM_TIMING53_GEAR_SHIFT_TX_LO(0xFF),
+
+    /* TIMING54 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
+    .timing54 = XCVR_TSM_TIMING54_SEQ_PIC_CORE_EN_RX_HI(0xFF) | XCVR_TSM_TIMING54_SEQ_PIC_CORE_EN_RX_LO(0xFF) |
+                XCVR_TSM_TIMING54_SEQ_PIC_CORE_EN_TX_HI(0xFF) | XCVR_TSM_TIMING54_SEQ_PIC_CORE_EN_TX_LO(0xFF),
+
+    /* TIMING55 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
+    .timing55 = XCVR_TSM_TIMING55_SEQ_PIC_SHORT_CINT_SHORT_EN_RX_HI(0xFF) |
+                XCVR_TSM_TIMING55_SEQ_PIC_SHORT_CINT_SHORT_EN_RX_LO(0xFF) |
+                XCVR_TSM_TIMING55_SEQ_PIC_SHORT_CINT_SHORT_EN_TX_HI(0xFF) |
+                XCVR_TSM_TIMING55_SEQ_PIC_SHORT_CINT_SHORT_EN_TX_LO(0xFF),
+
+    /* TIMING56 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
+    .timing56 = XCVR_TSM_TIMING56_SEQ_PIC_FILTER_LOW_BW_SM_EN_RX_HI(0xFF) |
+                XCVR_TSM_TIMING56_SEQ_PIC_FILTER_LOW_BW_SM_EN_RX_LO(0xFF) |
+                XCVR_TSM_TIMING56_SEQ_PIC_FILTER_LOW_BW_SM_EN_TX_HI(0xFF) |
+                XCVR_TSM_TIMING56_SEQ_PIC_FILTER_LOW_BW_SM_EN_TX_LO(0xFF),
+
+    /* TIMING57 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
+    .timing57 =
+        XCVR_TSM_TIMING57_SEQ_PIC_RFB_OPEN_SM_EN_RX_HI(0xFF) | XCVR_TSM_TIMING57_SEQ_PIC_RFB_OPEN_SM_EN_RX_LO(0xFF) |
+        XCVR_TSM_TIMING57_SEQ_PIC_RFB_OPEN_SM_EN_TX_HI(0xFF) | XCVR_TSM_TIMING57_SEQ_PIC_RFB_OPEN_SM_EN_TX_LO(0xFF),
+
+    /* TIMING58 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
+    .timing58 = XCVR_TSM_TIMING58_SEQ_PIC_RINT2_SHORT_FM_EN_RX_HI(0xFF) |
+                XCVR_TSM_TIMING58_SEQ_PIC_RINT2_SHORT_FM_EN_RX_LO(0xFF) |
+                XCVR_TSM_TIMING58_SEQ_PIC_RINT2_SHORT_FM_EN_TX_HI(0xFF) |
+                XCVR_TSM_TIMING58_SEQ_PIC_RINT2_SHORT_FM_EN_TX_LO(0xFF),
+
+    /* TIMING59 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
+    .timing59 =
+        XCVR_TSM_TIMING59_SEQ_LODIV_SYNC_RESET_EN_RX_HI(0xFF) | XCVR_TSM_TIMING59_SEQ_LODIV_SYNC_RESET_EN_RX_LO(0xFF) |
+        XCVR_TSM_TIMING59_SEQ_LODIV_SYNC_RESET_EN_TX_HI(0xFF) | XCVR_TSM_TIMING59_SEQ_LODIV_SYNC_RESET_EN_TX_LO(0xFF),
+
+    /* TIMING60 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
+    .timing60 = XCVR_TSM_TIMING60_SEQ_LODIV_SYNC_EN_RX_HI(0xFF) | XCVR_TSM_TIMING60_SEQ_LODIV_SYNC_EN_RX_LO(0xFF) |
+                XCVR_TSM_TIMING60_SEQ_LODIV_SYNC_EN_TX_HI(0xFF) | XCVR_TSM_TIMING60_SEQ_LODIV_SYNC_EN_TX_LO(0xFF),
+
+    /* TIMING61 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
+    .timing61 =
+        XCVR_TSM_TIMING61_SEQ_LODIV_SYNC_SPARE_EN_RX_HI(0xFF) | XCVR_TSM_TIMING61_SEQ_LODIV_SYNC_SPARE_EN_RX_LO(0xFF) |
+        XCVR_TSM_TIMING61_SEQ_LODIV_SYNC_SPARE_EN_TX_HI(0xFF) | XCVR_TSM_TIMING61_SEQ_LODIV_SYNC_SPARE_EN_TX_LO(0xFF),
+
 /* WU_LATENCY configuration, dependencies: ['COM', 'COM'] */
 #if RF_OSC_26MHZ == 1
     .wu_latency = XCVR_TSM_WU_LATENCY_RX_SETTLING_LATENCY(0x06) |
@@ -1027,14 +1101,16 @@ const xcvr_common_config_t xcvr_common_config = {
                          XCVR_TX_DIG_IMAGE_FILTER_CTRL_IMAGE_SYNC0_FILTER_OVRD(0) |
                          XCVR_TX_DIG_IMAGE_FILTER_CTRL_IMAGE_SYNC1_FILTER_OVRD(0),
 
-    /* PA_CTRL configuration, dependencies: ['COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
-    .pa_ctrl = XCVR_TX_DIG_PA_CTRL_EARLY_WU_COMPLETE(0) | XCVR_TX_DIG_PA_CTRL_PA_TGT_POWER(0x26) |
+    /* PA_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
+    .pa_ctrl = XCVR_TX_DIG_PA_CTRL_EARLY_WU_COMPLETE(0) | XCVR_TX_DIG_PA_CTRL_PA_RAMP_ANA_EN(1) |
+               XCVR_TX_DIG_PA_CTRL_PA_RAMP_ANA_IDX(0x0) | XCVR_TX_DIG_PA_CTRL_PA_RAMP_DIG_INTERP_EN(1) |
+               XCVR_TX_DIG_PA_CTRL_PA_RAMP_HOLD(7) | XCVR_TX_DIG_PA_CTRL_PA_TGT_POWER(0x26) |
                XCVR_TX_DIG_PA_CTRL_TGT_PWR_SRC(1) | XCVR_TX_DIG_PA_CTRL_TX_PA_PUP_OVRD(0) |
                XCVR_TX_DIG_PA_CTRL_TX_PA_PUP_OVRD_EN(0),
 
-    /* PA_RAMP_TBL0 configuration, dependencies: ['COM', 'COM', 'COM'] */
-    .pa_ramp_tbl0 = XCVR_TX_DIG_PA_RAMP_TBL0_PA_RAMP1(0x02) | XCVR_TX_DIG_PA_RAMP_TBL0_PA_RAMP2(0x04) |
-                    XCVR_TX_DIG_PA_RAMP_TBL0_PA_RAMP3(0x06),
+    /* PA_RAMP_TBL0 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
+    .pa_ramp_tbl0 = XCVR_TX_DIG_PA_RAMP_TBL0_PA_RAMP0(0x00) | XCVR_TX_DIG_PA_RAMP_TBL0_PA_RAMP1(0x02) |
+                    XCVR_TX_DIG_PA_RAMP_TBL0_PA_RAMP2(0x04) | XCVR_TX_DIG_PA_RAMP_TBL0_PA_RAMP3(0x06),
 
     /* PA_RAMP_TBL1 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
     .pa_ramp_tbl1 = XCVR_TX_DIG_PA_RAMP_TBL1_PA_RAMP4(0x09) | XCVR_TX_DIG_PA_RAMP_TBL1_PA_RAMP5(0x0C) |

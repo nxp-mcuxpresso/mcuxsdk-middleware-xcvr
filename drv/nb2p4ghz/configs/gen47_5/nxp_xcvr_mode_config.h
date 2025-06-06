@@ -72,6 +72,7 @@ typedef struct tag_xcvr_common_config_t
     uint32_t mod_ctrl;
     uint32_t pll_datarate_ctrl;
     uint32_t tuning_cap_rx_ctrl;
+    uint32_t tuning_cap_tx_ctrl;
     /* XCVR_RX_DIG registers */
     uint32_t agc_ctrl;
     uint32_t agc_ctrl_stat;
@@ -121,12 +122,16 @@ typedef struct tag_xcvr_common_config_t
     uint32_t agc_timing2;
     uint32_t ctrl0;
     uint32_t ctrl1;
+    uint32_t ctrl2;
     uint32_t dcoc_ctrl0;
     uint32_t dcoc_ctrl1;
+    uint32_t iqmc_ctrl1_drs;
     uint32_t nadm_ctrl;
     uint32_t nb_rssi_ctrl0;
     uint32_t nb_rssi_ctrl1;
     uint32_t rssi_global_ctrl;
+    uint32_t tqi_ctrl;
+    uint32_t tqi_thr;
     uint32_t wb_rssi_ctrl;
     /* XCVR_TSM registers */
     uint32_t ctrl;
@@ -188,6 +193,15 @@ typedef struct tag_xcvr_common_config_t
     uint32_t timing50;
     uint32_t timing51;
     uint32_t timing52;
+    uint32_t timing53;
+    uint32_t timing54;
+    uint32_t timing55;
+    uint32_t timing56;
+    uint32_t timing57;
+    uint32_t timing58;
+    uint32_t timing59;
+    uint32_t timing60;
+    uint32_t timing61;
     uint32_t wu_latency;
     /* XCVR_TX_DIG registers */
     uint32_t data_padding_ctrl;
@@ -248,9 +262,9 @@ typedef struct tag_xcvr_mode_datarate_config_t
     /* XCVR_ANALOG registers */
     uint32_t tx_dac_pa;
     /* XCVR_MISC registers */
-    uint32_t ips_fo_addr[1];
-    uint32_t ips_fo_drs0_data[1];
-    uint32_t ips_fo_drs1_data[1];
+    uint32_t ips_fo_addr[3];
+    uint32_t ips_fo_drs0_data[3];
+    uint32_t ips_fo_drs1_data[3];
     uint32_t xcvr_ctrl;
     /* XCVR_PLL_DIG registers */
     uint32_t chan_map;

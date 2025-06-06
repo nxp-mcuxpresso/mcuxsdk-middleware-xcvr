@@ -213,7 +213,7 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_0p5_h_0p32_1mbps_config = {
     /* XCVR_ANALOG configs */
     /***********************/
 
-    /* TX_DAC_PA configuration, dependencies: ['COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM'] */
+    /* TX_DAC_PA configuration, dependencies: ['COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM', 'COM'] */
     .tx_dac_pa = XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_CFBK_DRS(0),
 
     /* XCVR_MISC configs */
@@ -223,11 +223,31 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_0p5_h_0p32_1mbps_config = {
     .ips_fo_addr[0] =
         XCVR_MISC_IPS_FO_ADDR_ADDR(0x370) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0),
 
+    /* IPS_FO_ADDR configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR'] */
+    .ips_fo_addr[1] =
+        XCVR_MISC_IPS_FO_ADDR_ADDR(0x214) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0),
+
+    /* IPS_FO_ADDR configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR'] */
+    .ips_fo_addr[2] =
+        XCVR_MISC_IPS_FO_ADDR_ADDR(0x214) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0),
+
     /* IPS_FO_DRS0_DATA configuration, dependencies: ['MD+DR'] */
     .ips_fo_drs0_data[0] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(0x00000000),
 
+    /* IPS_FO_DRS0_DATA configuration, dependencies: ['MD+DR'] */
+    .ips_fo_drs0_data[1] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(0x00000400),
+
+    /* IPS_FO_DRS0_DATA configuration, dependencies: ['MD+DR'] */
+    .ips_fo_drs0_data[2] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(0x00000200),
+
     /* IPS_FO_DRS1_DATA configuration, dependencies: ['MD+DR'] */
     .ips_fo_drs1_data[0] = XCVR_MISC_IPS_FO_DRS1_DATA_DRS1_DATA(0x00000000),
+
+    /* IPS_FO_DRS1_DATA configuration, dependencies: ['MD+DR'] */
+    .ips_fo_drs1_data[1] = XCVR_MISC_IPS_FO_DRS1_DATA_DRS1_DATA(0x00000400),
+
+    /* IPS_FO_DRS1_DATA configuration, dependencies: ['MD+DR'] */
+    .ips_fo_drs1_data[2] = XCVR_MISC_IPS_FO_DRS1_DATA_DRS1_DATA(0x00000400),
 
     /* XCVR_CTRL configuration, dependencies: ['COM', 'MD+DR', 'MD+DR', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM',
        'COM', 'COM', 'COM'] */
@@ -519,18 +539,19 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_0p5_h_0p32_1mbps_config = {
     .gfsk_coeff_6_7 = XCVR_TX_DIG_GFSK_COEFF_6_7_GFSK_COEFF_6(0x12C) | XCVR_TX_DIG_GFSK_COEFF_6_7_GFSK_COEFF_7(0x176),
 #endif /* RF_OSC_26MHZ == 1 */
 
-    /* GFSK_CTRL configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR'] */
+    /* GFSK_CTRL configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR', 'MD+DR'] */
     .gfsk_ctrl = XCVR_TX_DIG_GFSK_CTRL_BT_EQ_OR_GTR_ONE(0) | XCVR_TX_DIG_GFSK_CTRL_GFSK_COEFF_MAN(0) |
 #if RF_OSC_26MHZ == 1
-                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x032B),
+                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x032B) |
 #else
-                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x0293),
+                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x0293) |
 #endif /* RF_OSC_26MHZ == 1 */
+                 XCVR_TX_DIG_GFSK_CTRL_GFSK_ZERO_FDEV_EN(0),
 
     /* IMAGE_FILTER_CTRL configuration, dependencies: ['COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .image_filter_ctrl = XCVR_TX_DIG_IMAGE_FILTER_CTRL_IMAGE_FILTER_OVRD_EN(0),
 
-    /* PA_CTRL configuration, dependencies: ['COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
+    /* PA_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .pa_ctrl = XCVR_TX_DIG_PA_CTRL_PA_RAMP_SEL(1),
 
     /* TXDIG_CTRL configuration, dependencies: ['MD+DR', 'COM', 'MD+DR', 'MD+DR'] */
@@ -731,7 +752,7 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_0p5_h_0p32_500kbps_config = {
     /* XCVR_ANALOG configs */
     /***********************/
 
-    /* TX_DAC_PA configuration, dependencies: ['COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM'] */
+    /* TX_DAC_PA configuration, dependencies: ['COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM', 'COM'] */
     .tx_dac_pa = XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_CFBK_DRS(1),
 
     /* XCVR_MISC configs */
@@ -741,11 +762,31 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_0p5_h_0p32_500kbps_config = {
     .ips_fo_addr[0] =
         XCVR_MISC_IPS_FO_ADDR_ADDR(0x370) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0),
 
+    /* IPS_FO_ADDR configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR'] */
+    .ips_fo_addr[1] =
+        XCVR_MISC_IPS_FO_ADDR_ADDR(0x214) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0),
+
+    /* IPS_FO_ADDR configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR'] */
+    .ips_fo_addr[2] =
+        XCVR_MISC_IPS_FO_ADDR_ADDR(0x214) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0),
+
     /* IPS_FO_DRS0_DATA configuration, dependencies: ['MD+DR'] */
     .ips_fo_drs0_data[0] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(0x00000000),
 
+    /* IPS_FO_DRS0_DATA configuration, dependencies: ['MD+DR'] */
+    .ips_fo_drs0_data[1] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(0x00000400),
+
+    /* IPS_FO_DRS0_DATA configuration, dependencies: ['MD+DR'] */
+    .ips_fo_drs0_data[2] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(0x00000200),
+
     /* IPS_FO_DRS1_DATA configuration, dependencies: ['MD+DR'] */
     .ips_fo_drs1_data[0] = XCVR_MISC_IPS_FO_DRS1_DATA_DRS1_DATA(0x00000000),
+
+    /* IPS_FO_DRS1_DATA configuration, dependencies: ['MD+DR'] */
+    .ips_fo_drs1_data[1] = XCVR_MISC_IPS_FO_DRS1_DATA_DRS1_DATA(0x00000400),
+
+    /* IPS_FO_DRS1_DATA configuration, dependencies: ['MD+DR'] */
+    .ips_fo_drs1_data[2] = XCVR_MISC_IPS_FO_DRS1_DATA_DRS1_DATA(0x00000400),
 
     /* XCVR_CTRL configuration, dependencies: ['COM', 'MD+DR', 'MD+DR', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM',
        'COM', 'COM', 'COM'] */
@@ -1037,18 +1078,19 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_0p5_h_0p32_500kbps_config = {
     .gfsk_coeff_6_7 = XCVR_TX_DIG_GFSK_COEFF_6_7_GFSK_COEFF_6(0x12C) | XCVR_TX_DIG_GFSK_COEFF_6_7_GFSK_COEFF_7(0x176),
 #endif /* RF_OSC_26MHZ == 1 */
 
-    /* GFSK_CTRL configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR'] */
+    /* GFSK_CTRL configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR', 'MD+DR'] */
     .gfsk_ctrl = XCVR_TX_DIG_GFSK_CTRL_BT_EQ_OR_GTR_ONE(0) | XCVR_TX_DIG_GFSK_CTRL_GFSK_COEFF_MAN(0) |
 #if RF_OSC_26MHZ == 1
-                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x032B),
+                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x032B) |
 #else
-                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x0293),
+                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x0293) |
 #endif /* RF_OSC_26MHZ == 1 */
+                 XCVR_TX_DIG_GFSK_CTRL_GFSK_ZERO_FDEV_EN(0),
 
     /* IMAGE_FILTER_CTRL configuration, dependencies: ['COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .image_filter_ctrl = XCVR_TX_DIG_IMAGE_FILTER_CTRL_IMAGE_FILTER_OVRD_EN(0),
 
-    /* PA_CTRL configuration, dependencies: ['COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
+    /* PA_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .pa_ctrl = XCVR_TX_DIG_PA_CTRL_PA_RAMP_SEL(1),
 
     /* TXDIG_CTRL configuration, dependencies: ['MD+DR', 'COM', 'MD+DR', 'MD+DR'] */
@@ -1249,7 +1291,7 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_0p5_h_0p32_250kbps_config = {
     /* XCVR_ANALOG configs */
     /***********************/
 
-    /* TX_DAC_PA configuration, dependencies: ['COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM'] */
+    /* TX_DAC_PA configuration, dependencies: ['COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM', 'COM'] */
     .tx_dac_pa = XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_CFBK_DRS(1),
 
     /* XCVR_MISC configs */
@@ -1259,11 +1301,31 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_0p5_h_0p32_250kbps_config = {
     .ips_fo_addr[0] =
         XCVR_MISC_IPS_FO_ADDR_ADDR(0x370) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0),
 
+    /* IPS_FO_ADDR configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR'] */
+    .ips_fo_addr[1] =
+        XCVR_MISC_IPS_FO_ADDR_ADDR(0x214) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0),
+
+    /* IPS_FO_ADDR configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR'] */
+    .ips_fo_addr[2] =
+        XCVR_MISC_IPS_FO_ADDR_ADDR(0x214) | XCVR_MISC_IPS_FO_ADDR_ENTRY_RX(0) | XCVR_MISC_IPS_FO_ADDR_ENTRY_TX(0),
+
     /* IPS_FO_DRS0_DATA configuration, dependencies: ['MD+DR'] */
     .ips_fo_drs0_data[0] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(0x00000000),
 
+    /* IPS_FO_DRS0_DATA configuration, dependencies: ['MD+DR'] */
+    .ips_fo_drs0_data[1] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(0x00000400),
+
+    /* IPS_FO_DRS0_DATA configuration, dependencies: ['MD+DR'] */
+    .ips_fo_drs0_data[2] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(0x00000200),
+
     /* IPS_FO_DRS1_DATA configuration, dependencies: ['MD+DR'] */
     .ips_fo_drs1_data[0] = XCVR_MISC_IPS_FO_DRS1_DATA_DRS1_DATA(0x00000000),
+
+    /* IPS_FO_DRS1_DATA configuration, dependencies: ['MD+DR'] */
+    .ips_fo_drs1_data[1] = XCVR_MISC_IPS_FO_DRS1_DATA_DRS1_DATA(0x00000400),
+
+    /* IPS_FO_DRS1_DATA configuration, dependencies: ['MD+DR'] */
+    .ips_fo_drs1_data[2] = XCVR_MISC_IPS_FO_DRS1_DATA_DRS1_DATA(0x00000400),
 
     /* XCVR_CTRL configuration, dependencies: ['COM', 'MD+DR', 'MD+DR', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM',
        'COM', 'COM', 'COM'] */
@@ -1555,18 +1617,19 @@ const xcvr_mode_datarate_config_t xcvr_gfsk_bt_0p5_h_0p32_250kbps_config = {
     .gfsk_coeff_6_7 = XCVR_TX_DIG_GFSK_COEFF_6_7_GFSK_COEFF_6(0x12C) | XCVR_TX_DIG_GFSK_COEFF_6_7_GFSK_COEFF_7(0x176),
 #endif /* RF_OSC_26MHZ == 1 */
 
-    /* GFSK_CTRL configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR'] */
+    /* GFSK_CTRL configuration, dependencies: ['MD+DR', 'MD+DR', 'MD+DR', 'MD+DR'] */
     .gfsk_ctrl = XCVR_TX_DIG_GFSK_CTRL_BT_EQ_OR_GTR_ONE(0) | XCVR_TX_DIG_GFSK_CTRL_GFSK_COEFF_MAN(0) |
 #if RF_OSC_26MHZ == 1
-                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x032B),
+                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x032B) |
 #else
-                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x0293),
+                 XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV(0x0293) |
 #endif /* RF_OSC_26MHZ == 1 */
+                 XCVR_TX_DIG_GFSK_CTRL_GFSK_ZERO_FDEV_EN(0),
 
     /* IMAGE_FILTER_CTRL configuration, dependencies: ['COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .image_filter_ctrl = XCVR_TX_DIG_IMAGE_FILTER_CTRL_IMAGE_FILTER_OVRD_EN(0),
 
-    /* PA_CTRL configuration, dependencies: ['COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
+    /* PA_CTRL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'MD+DR', 'COM', 'COM', 'COM', 'COM'] */
     .pa_ctrl = XCVR_TX_DIG_PA_CTRL_PA_RAMP_SEL(1),
 
     /* TXDIG_CTRL configuration, dependencies: ['MD+DR', 'COM', 'MD+DR', 'MD+DR'] */

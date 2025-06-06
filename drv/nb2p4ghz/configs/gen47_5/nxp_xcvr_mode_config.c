@@ -110,8 +110,14 @@ xcvrStatus_t XCVR_RadioGenRegSetup(const xcvr_config_t *xcvr_config)
         /* XCVR_MISC configs */
         /*********************/
         XCVR_MISC->IPS_FO_ADDR[0]      = mode_datarate_cfg->ips_fo_addr[0];
+        XCVR_MISC->IPS_FO_ADDR[1]      = mode_datarate_cfg->ips_fo_addr[1];
+        XCVR_MISC->IPS_FO_ADDR[2]      = mode_datarate_cfg->ips_fo_addr[2];
         XCVR_MISC->IPS_FO_DRS0_DATA[0] = mode_datarate_cfg->ips_fo_drs0_data[0];
+        XCVR_MISC->IPS_FO_DRS0_DATA[1] = mode_datarate_cfg->ips_fo_drs0_data[1];
+        XCVR_MISC->IPS_FO_DRS0_DATA[2] = mode_datarate_cfg->ips_fo_drs0_data[2];
         XCVR_MISC->IPS_FO_DRS1_DATA[0] = mode_datarate_cfg->ips_fo_drs1_data[0];
+        XCVR_MISC->IPS_FO_DRS1_DATA[1] = mode_datarate_cfg->ips_fo_drs1_data[1];
+        XCVR_MISC->IPS_FO_DRS1_DATA[2] = mode_datarate_cfg->ips_fo_drs1_data[2];
         XCVR_MISC->LDO_TRIM_0          = common_cfg->ldo_trim_0;
         XCVR_MISC->LDO_TRIM_1          = common_cfg->ldo_trim_1;
         XCVR_MISC->XCVR_CTRL           = common_cfg->xcvr_ctrl | mode_datarate_cfg->xcvr_ctrl;
@@ -134,6 +140,7 @@ xcvrStatus_t XCVR_RadioGenRegSetup(const xcvr_config_t *xcvr_config)
         XCVR_PLL_DIG->MOD_CTRL             = common_cfg->mod_ctrl;
         XCVR_PLL_DIG->PLL_DATARATE_CTRL    = common_cfg->pll_datarate_ctrl;
         XCVR_PLL_DIG->TUNING_CAP_RX_CTRL   = common_cfg->tuning_cap_rx_ctrl;
+        XCVR_PLL_DIG->TUNING_CAP_TX_CTRL   = common_cfg->tuning_cap_tx_ctrl;
         /***********************/
         /* XCVR_RX_DIG configs */
         /***********************/
@@ -196,6 +203,7 @@ xcvrStatus_t XCVR_RadioGenRegSetup(const xcvr_config_t *xcvr_config)
         XCVR_RX_DIG->CTRL0              = common_cfg->ctrl0 | mode_datarate_cfg->ctrl0;
         XCVR_RX_DIG->CTRL0_DRS          = mode_datarate_cfg->ctrl0_drs;
         XCVR_RX_DIG->CTRL1              = common_cfg->ctrl1;
+        XCVR_RX_DIG->CTRL2              = common_cfg->ctrl2;
         XCVR_RX_DIG->DCOC_CTRL0         = common_cfg->dcoc_ctrl0 | mode_datarate_cfg->dcoc_ctrl0;
         XCVR_RX_DIG->DCOC_CTRL0_DRS     = mode_datarate_cfg->dcoc_ctrl0_drs;
         XCVR_RX_DIG->DCOC_CTRL1         = common_cfg->dcoc_ctrl1;
@@ -203,10 +211,13 @@ xcvrStatus_t XCVR_RadioGenRegSetup(const xcvr_config_t *xcvr_config)
         XCVR_RX_DIG->DEMOD_FILT_0_1_DRS = mode_datarate_cfg->demod_filt_0_1_drs;
         XCVR_RX_DIG->DEMOD_FILT_2_4     = mode_datarate_cfg->demod_filt_2_4;
         XCVR_RX_DIG->DEMOD_FILT_2_4_DRS = mode_datarate_cfg->demod_filt_2_4_drs;
+        XCVR_RX_DIG->IQMC_CTRL1_DRS     = common_cfg->iqmc_ctrl1_drs;
         XCVR_RX_DIG->NB_RSSI_CTRL0      = common_cfg->nb_rssi_ctrl0;
         XCVR_RX_DIG->NB_RSSI_CTRL1      = common_cfg->nb_rssi_ctrl1;
         XCVR_RX_DIG->RCCAL_CTRL0        = mode_datarate_cfg->rccal_ctrl0;
         XCVR_RX_DIG->RSSI_GLOBAL_CTRL   = common_cfg->rssi_global_ctrl | mode_datarate_cfg->rssi_global_ctrl;
+        XCVR_RX_DIG->TQI_CTRL           = common_cfg->tqi_ctrl;
+        XCVR_RX_DIG->TQI_THR            = common_cfg->tqi_thr;
         XCVR_RX_DIG->WB_RSSI_CTRL       = common_cfg->wb_rssi_ctrl;
         /********************/
         /* XCVR_TSM configs */
@@ -270,6 +281,15 @@ xcvrStatus_t XCVR_RadioGenRegSetup(const xcvr_config_t *xcvr_config)
         XCVR_TSM->TIMING50      = common_cfg->timing50;
         XCVR_TSM->TIMING51      = common_cfg->timing51;
         XCVR_TSM->TIMING52      = common_cfg->timing52;
+        XCVR_TSM->TIMING53      = common_cfg->timing53;
+        XCVR_TSM->TIMING54      = common_cfg->timing54;
+        XCVR_TSM->TIMING55      = common_cfg->timing55;
+        XCVR_TSM->TIMING56      = common_cfg->timing56;
+        XCVR_TSM->TIMING57      = common_cfg->timing57;
+        XCVR_TSM->TIMING58      = common_cfg->timing58;
+        XCVR_TSM->TIMING59      = common_cfg->timing59;
+        XCVR_TSM->TIMING60      = common_cfg->timing60;
+        XCVR_TSM->TIMING61      = common_cfg->timing61;
         XCVR_TSM->WU_LATENCY    = common_cfg->wu_latency;
         /***********************/
         /* XCVR_TX_DIG configs */
