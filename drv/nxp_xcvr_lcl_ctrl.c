@@ -3439,32 +3439,32 @@ xcvrLclStatus_t XCVR_LCL_RsmCompCfo(int32_t cfo_in_hz)
     return status;
 }
 #else
-xcvrLclStatus_t XCVR_LCL_RsmCompCfo(int32_t cfo_in_hz) 
-{ 
-    xcvrLclStatus_t status = gXcvrLclStatusSuccess; 
-    if ((cfo_in_hz > 262143) || (cfo_in_hz < -262143)) /* Test CFO limitation */ 
+xcvrLclStatus_t XCVR_LCL_RsmCompCfo(int32_t cfo_in_hz)
+{
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    if ((cfo_in_hz > 262143) || (cfo_in_hz < -262143)) /* Test CFO limitation */
     {
-         status = gXcvrLclStatusInvalidArgs; 
-    } 
-    else 
+        status = gXcvrLclStatusInvalidArgs;
+    }
+    else
     {
-        int32_t itemp; 
-        if (cfo_in_hz < 0) 
-        { /* Compensation is in the opposite direction of the CFO value, so we negate on the way in but not the way out */ 
-            itemp = (((uint32_t)(-cfo_in_hz) * 16384) / 15625); 
-        } 
-        else 
-        { 
-            /* Compensation is in the opposite direction of the CFO value, so we negate on the way out but not on the way in */ 
-            itemp = -(int32_t)(((uint32_t)cfo_in_hz * 16384) / 15625); 
-        } 
-        XCVR_PLL_DIG->PLL_OFFSET_CTRL = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(itemp); 
-    } 
-    
-return status; 
+        // Each bit in the PLL_OFFSET_CTRL register is 0x04000000/64_000_000 (simplified, 15625/16384) Hz.
+        // For our conversion, we need to multiply by the reciprocal, 16384/15625.
+        // This means we can handle up to (0xffffffff/16384) = 262143 (0x3ffff) desired correction using 32-bit math.
+        // The maximum contemplatable CFO is 100ppm, if our device is +50ppm and the other is -50ppm.
+        // At 2478MHz, that's 247800 Hz of correction. 262143 is significantly larger than 247800,
+        // so we can get away with 32-bit integer math.
+        uint32_t utemp = __builtin_abs(cfo_in_hz);
+        int32_t itemp = ((utemp * 16384u) / 15625u);
+        if (cfo_in_hz >= 0) {
+            /* Compensation is in the opposite direction of the CFO value, so we negate on the way in but not the way out */
+            itemp *= -1;
+        }
+        XCVR_PLL_DIG->PLL_OFFSET_CTRL = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(itemp);
+    }
 
+    return status;
 }
-
 #endif
 
 int32_t XCVR_LCL_RsmReadCfoComp(void)
