@@ -3454,7 +3454,11 @@ xcvrLclStatus_t XCVR_LCL_RsmCompCfo(int32_t cfo_in_hz)
         // The maximum contemplatable CFO is 100ppm, if our device is +50ppm and the other is -50ppm.
         // At 2478MHz, that's 247800 Hz of correction. 262143 is significantly larger than 247800,
         // so we can get away with 32-bit integer math.
-        uint32_t utemp = __builtin_abs(cfo_in_hz);
+#if defined(USE_BUILTIN_FUNCTIONS) && (USE_BUILTIN_FUNCTIONS == 1)
+        uint32_t utemp = __builtin_abs(cfo_in_hz); /* Warning: Not supported on all compilers */
+#else
+        uint32_t utemp = abs(cfo_in_hz);
+#endif /* USE_BUILTIN_FUNCTIONS == 1 */
         int32_t itemp = ((utemp * 16384u) / 15625u);
         if (cfo_in_hz >= 0) {
             /* Compensation is in the opposite direction of the CFO value, so we negate on the way in but not the way out */
