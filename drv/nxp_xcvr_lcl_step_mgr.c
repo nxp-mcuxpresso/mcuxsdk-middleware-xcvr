@@ -15,7 +15,9 @@
  * Variables
  ******************************************************************************/
 const uint8_t rtt_payload_sizes[8] = {0U,2U,6U,2U,4U,6U,8U,0U};  /* Last value is dummy value to allow indexing the array by RTT_TYPE */
-const uint8_t permut_step_size_words_offset[] = {1,2,4,5};       /* For radio gen >= 475: step word size offset when including T_PM. index is (num_ap-1)/4 */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+static const uint8_t permut_step_size_words_offset[] = {1,2,4,5};       /* For radio gen >= 475: step word size offset when including T_PM. index is (num_ap-1)/4 */
+#endif
 
 /* Circular buffer related static data - supports setup of buffer state and IRQ operation */
 static uint8_t total_step_count; 
@@ -148,6 +150,7 @@ xcvrLclStatus_t XCVR_LCL_MakeMode013CfgHeader(xcvr_lcl_mode_0_1_3_cfg_t *cfg_ent
 
     return status;
 }
+
 
 xcvrLclStatus_t XCVR_LCL_MakeMode2CfgHeader(xcvr_lcl_mode_2_cfg_t *cfg_entry,
                                    uint16_t channel_num,
@@ -403,12 +406,16 @@ xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format
     {
         status = gXcvrLclStatusInvalidArgs;
     }
-    uint8_t rtt_size;
-    uint8_t phase_size;
-
-    status = XCVR_LCL_CalcConfig_Size(step_format, rtt_type, num_ap, false, config_size_words, &rtt_size, &phase_size);
-    status |= XCVR_LCL_CalcResult_Size(step_format, rtt_type, num_ap, false, result_size_words, &phase_size);
-
+    else
+    {
+        uint8_t rtt_size;
+        uint8_t phase_size;
+        status = XCVR_LCL_CalcConfig_Size(step_format, rtt_type, num_ap, false, config_size_words, &rtt_size, &phase_size);
+        if (status == gXcvrLclStatusSuccess)
+        {
+            status = XCVR_LCL_CalcResult_Size(step_format, rtt_type, num_ap, false, result_size_words, &phase_size);
+        }
+    }
     return status;
 }
 
@@ -537,8 +544,8 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
                         }
                         
                         /* Cast Step Header */
-                        volatile COM_MODE_CFG_HDR_Type * step_header_ptr = (volatile COM_MODE_CFG_HDR_Type *)ram_address;
-                        XCVR_LCL_MakeCommonHeader(step_hdr_ptr, *channel_list_ptr,(uint16_t)(0U), *step_cfo_ptr, *hpm_cal_list_ptr, *phase_add_ptr, *step_cfg_list_ptr);
+                        volatile COM_MODE_CFG_HDR_UNION_Type * step_header_ptr = (volatile COM_MODE_CFG_HDR_UNION_Type *)ram_address;
+                        temp_status = XCVR_LCL_MakeCommonHeaderInline((COM_MODE_CFG_HDR_UNION_Type *)step_hdr_ptr, (uint16_t)(*channel_list_ptr),(uint16_t)(0U), (uint16_t)*step_cfo_ptr, (uint16_t)*hpm_cal_list_ptr, (uint16_t)*phase_add_ptr, (uint16_t)*step_cfg_list_ptr);
                         XCVR_LCL_WriteCommonHeader(step_header_ptr, step_hdr_ptr);
                         phase_add_ptr++;
 
@@ -554,12 +561,15 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
                                 aa_list_ptr++;
                                 aa_list_ptr++;
                             }
-                            else if(*step_type_ptr != XCVR_RSM_STEP_FCS) /* for other modes using packets ( mode1 and mode3 ) */
+                            else 
                             {
-                                /* case RTT ( mode1 and Mode3 ) in phy test mode */
-                                /* Because payload pointers are incremented inside the macro, we need to undo that increment when in test mode */
-                                payload_list_init_ptr -= (payload_sz>>1); 
-                                payload_list_refl_ptr -= (payload_sz>>1);
+                                if(*step_type_ptr != XCVR_RSM_STEP_FCS) /* for other modes using packets ( mode1 and mode3 ) */
+                                {
+                                    /* case RTT ( mode1 and Mode3 ) in phy test mode */
+                                    /* Because payload pointers are incremented inside the macro, we need to undo that increment when in test mode */
+                                    payload_list_init_ptr -= (payload_sz>>1); 
+                                    payload_list_refl_ptr -= (payload_sz>>1);
+                                }
                             }
                         }
 

@@ -1419,7 +1419,7 @@ void XCVR_FastPeriphReg_UpDownload_Go(PKT_RAM_BANK_SEL_T pkt_ram_sel, uint32_t o
  * routine because overflow protection is not included. The intent is that static data structures can be checked once
  * and then subsequent checks can be omitted. Dynamic descriptor structures must be checked every time.
  */
-xcvrStatus_t XCVR_FastPeriphDescrip_Load(uint32_t *descriptor_list,
+xcvrStatus_t XCVR_FastPeriphDescrip_Load(const uint32_t *descriptor_list,
                                          uint16_t num_descrips,
                                          volatile uint32_t *pkt_ram_mem_ptr);
 
@@ -1536,7 +1536,7 @@ bool XCVR_FastPeriph_CheckErrorComplete(void);
  * word count that will be used in the PKT RAM for storage of the data.
  *
  */
-xcvrStatus_t XCVR_FastBackupRestore(uint32_t *desc_ptr,
+xcvrStatus_t XCVR_FastBackupRestore(const uint32_t *desc_ptr,
                                     uint8_t num_entries,
                                     PKT_RAM_BANK_SEL_T pkt_ram_bank,
                                     uint16_t pkt_ram_index_offset,

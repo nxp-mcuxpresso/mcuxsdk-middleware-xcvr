@@ -197,15 +197,15 @@ extern "C" {
     do                                                                                                                 \
     {                                                                                                                  \
         (cfg_entry)->header.STEP_CFG =                                                                                 \
-            (uint16_t)(step_cfg); /* This is the output of XCVR_LCL_MakeStepCfg() function */                          \
+            (uint16_t)((step_cfg)); /* This is the output of XCVR_LCL_MakeStepCfg() function */                          \
         uint16_t mapped_channel;                                                                                       \
         MAKE_MAPPED_CHAN_OVRD2((channel_num), mapped_channel); /* Maps to proper format for RSM channels */            \
-        (cfg_entry)->header.CHANNEL_NUM    = mapped_channel; /* Entry is full 16 bits wide so no need to mask/shift */ \
+        (cfg_entry)->header.CHANNEL_NUM    = (uint16_t)(mapped_channel); /* Entry is full 16 bits wide so no need to mask/shift */ \
         (cfg_entry)->header.STEP_CFO       = (step_cfo);     /* Entry is full 16 bits wide so no need to mask/shift */ \
         (cfg_entry)->header.HPM_CAL_FACTOR = (uint16_t)(COM_MODE_013_CFG_HDR_HPM_CAL_FACTOR_HPM_CAL_FACTOR(                       \
-            hpm_cal >> 1U)); /*  Field stores the 12MSBs of HPM_CAL_FACTOR: HPM_CAL_FACTOR[12:1] */                     \
-        (cfg_entry)->header.CTUNE_MANUAL = COM_MODE_013_CFG_HDR_CTUNE_MANUAL_CTUNE_MANUAL(ctune);                      \
-        (cfg_entry)->header.PHASE_ADD    = COM_MODE_013_CFG_HDR_PHASE_ADD_PHASE_ADD(phase_add);                        \
+            (hpm_cal) >> 1U)); /*  Field stores the 12MSBs of HPM_CAL_FACTOR: HPM_CAL_FACTOR[12:1] */                     \
+        (cfg_entry)->header.CTUNE_MANUAL = COM_MODE_013_CFG_HDR_CTUNE_MANUAL_CTUNE_MANUAL((ctune));                      \
+        (cfg_entry)->header.PHASE_ADD    = COM_MODE_013_CFG_HDR_PHASE_ADD_PHASE_ADD((phase_add));                        \
     } while (false)
 
 #if (1) /* use this option if the pointers passed into the macro are not incrementable */
@@ -786,6 +786,54 @@ xcvrLclStatus_t XCVR_LCL_MakeMode2CfgHeader(xcvr_lcl_mode_2_cfg_t *cfg_entry,
                                             uint16_t hpm_cal,
                                             uint32_t step_cfg);
 #endif /* defined(USE_LCL_STEP_MACROS) && (USE_LCL_STEP_MACROS==1) */
+
+/*!
+ * @brief Function to configure header settings for a all Channel Sounding step types.
+ *
+ * This function configures header settings for any Channel Sounding step configuration. The
+ * ::XCVR_LCL_MakeStepCfg() routine is used to create the step_cfg input. Not all inputs are meaningful in certain RSM
+ * configurations.
+ *
+ * @param[out] cfg_entry Pointer to the location to store the configuration structure (typically in PKT RAM).
+ * @param[in] channel_num the channel number to be applied.
+ * @param[in] ctune the ctune value to be applied.
+ * @param[in] step_cfo The CFO adjustment to be applied..
+ * @param[in] hpm_cal the HPM CAL value to be applied.
+ * @param[in] phase_add The phase adder to include on this step.
+ * @param[in] step_cfg The step configuration value created by ::XCVR_LCL_MakeStepCfg().
+ *
+ * @return The status of the header configuration process.
+ *
+ * @note Function is specified inline in the header to ensure it is inline always (for speed)
+*/
+static inline xcvrLclStatus_t XCVR_LCL_MakeCommonHeaderInline(COM_MODE_CFG_HDR_UNION_Type *cfg_entry,
+                                              uint16_t channel_num,
+                                              uint16_t ctune,
+                                              uint16_t step_cfo,
+                                              uint16_t hpm_cal,
+                                              uint16_t phase_add,
+                                              uint16_t step_cfg);
+
+static inline xcvrLclStatus_t XCVR_LCL_MakeCommonHeaderInline(COM_MODE_CFG_HDR_UNION_Type *cfg_entry,
+                                              uint16_t channel_num,
+                                              uint16_t ctune,
+                                              uint16_t step_cfo,
+                                              uint16_t hpm_cal,
+                                              uint16_t phase_add,
+                                              uint16_t step_cfg)
+{
+        cfg_entry->header.STEP_CFG = (uint16_t)(step_cfg); /* This is the output of XCVR_LCL_MakeStepCfg() function */                          
+        uint16_t mapped_channel;
+        MAKE_MAPPED_CHAN_OVRD2((channel_num), mapped_channel); /* Maps to proper format for RSM channels */
+        cfg_entry->header.CHANNEL_NUM = (uint16_t)(mapped_channel); /* Entry is full 16 bits wide so no need to mask/shift */
+        cfg_entry->header.STEP_CFO = step_cfo;     /* Entry is full 16 bits wide so no need to mask/shift */ 
+        cfg_entry->header.HPM_CAL_FACTOR = (uint16_t)(COM_MODE_013_CFG_HDR_HPM_CAL_FACTOR_HPM_CAL_FACTOR(hpm_cal >> 1U)); /*  Field stores the 12MSBs of HPM_CAL_FACTOR: HPM_CAL_FACTOR[12:1] */
+        cfg_entry->header.CTUNE_MANUAL = COM_MODE_013_CFG_HDR_CTUNE_MANUAL_CTUNE_MANUAL(ctune);
+        cfg_entry->header.PHASE_ADD = COM_MODE_013_CFG_HDR_PHASE_ADD_PHASE_ADD(phase_add);
+
+        return gXcvrLclStatusSuccess;
+};
+
 
 /*!
  * @brief Function to calculate config sizes for a single Channel Sounding step.

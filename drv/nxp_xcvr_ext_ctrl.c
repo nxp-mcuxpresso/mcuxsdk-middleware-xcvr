@@ -1769,11 +1769,13 @@ static uint32_t XCVR_LCL_GroupNibbles(const lclAntennaSwitchingLutConfig_t *pCon
 {
     /* generate a 32 value by group 8 chunks of 4 bits stored in a table (first 4bit value is read from startindex) */
     uint32_t temp_value = 0U;
-
-    for (uint8_t j = startindex; j < (startindex + 8U); j++)
+    if (startindex < (32U-8U)) /* make sure not to overflow loop counter or go off end of array */
     {
-        temp_value |= (((uint32_t)(pConfig->antennaLut[j]) & 0xFUL)
-                       << (4U * (j - startindex))); /* assemble 8 chunks of 4 bits into a 32bit word*/
+        for (uint8_t j = startindex; j < (startindex + 8U); j++)
+        {
+            temp_value |= (((uint32_t)(pConfig->antennaLut[j]) & 0xFUL)
+                           << (4U * (j - startindex))); /* assemble 8 chunks of 4 bits into a 32bit word*/
+        }
     }
     return (temp_value);
 }
@@ -1785,10 +1787,13 @@ static void XCVR_LCL_UngroupNibbles(lclAntennaSwitchingLutConfig_t *pConfig,
     /* split a 32bit value into 8 chunks of 4 bits and store them in the table from startindex position*/
     uint32_t temp_register = sourceregister;
 
-    for (uint8_t j = startindex; j < (startindex + 8U); j++)
+    if (startindex < (32U-8U)) /* make sure not to overflow loop counter or go off end of array */
     {
-        pConfig->antennaLut[j] = (uint8_t)(temp_register & 0xFU); /* break the register value in 8 chunks of 4 bits */
-        temp_register          = temp_register >> 4U;
+        for (uint8_t j = startindex; j < (startindex + 8U); j++)
+        {
+            pConfig->antennaLut[j] = (uint8_t)(temp_register & 0xFU); /* break the register value in 8 chunks of 4 bits */
+            temp_register          = temp_register >> 4U;
+        }
     }
 }
 

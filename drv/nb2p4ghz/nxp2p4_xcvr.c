@@ -755,8 +755,12 @@ xcvrStatus_t XCVR_SetXtalTempComp(const xcvr_temp_comp_lut_t *temp_comp_lut, int
     xcvrStatus_t status = gXcvrInvalidParameters_c;
     uint8_t cdac_trim_val;
     /* Check for NULLPTR on temp_comp_lut */
-    if (temp_comp_lut != NULLPTR)
+    if ((temp_comp_lut != NULLPTR) && (temp_deg_c > -50) && (temp_deg_c < 250))
     {
+        if ((temp_comp_lut->min_temp_degc <= -50) || (temp_comp_lut->max_temp_degc >=250))
+        {
+            return status;
+        }
         /* if input temperature is below min_temp in the LUT, use the first entry in the LUT */
         if (temp_deg_c < temp_comp_lut->min_temp_degc)
         {
@@ -774,7 +778,7 @@ xcvrStatus_t XCVR_SetXtalTempComp(const xcvr_temp_comp_lut_t *temp_comp_lut, int
             else
             {
                 /* calculate index in the LUT to use based in the min_temp and temp_step */
-                int8_t index = (temp_deg_c - temp_comp_lut->min_temp_degc) / temp_comp_lut->temp_step_degc;
+                int16_t index = (temp_deg_c - temp_comp_lut->min_temp_degc) / temp_comp_lut->temp_step_degc;
                 if ((index < XTAL_TEMP_COMP_LUT_SIZE) && (index >= 0))
                 {
                     cdac_trim_val = temp_comp_lut->xtal_trim_lut[index];
@@ -2261,7 +2265,7 @@ uint32_t  XCVR_FastPeriphDescrip_WordCount(uint32_t * descriptor_list, uint16_t 
     return word_count;
 }
 
-xcvrStatus_t XCVR_FastPeriphDescrip_Load(uint32_t *descriptor_list,
+xcvrStatus_t XCVR_FastPeriphDescrip_Load(const uint32_t *descriptor_list,
                                          uint16_t num_descrips,
                                          volatile uint32_t *pkt_ram_mem_ptr)
 {
@@ -2275,7 +2279,7 @@ xcvrStatus_t XCVR_FastPeriphDescrip_Load(uint32_t *descriptor_list,
     {
         uint16_t i;
         uint32_t index = 0U; /* Track index into an array starting at offset_in_pkt_ram location */
-        uint32_t * descriptor_ptr = descriptor_list;
+        const uint32_t * descriptor_ptr = (const uint32_t *)(descriptor_list);
         uint32_t descriptor;
         uint32_t word_count;
         /* This loop moves descriptors to the proper, expanded locations in PKT RAM */
@@ -2421,7 +2425,7 @@ bool XCVR_FastPeriph_CheckErrorComplete(void)
     return status_ok;  /* True means no error, False indicates an error occurred */
 }
 
-xcvrStatus_t XCVR_FastBackupRestore(uint32_t *desc_ptr,
+xcvrStatus_t XCVR_FastBackupRestore(const uint32_t *desc_ptr,
                                     uint8_t num_entries,
                                     PKT_RAM_BANK_SEL_T pkt_ram_bank,
                                     uint16_t pkt_ram_index_offset,
@@ -2448,7 +2452,7 @@ xcvrStatus_t XCVR_FastBackupRestore(uint32_t *desc_ptr,
     return status;
 }
 
-const uint32_t xcvr_backup_descriptor[8] = {
+static const uint32_t xcvr_backup_descriptor[8] = {
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, sizeof(XCVR_MISC_Type) >> 2, XCVR_MISC),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, sizeof(GEN4PHY_Type) >> 2, XCVR_2P4GHZ_PHY),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, sizeof(XCVR_PLL_DIG_Type) >> 2, XCVR_PLL_DIG),
@@ -2459,6 +2463,7 @@ const uint32_t xcvr_backup_descriptor[8] = {
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, sizeof(RBME_Type) >> 2, RBME),
 };
 
+#if defined(SUPPORT_LIF_RBME_BU_PREP) && (SUPPORT_LIF_RBME_BU_PREP == 1)
 static void XCVR_LIF_RBME_PrepareBackup(void)
 {
     /* TODO: We may want to look a little deeper into the state of the XCVR when this backup is being performed in
@@ -2466,20 +2471,23 @@ static void XCVR_LIF_RBME_PrepareBackup(void)
      * bits need to be cleared before backup so that restoring registers doesn't start some XCVR activity unexpectedly.
      * */
 }
+#endif /* SUPPORT_LIF_RBME_BU_PREP = 1 */
 
 xcvrStatus_t XCVR_LIF_RBME_Backup(void)
 {
+#if defined(SUPPORT_LIF_RBME_BU_PREP) && (SUPPORT_LIF_RBME_BU_PREP == 1)
     /* TODO: */
     XCVR_LIF_RBME_PrepareBackup();
+#endif /* SUPPORT_LIF_RBME_BU_PREP = 1 */
 
     /* Backup XCVR and RBME registers to TX PKT RAM */
-    return XCVR_FastBackupRestore((uint32_t *)xcvr_backup_descriptor, 8, TX_PKT_RAM_SEL, 0, false);
+    return XCVR_FastBackupRestore((const uint32_t *)xcvr_backup_descriptor, 8, TX_PKT_RAM_SEL, 0, false);
 }
 
 xcvrStatus_t XCVR_LIF_RBME_Restore(void)
 {
     /* Restore XCVR and RBME registers from TX PKT RAM */
-    return XCVR_FastBackupRestore((uint32_t *)xcvr_backup_descriptor, 8, TX_PKT_RAM_SEL, 0, true);
+    return XCVR_FastBackupRestore((const uint32_t *)xcvr_backup_descriptor, 8, TX_PKT_RAM_SEL, 0, true);
 }
 
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */

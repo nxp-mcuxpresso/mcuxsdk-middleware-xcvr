@@ -1313,39 +1313,41 @@ void IQMCRunTrials(xcvr_iqmc_trials_t *trials_data, uint8_t num_trials)
     trials_data->IQMC_phase_adj_sum = 0;
 
     /* Loop through the specified number of trials for IQMC calibration */
-    assert(num_trials < IQMCalibrationTrials);
-    for (cnt = 0U; cnt < num_trials; cnt++)
+    if (num_trials <= IQMCalibrationTrials)
     {
-        /* Set up for IQMC calibration trial */
-        XCVR_RX_DIG->IQMC_CTRL1 =
-            XCVR_RX_DIG_IQMC_CTRL1_IQMC_GAIN_ADJ(0x400) | /* Set IQ gain mismatch to default (1.0) */
-            XCVR_RX_DIG_IQMC_CTRL1_IQMC_PHASE_ADJ(0);     /* Set IQ phase mismatch to default (0) */
-        XCVR_RX_DIG->IQMC_CTRL0 =
-            XCVR_RX_DIG_IQMC_CTRL0_IQMC_CAL_EN_MASK |                  /* Enable IQMC HW Calibration */
-            XCVR_RX_DIG_IQMC_CTRL0_IQMC_NUM_ITER(IQMCalibrationIter) | /* Set number of iterations to compute IQMC;
-                                                                          default: 0x80; Max: FF (Need to check?) */
-            XCVR_RX_DIG_IQMC_CTRL0_IQMC_DC_GAIN_ADJ(0x400) |           /* Default value for DC GAIN ADJ in IQMC */
-            XCVR_RX_DIG_IQMC_CTRL0_IQMC_CAL_FREQ_SEL(1U);
-        /* Wait for IQMCalibrationIter * 13 microseconds */
-        while ((XCVR_RX_DIG->IQMC_CTRL0 & XCVR_RX_DIG_IQMC_CTRL0_IQMC_CAL_EN_MASK) != 0U)
+        for (cnt = 0U; cnt < num_trials; cnt++)
         {
-        } /* Wait for CAL enable bit to clear indicating completion */
+            /* Set up for IQMC calibration trial */
+            XCVR_RX_DIG->IQMC_CTRL1 =
+                XCVR_RX_DIG_IQMC_CTRL1_IQMC_GAIN_ADJ(0x400) | /* Set IQ gain mismatch to default (1.0) */
+                XCVR_RX_DIG_IQMC_CTRL1_IQMC_PHASE_ADJ(0);     /* Set IQ phase mismatch to default (0) */
+            XCVR_RX_DIG->IQMC_CTRL0 =
+                XCVR_RX_DIG_IQMC_CTRL0_IQMC_CAL_EN_MASK |                  /* Enable IQMC HW Calibration */
+                XCVR_RX_DIG_IQMC_CTRL0_IQMC_NUM_ITER(IQMCalibrationIter) | /* Set number of iterations to compute IQMC;
+                                                                              default: 0x80; Max: FF (Need to check?) */
+                XCVR_RX_DIG_IQMC_CTRL0_IQMC_DC_GAIN_ADJ(0x400) |           /* Default value for DC GAIN ADJ in IQMC */
+                XCVR_RX_DIG_IQMC_CTRL0_IQMC_CAL_FREQ_SEL(1U);
+            /* Wait for IQMCalibrationIter * 13 microseconds */
+            while ((XCVR_RX_DIG->IQMC_CTRL0 & XCVR_RX_DIG_IQMC_CTRL0_IQMC_CAL_EN_MASK) != 0U)
+            {
+            } /* Wait for CAL enable bit to clear indicating completion */
 
-        /* Read Calibration Trial Results and save in Trial Value Buffers */
-        temp       = XCVR_RX_DIG->IQMC_CTRL1;
-        temp_gain  = (uint16_t)((temp & XCVR_RX_DIG_IQMC_CTRL1_IQMC_GAIN_ADJ_MASK) >>
-                               XCVR_RX_DIG_IQMC_CTRL1_IQMC_GAIN_ADJ_SHIFT);
-        temp_phase = (uint16_t)((temp & XCVR_RX_DIG_IQMC_CTRL1_IQMC_PHASE_ADJ_MASK) >>
-                                XCVR_RX_DIG_IQMC_CTRL1_IQMC_PHASE_ADJ_SHIFT);
+            /* Read Calibration Trial Results and save in Trial Value Buffers */
+            temp       = XCVR_RX_DIG->IQMC_CTRL1;
+            temp_gain  = (uint16_t)((temp & XCVR_RX_DIG_IQMC_CTRL1_IQMC_GAIN_ADJ_MASK) >>
+                                   XCVR_RX_DIG_IQMC_CTRL1_IQMC_GAIN_ADJ_SHIFT);
+            temp_phase = (uint16_t)((temp & XCVR_RX_DIG_IQMC_CTRL1_IQMC_PHASE_ADJ_MASK) >>
+                                    XCVR_RX_DIG_IQMC_CTRL1_IQMC_PHASE_ADJ_SHIFT);
 
-        temp_phase |= (((temp_phase & 0x0800U) != 0U) ? 0xF800U : 0x0U); // Sign extend from 12 to 16 bits
-        trials_data->IQMC_gain_cal_trials[cnt] = (uint16_t)(temp_gain);
-        trials_data->IQMC_phase_cal_trials[cnt] =
-            ((int16_t)temp_phase); /* Convert to int16 for storage and processing */
+            temp_phase |= (((temp_phase & 0x0800U) != 0U) ? 0xF800U : 0x0U); // Sign extend from 12 to 16 bits
+            trials_data->IQMC_gain_cal_trials[cnt] = (uint16_t)(temp_gain);
+            trials_data->IQMC_phase_cal_trials[cnt] =
+                ((int16_t)temp_phase); /* Convert to int16 for storage and processing */
 
-        /* Compute a running sum of gain/phase adjustment values */
-        trials_data->IQMC_gain_adj_sum  = trials_data->IQMC_gain_adj_sum + ((uint16_t)temp_gain);
-        trials_data->IQMC_phase_adj_sum = trials_data->IQMC_phase_adj_sum + ((int16_t)temp_phase);
+            /* Compute a running sum of gain/phase adjustment values */
+            trials_data->IQMC_gain_adj_sum  = trials_data->IQMC_gain_adj_sum + ((uint16_t)temp_gain);
+            trials_data->IQMC_phase_adj_sum = trials_data->IQMC_phase_adj_sum + ((int16_t)temp_phase);
+        }
     }
 
     /* release AGC freeze */

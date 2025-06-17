@@ -1871,21 +1871,21 @@ void XCVR_LCL_ResetTsmTimingsBt(void)
     /* Assert the TSM_CTRL2 bit to reset to Bluetooth LE settings */
     XCVR_TSM->CTRL2 &= ~(XCVR_TSM_CTRL2_RST_CSR_SW2_EN_MASK);
     temp = XCVR_TSM->CTRL2;
+    (void)temp; /* read of CTRL2 register is required to clear the reset signal */
 
     /* Update any register that needs special values different from the reset values */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
     temp = 0xFFFFFFFFU;
-    uint32_t * write_ptr = (uint32_t *) &(XCVR_TSM->TIMING53);
     /* Clears TIMING53..61 to disabled values */
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
+    XCVR_TSM->TIMING53 = temp; 
+    XCVR_TSM->TIMING54 = temp;
+    XCVR_TSM->TIMING55 = temp;
+    XCVR_TSM->TIMING56 = temp;
+    XCVR_TSM->TIMING57 = temp;
+    XCVR_TSM->TIMING58 = temp;
+    XCVR_TSM->TIMING59 = temp;
+    XCVR_TSM->TIMING60 = temp;
+    XCVR_TSM->TIMING61 = temp;
 #endif /* NXP_RADIO_GEN == 470 */    
     /* WU_LATENCY */
     XCVR_TSM->WU_LATENCY = xcvr_common_config.wu_latency;
@@ -1907,6 +1907,7 @@ void XCVR_LCL_ResetTsmTimingsCs(void)
     /* Assert the TSM_CTRL2 bit to reset to Bluetooth Channel Sounding settings */
     XCVR_TSM->CTRL2 &= ~(XCVR_TSM_CTRL2_RST_CSR_SW_EN_MASK);
     temp = XCVR_TSM->CTRL2;
+    (void)temp; /* read of CTRL2 register is required to clear the reset signal */
 
     /* Update any register that needs special values different from the reset values */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
@@ -1918,17 +1919,16 @@ void XCVR_LCL_ResetTsmTimingsCs(void)
     /* FAST_CTRL2 completely written by XCVR_LCL_Set_TSM_FastStart */
     XCVR_TSM->FAST_CTRL3 = xcvr_lcl_tsm_generic_config.FAST_CTRL3;
     temp = 0xFFFFFFFFU;
-    uint32_t * write_ptr = (uint32_t *) &(XCVR_TSM->TIMING53);
     /* Clears TIMING53..61 to disabled values */
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
-    *write_ptr = temp; write_ptr++;
+    XCVR_TSM->TIMING53 = temp; 
+    XCVR_TSM->TIMING54 = temp;
+    XCVR_TSM->TIMING55 = temp;
+    XCVR_TSM->TIMING56 = temp;
+    XCVR_TSM->TIMING57 = temp;
+    XCVR_TSM->TIMING58 = temp;
+    XCVR_TSM->TIMING59 = temp;
+    XCVR_TSM->TIMING60 = temp;
+    XCVR_TSM->TIMING61 = temp;
 #endif /* NXP_RADIO_GEN == 470 */    
     /* TIMING16 */
     XCVR_TSM->TIMING16 = xcvr_lcl_tsm_generic_config.TIMING16;
@@ -2033,14 +2033,14 @@ xcvrLclStatus_t XCVR_LCL_BlePhyBT2RegRestore(bt2_reg_backup_t *bt2_reg)
     XCVR_TX_DIG->GFSK_COEFF_4_5 = bt2_reg->XCVR_TX_DIG_GFSK_COEFF_4_5;
     XCVR_TX_DIG->GFSK_COEFF_6_7  = bt2_reg->XCVR_TX_DIG_GFSK_COEFF_6_7;
     /* FDEV field is not backup and restored */
-    uint16_t fdev = (uint16_t)XCVR_TX_DIG->GFSK_CTRL & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;
-    XCVR_TX_DIG->GFSK_CTRL = (bt2_reg->XCVR_TX_DIG_GFSK_CTRL & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)) | (uint32_t)fdev;
+    uint32_t fdev = (uint32_t)XCVR_TX_DIG->GFSK_CTRL & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;
+    XCVR_TX_DIG->GFSK_CTRL = (bt2_reg->XCVR_TX_DIG_GFSK_CTRL & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)) | fdev;
 
     /* IPS_FO changing GFSK_CTRL*/
-    fdev = (uint16_t)XCVR_MISC->IPS_FO_DRS1_DATA[1] & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;  /* reset every other bits except FDEV */
-    XCVR_MISC->IPS_FO_DRS1_DATA[1] = bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_1 | (uint32_t)fdev; /* FDEV field = 0 in bt2_reg*/
-    fdev = (uint16_t)XCVR_MISC->IPS_FO_DRS1_DATA[2] & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;  /* reset every other bits except FDEV */
-    XCVR_MISC->IPS_FO_DRS1_DATA[2] = bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_2 | (uint32_t)fdev; /* FDEV field = 0 in bt2_reg*/
+    fdev = XCVR_MISC->IPS_FO_DRS1_DATA[1] & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;  /* reset every other bits except FDEV */
+    XCVR_MISC->IPS_FO_DRS1_DATA[1] = bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_1 | fdev; /* FDEV field = 0 in bt2_reg*/
+    fdev = XCVR_MISC->IPS_FO_DRS1_DATA[2] & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;  /* reset every other bits except FDEV */
+    XCVR_MISC->IPS_FO_DRS1_DATA[2] = bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_2 | fdev; /* FDEV field = 0 in bt2_reg*/
 
     return status;
 }
@@ -2093,7 +2093,7 @@ xcvrLclStatus_t XCVR_LCL_BlePhyBT2Config(const xcvr_config_t *  config)
 
     /* Note: GFSK_CTRL and DATARATE_CONFIG_GFSK_CTRL (FDEV) is overriden by rsmInit.
              keep GFSK_FDEV from ble rsm setting  */
-    uint16_t fdev = (uint16_t)XCVR_TX_DIG->GFSK_CTRL & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;
+    uint32_t fdev = (uint32_t)XCVR_TX_DIG->GFSK_CTRL & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;
     XCVR_TX_DIG->GFSK_CTRL = (config->mode_data_rate_cfg->gfsk_ctrl & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)) | (uint32_t)fdev;
 
     /* Disable IPS_FO changing GFSK_CTRL not needed for 2Mbps case (DRS1) */
@@ -2857,7 +2857,7 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
 {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
     /* Error checking for NULL pointer and invalid sequence lengths */
-    if ((hadm_chan_idx_list == NULLPTR) || (cal_results == NULLPTR)  || (num_freqs == 0U))
+    if ((hadm_chan_idx_list == NULLPTR) || (cal_results == NULLPTR)  || (num_freqs == 0U) || (num_freqs > 255U))
     {
         status = gXcvrLclStatusInvalidArgs;
     }
@@ -3036,7 +3036,7 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
             XCVR_WaitRxTxWd();
             }
             /* Capture calibrated values & warmdown */
-            results_ptr[i].hpm_cal_val = cal_avg/HPM_CAL_REPETITIONS; 
+            results_ptr[i].hpm_cal_val = (uint16_t)(cal_avg/HPM_CAL_REPETITIONS); 
 #else
             temp_count = 10000U;
             while (temp_count > 0U)

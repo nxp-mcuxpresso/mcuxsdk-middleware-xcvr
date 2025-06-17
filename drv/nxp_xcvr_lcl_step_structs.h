@@ -18,6 +18,10 @@
 **
 ** ###################################################################
 */
+#ifndef NXP_XCVR_LCL_STEP_STRUCTS_H
+/* clang-format off */
+#define NXP_XCVR_LCL_STEP_STRUCTS_H
+/* clang-format on */
 
 /*!
  * @file nxp_xcvr_lcl_step_structs.h
@@ -33,10 +37,6 @@
 /* ----------------------------------------------------------------------------
    -- MCU activation
    ---------------------------------------------------------------------------- */
-
-/* Prevention from multiple including the same memory map */
-#if !defined(MCU_nxp_xcvr_lcl_step_structs)  /* Check if memory map has not been already included */
-#define MCU_nxp_xcvr_lcl_step_structs
 
 /* Check if another memory map has not been also included */
 #if (defined(MCU_ACTIVE))
@@ -1733,5 +1733,6 @@ typedef struct {
 
 #endif /*  defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
 
-#endif  /* #if !defined(MCU_nxp_xcvr_lcl_step_structs) */
+
+#endif /* NXP_XCVR_LCL_STEP_STRUCTS_H */
 
