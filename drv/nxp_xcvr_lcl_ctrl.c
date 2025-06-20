@@ -1052,22 +1052,23 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
              XCVR_RX_DIG_NADM_CTRL_NADM_DMD_LATENCY(9U) | XCVR_RX_DIG_NADM_CTRL_NADM_FIR_LATENCY(15U));
 
 #if defined(NADM_WA_OVERDROOP)  &&  (NADM_WA_OVERDROOP ==1)
-        if (rate_is_2mbps) /* Modify IF to avoid including DC in NADM processing */
-        {        /* 2Mbps Overdroop acquistion filter */
+        if (rate_is_2mbps)
+        {        /* Widen CBPF */
             temp = XCVR_RX_DIG->RCCAL_CTRL0;
             temp &= ~(XCVR_RX_DIG_RCCAL_CTRL0_CBPF_SC_CODE_DRS_MASK | XCVR_RX_DIG_RCCAL_CTRL0_CBPF_BW_CODE_DRS_MASK);
             temp |= (XCVR_RX_DIG_RCCAL_CTRL0_CBPF_SC_CODE_DRS(0U) | XCVR_RX_DIG_RCCAL_CTRL0_CBPF_BW_CODE_DRS(0U));
             XCVR_RX_DIG->RCCAL_CTRL0 = temp;
+            /* Revised ACQ filter taps OVERDROOP with correct gain (LL-1913 & MCV-8628) */
             XCVR_RX_DIG->ACQ_FILT_0_3_DRS =
-                XCVR_RX_DIG_ACQ_FILT_0_3_DRS_H0(0x09) | XCVR_RX_DIG_ACQ_FILT_0_3_DRS_H1(0x02) |
-                        XCVR_RX_DIG_ACQ_FILT_0_3_DRS_H2(0x7A) | XCVR_RX_DIG_ACQ_FILT_0_3_DRS_H3(0x77);
+                XCVR_RX_DIG_ACQ_FILT_0_3_DRS_H0(0x11) | XCVR_RX_DIG_ACQ_FILT_0_3_DRS_H1(0x03) |
+                        XCVR_RX_DIG_ACQ_FILT_0_3_DRS_H2(0x75) | XCVR_RX_DIG_ACQ_FILT_0_3_DRS_H3(0x6F);
             XCVR_RX_DIG->ACQ_FILT_4_7_DRS =
-                XCVR_RX_DIG_ACQ_FILT_4_7_DRS_H4(0x02) | XCVR_RX_DIG_ACQ_FILT_4_7_DRS_H5(0x11) |
-                        XCVR_RX_DIG_ACQ_FILT_4_7_DRS_H6(0x0D) | XCVR_RX_DIG_ACQ_FILT_4_7_DRS_H7(0xEF);
+                XCVR_RX_DIG_ACQ_FILT_4_7_DRS_H4(0x04) | XCVR_RX_DIG_ACQ_FILT_4_7_DRS_H5(0x20) |
+                        XCVR_RX_DIG_ACQ_FILT_4_7_DRS_H6(0x18) | XCVR_RX_DIG_ACQ_FILT_4_7_DRS_H7(0xE1);
             XCVR_RX_DIG->ACQ_FILT_8_9_DRS =
-                XCVR_RX_DIG_ACQ_FILT_8_9_DRS_H8(0x1D8) | XCVR_RX_DIG_ACQ_FILT_8_9_DRS_H9(0x1F0);
+                XCVR_RX_DIG_ACQ_FILT_8_9_DRS_H8(0x1B4) | XCVR_RX_DIG_ACQ_FILT_8_9_DRS_H9(0x1E3);
             XCVR_RX_DIG->ACQ_FILT_10_11_DRS =
-                XCVR_RX_DIG_ACQ_FILT_10_11_DRS_H10(0x039) | XCVR_RX_DIG_ACQ_FILT_10_11_DRS_H11(0x07B);
+                XCVR_RX_DIG_ACQ_FILT_10_11_DRS_H10(0x06B) | XCVR_RX_DIG_ACQ_FILT_10_11_DRS_H11(0x0E7);
         }
 #endif
 
