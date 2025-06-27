@@ -510,13 +510,11 @@ void XCVR_LCL_RsmPLLInit(XCVR_RSM_SQTE_RATE_T rate)
         XCVR_PLL_DIG_TUNING_CAP_RX_CTRL_TUNING_RANGE_4(0U) | XCVR_PLL_DIG_TUNING_CAP_RX_CTRL_TUNING_RANGE_5(0U) |
         XCVR_PLL_DIG_TUNING_CAP_RX_CTRL_TUNING_RANGE_6(0U) | XCVR_PLL_DIG_TUNING_CAP_RX_CTRL_TUNING_RANGE_7(0U);
 
-#if(0) // disabled since this is overriden by IPS_FO by defaul ble config to use DRS feature.
+        /* HPM_COUNT_ADJUST set to 0 in localization usecase ? */
         temp = XCVR_PLL_DIG->HPM_SDM_RES;
         temp &= ~(XCVR_PLL_DIG_HPM_SDM_RES_HPM_COUNT_ADJUST_MASK);
-    temp |=
-        XCVR_PLL_DIG_HPM_SDM_RES_HPM_COUNT_ADJUST(0U); /* This is also configured by IPS_FO.... need to disable it */
-        XCVR_PLL_DIG->HPM_SDM_RES = temp;
-#endif
+        temp |=XCVR_PLL_DIG_HPM_SDM_RES_HPM_COUNT_ADJUST(0U); 
+        XCVR_MISC->IPS_FO_DRS0_DATA[0U] = XCVR_MISC_IPS_FO_DRS0_DATA_DRS0_DATA(temp);
     
         /* Settings for 1Mpbs operation */
         temp = XCVR_TX_DIG->GFSK_CTRL;
@@ -656,6 +654,9 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLBackup(rsm_reg_backup_t *reg_backup_ptr)
             XCVR_PLL_DIG->PLL_OFFSET_CTRL; /* this register is backed up because CFO compensation can corrupt it */
         reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_TX_CTRL = XCVR_PLL_DIG->TUNING_CAP_TX_CTRL;
         reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_RX_CTRL = XCVR_PLL_DIG->TUNING_CAP_RX_CTRL;
+        
+        reg_backup_ptr->XCVR_MISC_IPS_FO_DRS0_DATA_0 = XCVR_MISC->IPS_FO_DRS0_DATA[0U]; /* BU this register to restore the HPM_COUNT_ADJUST to the default value for non_localization context. */
+        
          /* TSM Overrides controlling the PLL signals, so included in PLL backup/restore */
         reg_backup_ptr->XCVR_TSM_OVRD0 = XCVR_TSM->OVRD0;
         reg_backup_ptr->XCVR_TSM_OVRD1 = XCVR_TSM->OVRD1;
@@ -739,6 +740,9 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLRestore(const rsm_reg_backup_t *reg_backup_ptr)
                 ->XCVR_PLL_OFFSET_CTRL; /* this register is restored because CFO compensation can corrupt it */
         XCVR_PLL_DIG->TUNING_CAP_TX_CTRL = reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_TX_CTRL;
         XCVR_PLL_DIG->TUNING_CAP_RX_CTRL = reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_RX_CTRL;
+        
+        XCVR_MISC->IPS_FO_DRS0_DATA[0U] = reg_backup_ptr->XCVR_MISC_IPS_FO_DRS0_DATA_0; /* Restore the HPM_COUNT_ADJUST to the default value for non_localization context. */
+        
         /* TSM Overrides controlling the PLL signals, so included in PLL backup/restore */
         XCVR_TSM->OVRD0 = reg_backup_ptr ->XCVR_TSM_OVRD0; 
         XCVR_TSM->OVRD1 = reg_backup_ptr ->XCVR_TSM_OVRD1; 

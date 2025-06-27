@@ -684,7 +684,9 @@ typedef struct
     uint32_t XCVR_MISC_IPS_FO_ADDR_1; /* Supporting NADM 1Mbps GFSK FDEV */
     uint32_t XCVR_MISC_IPS_FO_ADDR_2; /* Supporting NADM 1Mbps GFSK FDEV */
     uint32_t XCVR_MISC_IPS_FO_ADDR_3; /* Supporting KW47 per-step CFO  */
-
+    
+    uint32_t XCVR_MISC_IPS_FO_DRS0_DATA_0;
+    
     /* XCVR_2P4GHZ_PHY */
     uint32_t XCVR_2P4GHZ_PHY_RTT_CTRL;
     uint32_t XCVR_2P4GHZ_PHY_RTT_REF;
