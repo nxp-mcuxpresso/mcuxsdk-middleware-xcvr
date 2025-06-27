@@ -1315,21 +1315,14 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         XCVR_MISC->RSM_CTRL3 = temp;
 
         /* RSM_CTRL4 */
-        if (rsm_settings_ptr->sniffer_mode_en)
+        /* Configure RSM_DMA_DUR0 & RSM_DMA_DLY0 independent of whether using dma mask (these are always used for
+         * FCS sequence)*/
+        temp = XCVR_MISC_RSM_CTRL4_RSM_DMA_DLY0(rsm_settings_ptr->rsm_dma_dly_fm_ext) |
+               XCVR_MISC_RSM_CTRL4_RSM_DMA_DUR0(rsm_settings_ptr->rsm_dma_dur_fm_ext);
+        /* Configure RSM_DMA_DLY  if using dma mask */
+        if (rsm_settings_ptr->use_rsm_dma_mask)
         {
-            temp = 0U;
-        }
-        else
-        {
-            /* Configure RSM_DMA_DUR0 & RSM_DMA_DLY0 independent of whether using dma mask (these are always used for
-             * FCS sequence)*/
-            temp = XCVR_MISC_RSM_CTRL4_RSM_DMA_DLY0(rsm_settings_ptr->rsm_dma_dly_fm_ext) |
-                   XCVR_MISC_RSM_CTRL4_RSM_DMA_DUR0(rsm_settings_ptr->rsm_dma_dur_fm_ext);
-            /* Configure RSM_DMA_DLY  if using dma mask */
-            if (rsm_settings_ptr->use_rsm_dma_mask)
-            {
-                temp |= XCVR_MISC_RSM_CTRL4_RSM_DMA_DLY(rsm_settings_ptr->rsm_dma_dly_pm);
-            }
+            temp |= XCVR_MISC_RSM_CTRL4_RSM_DMA_DLY(rsm_settings_ptr->rsm_dma_dly_pm);
         }
         XCVR_MISC->RSM_CTRL4 = temp;
 
