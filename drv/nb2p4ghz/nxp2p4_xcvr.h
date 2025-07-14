@@ -1542,6 +1542,26 @@ xcvrStatus_t XCVR_FastBackupRestore(const uint32_t *desc_ptr,
                                     uint16_t pkt_ram_index_offset,
                                     bool restore);
 
+#if defined(SAVE_RESTORE_15P4)
+
+#define XCVR_15P4_BACKUP_DESC_SIZE      11U
+
+extern uint32_t xcvr_15p4_backup_descriptors[XCVR_15P4_BACKUP_DESC_SIZE];
+
+void XCVR_Create15p4BackupDescriptors();
+
+#endif
+
+#if defined(SAVE_RESTORE_BLE)
+
+#define XCVR_BLE_BACKUP_DESC_SIZE       11U
+
+extern uint32_t xcvr_ble_backup_descriptors[XCVR_BLE_BACKUP_DESC_SIZE];
+
+void XCVR_CreateBleBackupDescriptors();
+
+#endif
+
 /*!
  * @brief Function to backup the XCVR LIF and RBME registers to the TX_PACKET_RAM using the fast IPS DMA.
  *

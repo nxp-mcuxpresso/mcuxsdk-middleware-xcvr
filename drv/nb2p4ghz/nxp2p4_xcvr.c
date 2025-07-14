@@ -2463,6 +2463,113 @@ static const uint32_t xcvr_backup_descriptor[8] = {
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, sizeof(RBME_Type) >> 2, RBME),
 };
 
+#if defined(SAVE_RESTORE_15P4) || defined(SAVE_RESTORE_BLE)
+
+typedef struct
+{
+    uint32_t size;
+    uint32_t addr;
+} pr2ips_reg_set_desc_t;
+
+/* max(sizeof(reg_set_15p4_descriptors), sizeof(reg_set_ble_descriptors)) / sizeof(pr2ips_reg_set_desc_t) */
+#define MAX_REG_SET_COUNT        8U
+
+/* max(XCVR_15P4_BACKUP_DESC_SIZE, XCVR_BLE_BACKUP_DESC_SIZE) */
+#define MAX_BACKUP_DESC_SIZE     11U
+
+
+/* Helper function that takes in a list of register sets and converts it into a list of backup-descriptrs.
+ * That list is then used as an input to XCVR_FastBackupRestore(). This is needed since some of the registers sets
+ * that need to be saved/restored are larger than the maximum size of a backup descriptor (63 words).
+ * This function goes through the register sets and creates as many descriptors, for each register sets, as needed
+ * where each descriptor is at most 63 words.
+ */
+static void XCVR_CreateBackupDescriptors(const pr2ips_reg_set_desc_t *reg_sets, uint8_t reg_set_count, uint32_t *backup_descs, uint8_t desc_len)
+{
+    uint8_t j = 0U;
+
+    if (reg_sets == NULLPTR || backup_descs == NULLPTR)
+    {
+        return;
+    }
+
+    reg_set_count = MIN(reg_set_count, MAX_REG_SET_COUNT);
+    desc_len      = MIN(desc_len, MAX_BACKUP_DESC_SIZE);
+
+    for (uint8_t i = 0; i < reg_set_count; i++)
+    {
+        uint32_t size = reg_sets[i].size;
+        uint32_t addr = reg_sets[i].addr;
+        uint32_t descriptor;
+        uint32_t desc_size;
+
+        while (size > 0U && j < desc_len)
+        {
+            desc_size = MIN(0x3FU, size);
+            descriptor = PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, desc_size, addr);
+
+            /* overflowing is possible but not likely since the addresses are aprox in the
+             * middle of the memory and we can at most save ~11 segments of 256 bytes.
+             */
+            size -= desc_size;
+            addr += desc_size++ << 2;
+
+            backup_descs[j++] = descriptor;
+        }
+    }
+}
+
+#define PR2IPS_REG_SET_DESC(__name)    { (uint32_t)(sizeof(__name ## _Type) >> 2),  (uint32_t)__name }
+
+#if defined(SAVE_RESTORE_15P4)
+
+static const pr2ips_reg_set_desc_t reg_set_15p4_descriptors[] = {
+    PR2IPS_REG_SET_DESC(XCVR_MISC),
+    PR2IPS_REG_SET_DESC(XCVR_ZBDEMOD),
+    PR2IPS_REG_SET_DESC(XCVR_PLL_DIG),
+    PR2IPS_REG_SET_DESC(XCVR_RX_DIG),
+    PR2IPS_REG_SET_DESC(XCVR_TSM),
+    PR2IPS_REG_SET_DESC(XCVR_TX_DIG),
+    PR2IPS_REG_SET_DESC(XCVR_ANALOG),
+    PR2IPS_REG_SET_DESC(RBME),
+};
+
+uint32_t xcvr_15p4_backup_descriptors[XCVR_15P4_BACKUP_DESC_SIZE];
+
+void XCVR_Create15p4BackupDescriptors()
+{
+    uint8_t reg_set_count = sizeof(reg_set_15p4_descriptors) / sizeof(reg_set_15p4_descriptors[0]);
+
+    XCVR_CreateBackupDescriptors(reg_set_15p4_descriptors, reg_set_count, xcvr_15p4_backup_descriptors, XCVR_15P4_BACKUP_DESC_SIZE);
+}
+
+#endif /* SAVE_RESTORE_15P4 */
+
+#if defined(SAVE_RESTORE_BLE)
+
+static const pr2ips_reg_set_desc_t reg_set_ble_descriptors[] = {
+    PR2IPS_REG_SET_DESC(XCVR_MISC),
+    PR2IPS_REG_SET_DESC(GEN4PHY),
+    PR2IPS_REG_SET_DESC(XCVR_PLL_DIG),
+    PR2IPS_REG_SET_DESC(XCVR_RX_DIG),
+    PR2IPS_REG_SET_DESC(XCVR_TSM),
+    PR2IPS_REG_SET_DESC(XCVR_TX_DIG),
+    PR2IPS_REG_SET_DESC(XCVR_ANALOG),
+    PR2IPS_REG_SET_DESC(RBME),
+};
+
+uint32_t xcvr_ble_backup_descriptors[XCVR_BLE_BACKUP_DESC_SIZE];
+
+void XCVR_CreateBleBackupDescriptors()
+{
+    uint8_t reg_set_count = sizeof(reg_set_ble_descriptors) / sizeof(reg_set_ble_descriptors[0]);
+
+    XCVR_CreateBackupDescriptors(reg_set_15p4_descriptors, reg_set_count, xcvr_15p4_backup_descriptors, XCVR_BLE_BACKUP_DESC_SIZE);
+}
+
+#endif /* SAVE_RESTORE_BLE */
+#endif /* SAVE_RESTORE_15P4 || defined(SAVE_RESTORE_BLE */
+
 #if defined(SUPPORT_LIF_RBME_BU_PREP) && (SUPPORT_LIF_RBME_BU_PREP == 1)
 static void XCVR_LIF_RBME_PrepareBackup(void)
 {
