@@ -968,7 +968,7 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
         /* Ensure PA ramp analog is disabled since enabled by default (CONNRF-1412) */
         temp = xcvr_settings.analog_tx_dac_pa;
-        temp &= ~(XCVR_ANALOG_TX_DAC_PA_PA_SMOOTHER_EN_MASK);
+        temp &= ~(XCVR_ANALOG_TX_DAC_PA_PA_SMOOTHER_EN_MASK | XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_CFBK_MASK); /* CONNRF-1474 zero out DAC_TRIM_CFBK */
         XCVR_ANALOG->TX_DAC_PA = temp;
 
         /* KW47 specific padding settings for modulation bandwidth testing */
@@ -998,6 +998,9 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         XCVR_TX_DIG->DATA_PADDING_CTRL_1 = temp;
         XCVR_TX_DIG->DATA_PADDING_CTRL_2 =XCVR_TX_DIG_DATA_PADDING_CTRL_2_DATA_PAD_MFDEV(0x1DCDU) |
                                           XCVR_TX_DIG_DATA_PADDING_CTRL_2_DATA_PAD_PFDEV(0x233U);
+
+
+
 #else
         temp = xcvr_settings.tx_dig_data_padding_ctrl;
         temp &= ~(XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_MASK | XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN_MASK |
