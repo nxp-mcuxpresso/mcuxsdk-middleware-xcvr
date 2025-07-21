@@ -3476,13 +3476,21 @@ int32_t XCVR_LCL_RsmReadCfoComp(void)
 {
     uint32_t utemp = XCVR_PLL_DIG->PLL_OFFSET_CTRL;
     int32_t itemp;
+    bool negate = false;
+    itemp = (int32_t)utemp;
     if ((utemp & (1UL << 27)) != 0U)
     {
-        utemp |= ~XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET_MASK; /* sign extend in the uint type */
+      negate = true;
+      utemp |= ~XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET_MASK; /* sign extend in the uint type */
+      itemp = (int32_t)utemp;
+      itemp = -itemp; /* make a positive integer */
     }
-    itemp = (int32_t)utemp;
-    itemp = itemp * 64;
-    itemp = itemp / 67;
+    itemp = itemp * 15625u;
+    itemp = itemp / 16384u;
+    if (negate)
+    {
+      itemp = -itemp;
+    }
     return -itemp; /* CFO value is the negative of the frequency offset */
 }
 
