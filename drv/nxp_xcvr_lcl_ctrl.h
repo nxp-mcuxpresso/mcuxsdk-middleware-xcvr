@@ -42,11 +42,10 @@ extern "C" {
 /* Workaround for PKT RAM double buffering issue on KW47 at end of TX RAM. Last location is not usable */
 /* This symbol should be used in all double buffering related code to enforce not using the last location */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
-//#define TX_PACKET_RAM_PACKET_RAM_COUNT_DBL_BUFFER   (TX_PACKET_RAM_PACKET_RAM_COUNT-1U)
-#define TX_PACKET_RAM_PACKET_RAM_COUNT_DBL_BUFFER (TX_PACKET_RAM_PACKET_RAM_COUNT - 20U - 1U)
+#define TX_PACKET_RAM_PACKET_RAM_COUNT_DBL_BUFFER (TX_PACKET_RAM_PACKET_RAM_COUNT - 20U - 1U) /* accounts for error in KW47 end of RAM */
 #else
 #define TX_PACKET_RAM_PACKET_RAM_COUNT_DBL_BUFFER (TX_PACKET_RAM_PACKET_RAM_COUNT)
-#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470) */
+#endif /*  (NXP_RADIO_GEN == 470) */
 
 /* Long (64 bit) PN support is disabled by default but can be enabled at project level */
 #ifndef SUPPORT_RSM_LONG_PN

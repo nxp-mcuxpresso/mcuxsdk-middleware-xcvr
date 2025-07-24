@@ -21,6 +21,15 @@
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) && \
     (RF_OSC_26MHZ == 0) /* RSM step manager is new on Gen 4.7 radios & with 32MHZ RF_OSC */
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) 
+#define MAX_STEP_CFG_SIZE_WORDS   (19U)
+#define MAX_STEP_RES_SIZE_WORDS   (22U)
+#define MAX_STEP_SNIFFER_RES_SIZE_WORDS (2*MAX_STEP_RES_SIZE_WORDS)
+#else
+#define MAX_STEP_CFG_SIZE_WORDS   (13U)
+#define MAX_STEP_RES_SIZE_WORDS   (20U)
+#endif /* NXP_RADIO_GEN >= 475 */
+
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
@@ -98,7 +107,7 @@ typedef struct
 /*! @brief  CS subevent information storage. */
 typedef struct
 {
-    uint8_t num_steps;                /*!< Number of steps represented by this structure. */
+    uint16_t num_steps;                /*!< Number of steps represented by this structure. */
     XCVR_RSM_FSTEP_TYPE_T *step_type; /*!< List of step types. */
     uint32_t *aa_list; /*!< List of access addresses for init and refl roles; Assumed to be interleaved with init first
                           and refl second. */
@@ -109,6 +118,10 @@ typedef struct
     uint16_t *channel_list;      /*!< List of channel index (0..79) for the steps. */
     uint16_t *cfo_list;          /*!< List of CFO values for the steps. */
     uint16_t *phase_add_list;    /*!< List of phase_adder values for the steps. */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) 
+    uint32_t *ant_permut_list;    /*!< List of (packed) antena permutations for the steps. Only supports one permutation table applied to all steps. */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
+    bool multi_ant_permut;           /*!< Multi-antenna permutation in PKT RAM is enabled. */
     uint16_t *hpm_cal_list;      /*!< List of HPM CAL values for the steps. */
     uint16_t *step_cfg_list; /*!< List of values for step configuration, as output by XCVR_LCL_MakeStepCfg(). Partially
                                 redundant with step_type above but keeping both for simplicity/speed. Must be 1 entry
@@ -323,11 +336,12 @@ while (false)
     {                                                                                                                    \
         uint8_t words=0U;                                                                                                \
         uint8_t incr=0U;                                                                                                 \
+        uint32_t * ant_table = (ant_permut_ptr);                                                                         \
         volatile uint32_t *cfg_body_ptr = (volatile uint32_t *) cfg_entry ;                                              \
         if(ant_permut_mode) {                                                                                            \
-              *cfg_body_ptr++ = (ant_permut_ptr!=NULLPTR)? *(ant_permut_ptr)++ : 0U;                                     \
+              *cfg_body_ptr++ = (ant_table!=NULLPTR)? *(ant_table)++ : 0U;                                     \
                 if(num_ant > 8) {                                                                                        \
-                  *cfg_body_ptr++ = (ant_permut_ptr!=NULLPTR)? *(ant_permut_ptr)++ : 0U;                                 \
+                  *cfg_body_ptr++ = (ant_table!=NULLPTR)? *(ant_table)++ : 0U;                                 \
                 }                                                                                                        \
         }                                                                                                                \
         do {                                                                                                             \
@@ -903,8 +917,7 @@ xcvrLclStatus_t XCVR_LCL_CalcResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format, XCVR
  * same configuration is being used for a large number of steps.
  */
 xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format,
-                                                XCVR_RSM_RTT_TYPE_T rtt_type,
-                                                uint8_t num_ap,
+                                                xcvr_lcl_rsm_config_t * rsm_settings_ptr,
                                                 uint8_t *config_size_words,
                                                 uint8_t *result_size_words);
 
@@ -916,6 +929,7 @@ xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format
  * a particular area of PKT RAM but just checks the sequence length (in words) is smaller than a defined size.
  *
  * @param[in] subevent_info_ptr Pointer to the information describing a subevent (all steps).
+ * @param[in] rsm_settings_ptr Pointer to the information describing RSM settings (all steps).
  * @param[in] pkt_ram_cfg_buffer_sz_words The number of words allocated to storage of configuration step data.
  * @param[in] pkt_ram_res_buffer_sz_words The number of words allocated to storage of result step data.
  *
@@ -923,6 +937,7 @@ xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format
  *
  */
 xcvrLclStatus_t XCVR_LCL_ValidateSubeventInfo(cs_subevent_info_t *subevent_info_ptr,
+                                              xcvr_lcl_rsm_config_t * rsm_settings_ptr,
                                               uint16_t pkt_ram_cfg_buffer_sz_words,
                                               uint16_t pkt_ram_res_buffer_sz_words);
 
@@ -1063,9 +1078,7 @@ xcvrLclStatus_t XCVR_LCL_HandleIrqStepEos(int32_t status_bits);
 xcvrLclStatus_t XCVR_LCL_SetupInitialConfigs(uint8_t total_num_steps,
                                              uint32_t *config_in_ptr,
                                              uint32_t *results_out_ptr,
-                                             XCVR_RSM_RTT_TYPE_T rtt_type,
-                                             uint8_t num_ap,
-                                             bool sniffer_mode);
+                                             xcvr_lcl_rsm_config_t * rsm_settings_ptr);
 
 xcvrLclStatus_t XCVR_LCL_FinishFinalResults(void);
 

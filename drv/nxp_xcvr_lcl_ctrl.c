@@ -64,7 +64,7 @@
 #define RX_SETTLE_LAT_PDE (5U)
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  /*KW47 supports longer T_PM values */
-#define T_PM0_MAX (655U) /*!< Max value for T_PM0 for HADM usage.  */
+#define T_PM0_MAX (1023U) /*!< Max value for T_PM0 for HADM usage.  */
 #else
 #define T_PM0_MAX (640U) /*!< Max value for T_PM0 for HADM usage.  */
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
@@ -2563,9 +2563,12 @@ xcvrLclStatus_t XCVR_LCL_ValidateLclSettings(xcvr_lcl_rsm_config_t *rsm_settings
                                 lclTSw_10usec); /* 10usec T_SW works with any valid PA ramp value (checked above) */
             tmp_logic_sum += (uint32_t)(!valid_combo); /* Evaluate to false when params are ok */
         }
-
+        /* For KW47, max is 4; For KW43, max is 16 */
         tmp_logic_sum += (uint32_t)(rsm_settings_ptr->num_ant_path > NUM_ANT_PATH_MAX);
-    
+        /* For KW43, MULTI_ANT_PERMUT feature must be enabled if NUM_AP > 4 */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=475)
+        tmp_logic_sum += (uint32_t)((!rsm_settings_ptr->ant_permut_mode) && (rsm_settings_ptr->num_ant_path > 4U));
+ #endif    
         if (tmp_logic_sum != 0U)  /* If any of the above logic statements is true then the argument is invalid */
         {
           status = gXcvrLclStatusInvalidArgs;
@@ -2588,8 +2591,8 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
     if (status == gXcvrLclStatusSuccess)
     {
         /* Setup LCL block for normal operations with 1 antenna */
-        uint8_t t_pm                = (uint8_t)(rsm_settings_ptr->t_pm0);
-        uint8_t t_sw                = (uint8_t)(rsm_settings_ptr->t_sw);
+        uint16_t t_pm                = (rsm_settings_ptr->t_pm0);
+        uint16_t t_sw                = (uint16_t)(rsm_settings_ptr->t_sw);
         XCVR_RSM_SQTE_RATE_T rttPhy = (rsm_settings_ptr->rate);
         uint32_t spint_us, temp, offset, sampling_rate_factor;
         uint8_t temp_tx_sw_ena;
@@ -2701,13 +2704,32 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
                 XCVR_MISC_LCL_CFG0_RX_LCL_EN_MASK | XCVR_MISC_LCL_CFG0_TX_LCL_EN_MASK | XCVR_MISC_LCL_CFG0_LCL_EN_MASK;
 
             XCVR_MISC->LCL_GPIO_CTRL4 = XCVR_MISC_LCL_GPIO_CTRL4_LUT_WRAP_PTR(rsm_settings_ptr->num_ant_path);
-            //            temp = toneAntennaIDs_p[0] | (toneAntennaIDs_p[1] << 4U) | (toneAntennaIDs_p[2] << 8U) |
-            //            (toneAntennaIDs_p[3] << 12U);
-            temp                      = toneAntennaIDs_p[3];
-            temp                      = toneAntennaIDs_p[2] | (temp << 4U);
-            temp                      = toneAntennaIDs_p[1] | (temp << 4U);
-            temp                      = toneAntennaIDs_p[0] | (temp << 4U);
-            XCVR_MISC->LCL_GPIO_CTRL0 = temp;
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=475)
+            if (rsm_settings_ptr->ant_permut_mode) /* only program if not using ant_multi_permut_mode */
+            {
+              /* Implement a mapping table from antenna ID to GPIO values for output. Current implementation is for 8 physical antennae. */
+              /* The same antenna LUT is used when ant_permut_mode is set or not, but is expected to be interpreted */
+              /* differently when num ant path is > 4 (i.e. only 4 RF GPO so must be a coded output) */
+              uint64_t lut_temp = 0L; /* Working memory to build the 2x 32 bit words for the LUT */
+              uint64_t temp_entry; /* holds the entry temporarily for shifting */
+              uint8_t i;
+              for (i=0U;i<8U;i++)
+              {
+                  temp_entry = toneAntennaIDs_p[i] & 0xF; /* entries only occupy 4 bits */
+                  lut_temp |= temp_entry<<(i*4U);
+              }
+              XCVR_MISC->LCL_GPIO_CTRL0 = lut_temp & 0xFFFFFFFFL;
+              XCVR_MISC->LCL_GPIO_CTRL1 = lut_temp>>32U;               
+            }
+            else
+ #endif                       
+            {
+              temp                      = toneAntennaIDs_p[3];
+              temp                      = toneAntennaIDs_p[2] | (temp << 4U);
+              temp                      = toneAntennaIDs_p[1] | (temp << 4U);
+              temp                      = toneAntennaIDs_p[0] | (temp << 4U);
+              XCVR_MISC->LCL_GPIO_CTRL0 = temp;
+            }
             
             temp = XCVR_RX_DIG->AGC_CTRL_STAT;
             temp &= ~(XCVR_RX_DIG_AGC_CTRL_STAT_AGC_MAX_IDX_MASK);
@@ -4285,7 +4307,7 @@ static void XCVR_LCL_ReadStepConfigKW45(const xcvr_lcl_fstep_t *fstep_ptr,
 }
 #endif
 
-xcvrLclStatus_t XCVR_LCL_GetRsmCaptureBufferSize(xcvr_lcl_fstep_t *fstep_settings,
+xcvrLclStatus_t XCVR_LCL_GetRSMCaptureBufferSize(xcvr_lcl_fstep_t *fstep_settings,
                                                uint8_t num_steps,
                                                XCVR_RSM_RXTX_MODE_T role,
                                                uint16_t *dma_buffer_size,

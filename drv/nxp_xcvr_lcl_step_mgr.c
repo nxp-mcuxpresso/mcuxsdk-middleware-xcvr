@@ -16,8 +16,8 @@
  ******************************************************************************/
 const uint8_t rtt_payload_sizes[8] = {0U,2U,6U,2U,4U,6U,8U,0U};  /* Last value is dummy value to allow indexing the array by RTT_TYPE */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-static const uint8_t permut_step_size_words_offset[] = {1,2,4,5};       /* For radio gen >= 475: step word size offset when including T_PM. index is (num_ap-1)/4 */
-#endif
+const uint8_t permut_step_size_words_offset[] = {1U,2U,4U,5U};       /* For radio gen >= 475: step word size offset when including T_PM. index is (num_ap-1)/4 */
+#endif /* NXP_RADIO_GEN >= 475 */
 
 /* Circular buffer related static data - supports setup of buffer state and IRQ operation */
 static uint8_t total_step_count; 
@@ -110,7 +110,17 @@ uint8_t XCVR_LCL_ReadStepCfg(COM_MODE_013_CFG_HDR_Type * header_ptr,
     /* Return the length of the header as the function return value */
     t2 = (uint16_t)((XCVR_MISC->RSM_CTRL2&XCVR_MISC_RSM_CTRL2_RSM_RTT_TYPE_MASK)>>XCVR_MISC_RSM_CTRL2_RSM_RTT_TYPE_SHIFT);
     XCVR_RSM_RTT_TYPE_T rtt_type = (XCVR_RSM_RTT_TYPE_T)(t2);
-    status = XCVR_LCL_CalcConfigResult_Size(*step_format, rtt_type, 1U, &cfg_sz, &res_sz); /* Don't care about num_ap param, only want cfg_sz result */
+    uint8_t num_ap = ((XCVR_MISC->LCL_CFG0& XCVR_MISC_LCL_CFG0_AP_MAX_MASK)>>XCVR_MISC_LCL_CFG0_AP_MAX_SHIFT);
+    bool multi_ant_permut = false;
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+    /* Read multi-ant-permut setting */
+    multi_ant_permut = ((XCVR_MISC->LCL_CFG1&XCVR_MISC_LCL_CFG1_ANT_MULTI_PERMUT_MODE_MASK) == XCVR_MISC_LCL_CFG1_ANT_MULTI_PERMUT_MODE_MASK);
+#endif /* NXP_RADIO_GEN >= 475 */
+    xcvr_lcl_rsm_config_t rsm_settings_tmp;
+    rsm_settings_tmp.ant_permut_mode = multi_ant_permut;
+    rsm_settings_tmp.rtt_type = rtt_type;
+    rsm_settings_tmp.num_ant_path = num_ap;
+    status = XCVR_LCL_CalcConfigResult_Size(*step_format, &rsm_settings_tmp, &cfg_sz, &res_sz); 
     (void)status;
     (void)res_sz;
 
@@ -150,7 +160,6 @@ xcvrLclStatus_t XCVR_LCL_MakeMode013CfgHeader(xcvr_lcl_mode_0_1_3_cfg_t *cfg_ent
 
     return status;
 }
-
 
 xcvrLclStatus_t XCVR_LCL_MakeMode2CfgHeader(xcvr_lcl_mode_2_cfg_t *cfg_entry,
                                    uint16_t channel_num,
@@ -398,32 +407,32 @@ xcvrLclStatus_t XCVR_LCL_CalcResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format, XCVR
     return status;
 }
 
-xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format, XCVR_RSM_RTT_TYPE_T rtt_type, uint8_t num_ap, uint8_t * config_size_words, uint8_t * result_size_words)
+xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format, xcvr_lcl_rsm_config_t * rsm_settings_ptr, uint8_t * config_size_words, uint8_t * result_size_words)
 {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
     /* Error checking for NULL pointer */
-    if ((config_size_words == NULLPTR) || (result_size_words == NULLPTR))
+    if ((config_size_words == NULLPTR) || (result_size_words == NULLPTR) || (rsm_settings_ptr == NULLPTR))
     {
         status = gXcvrLclStatusInvalidArgs;
     }
-    else
-    {
+ else
+ {
         uint8_t rtt_size;
-        uint8_t phase_size;
-        status = XCVR_LCL_CalcConfig_Size(step_format, rtt_type, num_ap, false, config_size_words, &rtt_size, &phase_size);
-        if (status == gXcvrLclStatusSuccess)
-        {
-            status = XCVR_LCL_CalcResult_Size(step_format, rtt_type, num_ap, false, result_size_words, &phase_size);
-        }
+    uint8_t phase_size;
+
+        status = XCVR_LCL_CalcConfig_Size(step_format, rsm_settings_ptr->rtt_type, rsm_settings_ptr->num_ant_path, rsm_settings_ptr->ant_permut_mode, config_size_words, &rtt_size, &phase_size);
+        status |= XCVR_LCL_CalcResult_Size(step_format, rsm_settings_ptr->rtt_type, rsm_settings_ptr->num_ant_path, rsm_settings_ptr->ant_permut_mode, result_size_words, &phase_size);
+        (void)rtt_size; /* not using this result, only config and result size results */
+        (void)phase_size; /* not using this result, only config and result size results */
     }
     return status;
 }
 
-xcvrLclStatus_t XCVR_LCL_ValidateSubeventInfo(cs_subevent_info_t * subevent_info_ptr, uint16_t pkt_ram_cfg_buffer_sz_words, uint16_t pkt_ram_res_buffer_sz_words)
+xcvrLclStatus_t XCVR_LCL_ValidateSubeventInfo(cs_subevent_info_t * subevent_info_ptr, xcvr_lcl_rsm_config_t * rsm_settings_ptr, uint16_t pkt_ram_cfg_buffer_sz_words, uint16_t pkt_ram_res_buffer_sz_words)
 {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
     /* Input pointer is not NULLPTR */
-    if (subevent_info_ptr == NULLPTR)
+    if ((subevent_info_ptr == NULLPTR) || (rsm_settings_ptr == NULLPTR))
     {
         status = gXcvrLclStatusInvalidArgs;
     }
@@ -458,7 +467,7 @@ xcvrLclStatus_t XCVR_LCL_ValidateSubeventInfo(cs_subevent_info_t * subevent_info
             {
                 uint8_t cfg_sz;
                 uint8_t res_sz;
-                xcvrLclStatus_t temp_status = XCVR_LCL_CalcConfigResult_Size(*step_type_ptr, subevent_info_ptr->rtt_type, subevent_info_ptr->num_ap, &cfg_sz, &res_sz) ;
+                xcvrLclStatus_t temp_status = XCVR_LCL_CalcConfigResult_Size(*step_type_ptr, rsm_settings_ptr, &cfg_sz, &res_sz) ;
                 if (temp_status == gXcvrLclStatusSuccess)
                 {
                     total_cfg_sz += cfg_sz;
@@ -512,6 +521,9 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
         uint16_t * step_cfg_list_ptr = subevent_info_ptr->step_cfg_list;        
         uint16_t * step_cfo_ptr = subevent_info_ptr->cfo_list;        
         uint16_t * phase_add_ptr = subevent_info_ptr->phase_add_list;
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) 
+        uint32_t * ant_permut_ptr = subevent_info_ptr->ant_permut_list;
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
         uint32_t ram_address = 0U;
         static COM_MODE_CFG_HDR_UNION_Type step_header; /* Used to assemble header structures for write to PKT RAM */
         COM_MODE_CFG_HDR_UNION_Type * step_hdr_ptr = &step_header;
@@ -522,7 +534,7 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
                 uint8_t payload_sz = 0U;
                 uint8_t phase_sz = 0U;
                 /* Calculate the size of the config */
-                xcvrLclStatus_t temp_status = XCVR_LCL_CalcConfig_Size(*step_type_ptr, subevent_info_ptr->rtt_type, subevent_info_ptr->num_ap, false, &cfg_sz, &payload_sz, &phase_sz);
+                xcvrLclStatus_t temp_status = XCVR_LCL_CalcConfig_Size(*step_type_ptr, subevent_info_ptr->rtt_type, subevent_info_ptr->num_ap, subevent_info_ptr->multi_ant_permut, &cfg_sz, &payload_sz, &phase_sz);
                 if (temp_status == gXcvrLclStatusSuccess)
                 {
                     /* Fill out the configuration header & payload based on the step type */
@@ -564,22 +576,21 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
                             else 
                             {
                                 if(*step_type_ptr != XCVR_RSM_STEP_FCS) /* for other modes using packets ( mode1 and mode3 ) */
-                                {
-                                    /* case RTT ( mode1 and Mode3 ) in phy test mode */
-                                    /* Because payload pointers are incremented inside the macro, we need to undo that increment when in test mode */
-                                    payload_list_init_ptr -= (payload_sz>>1); 
-                                    payload_list_refl_ptr -= (payload_sz>>1);
+                            {
+                                /* case RTT ( mode1 and Mode3 ) in phy test mode */
+                                /* Because payload pointers are incremented inside the macro, we need to undo that increment when in test mode */
+                                payload_list_init_ptr -= (payload_sz>>1); 
+                                payload_list_refl_ptr -= (payload_sz>>1);
                                 }
                             }
                         }
 
                         /* Cast Phase Config: for Mode2 and Mode3 */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-                        uint32_t* dummy_ptr = NULLPTR;
                         volatile MODE2_3_CFG_BODY_Type* mode2_3_cfg_body_ptr = (volatile MODE2_3_CFG_BODY_Type *)((uint32_t*)ram_address + cfg_sz - phase_sz);
                         if((*step_type_ptr == XCVR_RSM_STEP_TN_TN) || (*step_type_ptr == XCVR_RSM_STEP_PK_TN_TN_PK ))
                         {
-                            XCVR_LCL_MakeMode23_Phase(mode2_3_cfg_body_ptr, phase_add_ptr, dummy_ptr, subevent_info_ptr->num_ap, false);
+                            XCVR_LCL_MakeMode23_Phase(mode2_3_cfg_body_ptr, phase_add_ptr, ant_permut_ptr, subevent_info_ptr->num_ap, subevent_info_ptr->multi_ant_permut);
                         }
 #endif
                     }
@@ -778,14 +789,19 @@ xcvrLclStatus_t XCVR_LCL_ReadResultSteps(uint32_t ** current_res_ptr)
             result_page = (result_page == 0U ? 1U : 0U); /* Single bit invert */
         }
         /* Read step data (header) and calculate length in words */
-        uint32_t step_data = (result_pkt_ram_buffer[result_index])>>8U; /* First word always includes RESULT_SIZE in second byte */
 #if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475))
+        uint32_t step_data = (result_pkt_ram_buffer[result_index])>>16U; /*  RESULT_SIZE is in upper 16bits of common header */
         uint8_t length = (uint8_t)((step_data&COM_RES_HDR_PBCD_CTUNE_AA_DET_RESULT_SIZE_MASK) >> COM_RES_HDR_PBCD_CTUNE_AA_DET_RESULT_SIZE_SHIFT);
 #else
+        uint32_t step_data = (result_pkt_ram_buffer[result_index])>>8U; /* First word always includes RESULT_SIZE in second byte */
         uint8_t length = (uint8_t)((step_data&COM_RES_HDR_SIZE_AGC_IDX_RESULT_SIZE_MASK)>>COM_RES_HDR_SIZE_AGC_IDX_RESULT_SIZE_SHIFT);
 #endif
 #if defined(DEBUG_CIRCULAR_BUFF) && (DEBUG_CIRCULAR_BUFF == 1)
-        assert(length <21); /* make sure length is correct */
+#if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475))
+        assert(length <MAX_STEP_SNIFFER_RES_SIZE_WORDS); /* make sure length is correct for worst case (sniffer use case) results */
+#else
+        assert(length <MAX_STEP_RES_SIZE_WORDS); /* make sure length is correct worst case results*/
+#endif /* NXP_RADIO_GEN >= 475 */
 #endif
         for (j=0U; j<length;j++)
         {
@@ -821,7 +837,7 @@ xcvrLclStatus_t XCVR_LCL_ReadResultSteps(uint32_t ** current_res_ptr)
     return status;
 }
 
-xcvrLclStatus_t XCVR_LCL_SetupInitialConfigs(uint8_t total_num_steps, uint32_t * config_in_ptr, uint32_t * results_out_ptr, XCVR_RSM_RTT_TYPE_T rtt_type, uint8_t num_ap, bool sniffer_mode)
+xcvrLclStatus_t XCVR_LCL_SetupInitialConfigs(uint8_t total_num_steps, uint32_t * config_in_ptr, uint32_t * results_out_ptr, xcvr_lcl_rsm_config_t * rsm_settings_ptr)
 {
     uint8_t  status = (uint8_t)(gXcvrLclStatusSuccess);  /* Accumulate status in uint8_t variable for multiple steps */
     /* Total number of steps in the sequence. One variable keeps the total throughout the sequence, the other 2 count down as the configs */
@@ -833,8 +849,8 @@ xcvrLclStatus_t XCVR_LCL_SetupInitialConfigs(uint8_t total_num_steps, uint32_t *
     /* Prep for routines to quickly calculate addresses based on step sizes */
     for (uint8_t i= 0U; i<4U; i++)
     {
-        status |= (uint8_t)(XCVR_LCL_CalcConfigResult_Size((XCVR_RSM_FSTEP_TYPE_T)i, rtt_type, num_ap, &cfg_step_length_words[i], &res_step_length_words[i]));
-        if (sniffer_mode)
+        status |= (uint8_t)(XCVR_LCL_CalcConfigResult_Size((XCVR_RSM_FSTEP_TYPE_T)i, rsm_settings_ptr, &cfg_step_length_words[i], &res_step_length_words[i]));
+        if (rsm_settings_ptr->sniffer_mode_en)
         {
             res_step_length_words[i] = res_step_length_words[i] * 2U; /* Twice as many results in each step in sniffer mode */
         }
@@ -875,8 +891,12 @@ xcvrLclStatus_t XCVR_LCL_FinishFinalResults(void)
 xcvrLclStatus_t XCVR_LCL_CheckPktRamCfg(cs_pkt_ram_config_info_t * pkt_ram_info_ptr)
 {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
-//    uint32_t temp;
-    /* Check CONFIG_DEPTH and RESULT_DEPTH < max depth in register */
+    if (pkt_ram_info_ptr == NULLPTR)
+    {
+        status = gXcvrLclStatusInvalidArgs;
+    }
+    else
+    {    /* Check CONFIG_DEPTH and RESULT_DEPTH < max depth in register */
     uint32_t max_size = XCVR_MISC_RSM_CONFIG_BUFF_RSM_CONFIG_DEPTH_MASK>>XCVR_MISC_RSM_CONFIG_BUFF_RSM_CONFIG_DEPTH_SHIFT; /* gets the max value of the register */
     /* Track args check by using all statements that evaluate to false (0 value) if param is ok */
     /* Sum up every status check and compare to zero at the end. If not == zero then return invalid args result */
@@ -916,6 +936,7 @@ xcvrLclStatus_t XCVR_LCL_CheckPktRamCfg(cs_pkt_ram_config_info_t * pkt_ram_info_
     if (tmp_logic_sum != 0U)
     {
         status = gXcvrLclStatusInvalidArgs;
+    }
     }
     
     return status;
