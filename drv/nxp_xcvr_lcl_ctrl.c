@@ -899,6 +899,27 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         }
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) && ((NXP_RADIO_GEN < 475) */
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+        if (rsm_settings_ptr->enable_inpr)
+        {
+            /* Inline Phase Return enable - full version */
+            temp = XCVR_PLL_DIG->PLL_PHASE_COMPENSATION;
+            temp &=  ~(XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_INPR_DT_MASK);
+            temp |= (XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_EN_INPR_MASK |  /* Enable Inline Phase Return, by default all antenna paths are managed */
+                     XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_EN_INPR_RX_NORM_MASK | XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_INPR_DT(2U));
+            temp &=  ~(XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_INPR_CORR_INV_MASK); /* No phase inversion */
+            temp |= (XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_INPR_TX_TQI_DIS_MASK|
+                     XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_INPR_TX_PA_PUP_TQI_EN_MASK|
+                     XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_INPR_TX_T_EXT_TQI_EN_MASK); /* Disable INPR control to cut Tx at loopback when TQI below INLINE_THR_TQI, for several antenna paths and for tone extension */
+            temp &= ~(XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_INPR_START_TUNING_MASK); /* Default case no delay for applying the phase */
+            XCVR_PLL_DIG->PLL_PHASE_COMPENSATION = temp;
+        }
+        else
+        {
+            XCVR_PLL_DIG->PLL_PHASE_COMPENSATION &=  ~(XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_EN_INPR_MASK); /* Disable Inline Phase Return */
+        }
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) */
+        
         /* ************** */
         /* Setup TXDIG for ranging */
         /* ************** */
