@@ -173,9 +173,9 @@ extern "C" {
 #if defined(FPGA_TARGET) && (FPGA_TARGET==1)
 #define TX_DATA_FLUSH_DLY_1MBPS (3U)
 #define TX_DATA_FLUSH_DLY_2MBPS (3U)
-#define RX_SYNC_DLY_1MBPS (8U) 
-#define RX_SYNC_DLY_2MBPS (6U) 
-#define RX_SETTLING_LATENCY_1MBPS (7U)
+#define RX_SYNC_DLY_1MBPS (4U) 
+#define RX_SYNC_DLY_2MBPS (4U) 
+#define RX_SETTLING_LATENCY_1MBPS (4U)
 #define RX_SETTLING_LATENCY_2MBPS (4U)
 #else /* (FPGA_TARGET==0) */
 #define TX_DATA_FLUSH_DLY_1MBPS (3U)
@@ -696,6 +696,9 @@ typedef struct
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
     uint32_t XCVR_2P4GHZ_PHY_DMD_CTRL1;
     uint32_t XCVR_2P4GHZ_PHY_DMD_CTRL2;
+#endif
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+    uint32_t XCVR_2P4GHZ_PHY_FSK_CFG0;
 #endif
     /* XCVR_TXDIG */
     uint32_t XCVR_TX_DIG_DATA_PADDING_CTRL;

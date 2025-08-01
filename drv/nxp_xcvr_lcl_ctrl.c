@@ -832,6 +832,11 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         temp |= GEN4PHY_DMD_CTRL2_WAIT_DMD_CLKEN_ADJ(6U);
         XCVR_2P4GHZ_PHY->DMD_CTRL2 = temp;       
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) 
+        XCVR_2P4GHZ_PHY->FSK_CFG0 &= ~(GEN4PHY_FSK_CFG0_AA_OUT_SEL_MASK);
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) */
+        
         /* ************** */
         /* Setup PLL for ranging */
         /* ************** */
@@ -1356,12 +1361,17 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         /* RSM_CTRL6 */
         temp = xcvr_lcl_rsm_generic_config.RSM_CTRL6; /* Structure based configuration for the RSM_CTRL0 register;  */
         temp &= ~(XCVR_MISC_RSM_CTRL6_RSM_RXLAT_DIG_MASK | XCVR_MISC_RSM_CTRL6_RSM_MODE0_TIMEOUT_MASK);
-        temp |= (XCVR_MISC_RSM_CTRL6_RSM_RXLAT_DIG(3U) |        /* give time for latency for HARTT to complete */
-                        XCVR_MISC_RSM_CTRL6_RSM_EARLY_MOD_DIS_MASK |  // disable_lpm_mod for tones and pkts 
-                 XCVR_MISC_RSM_CTRL6_RSM_SKIP_RECYCLE_R2R_MASK | // skip recycle at end of pkts (skip rx_init, to avoid
-                                                                 // hartt lost and also pulse can occur on AA_det
-                                                                 // instead of maintained level)
-                        XCVR_MISC_RSM_CTRL6_RSM_MODE0_TIMEOUT(rsm_settings_ptr->mode0_timeout_usec));
+        temp |=
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) /* CONNRF-1472 optimize timings for KW43 */
+            (XCVR_MISC_RSM_CTRL6_RSM_RXLAT_DIG(5U) | /* give time for latency for HARTT to complete */
+#else
+            (XCVR_MISC_RSM_CTRL6_RSM_RXLAT_DIG(3U) |                /* give time for latency for HARTT to complete */
+#endif
+             XCVR_MISC_RSM_CTRL6_RSM_EARLY_MOD_DIS_MASK |    // disable_lpm_mod for tones and pkts
+             XCVR_MISC_RSM_CTRL6_RSM_SKIP_RECYCLE_R2R_MASK | // skip recycle at end of pkts (skip rx_init, to avoid
+                                                             // hartt lost and also pulse can occur on AA_det
+                                                             // instead of maintained level)
+             XCVR_MISC_RSM_CTRL6_RSM_MODE0_TIMEOUT(rsm_settings_ptr->mode0_timeout_usec));
         XCVR_MISC->RSM_CTRL6 = temp;
 
         /* RSM_CTRL7 */
@@ -2188,6 +2198,9 @@ xcvrLclStatus_t XCVR_LCL_RsmRegBackup(rsm_reg_backup_t *reg_backup_ptr)
         reg_backup_ptr->XCVR_2P4GHZ_PHY_DMD_CTRL1= XCVR_2P4GHZ_PHY->DMD_CTRL1;
         reg_backup_ptr->XCVR_2P4GHZ_PHY_DMD_CTRL2= XCVR_2P4GHZ_PHY->DMD_CTRL2;
 #endif
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+        reg_backup_ptr->XCVR_2P4GHZ_PHY_FSK_CFG0= XCVR_2P4GHZ_PHY->FSK_CFG0;
+#endif
 
         /* XCVR_TXDIG */
         reg_backup_ptr->XCVR_TX_DIG_DATA_PADDING_CTRL  = XCVR_TX_DIG->DATA_PADDING_CTRL;
@@ -2277,6 +2290,9 @@ xcvrLclStatus_t XCVR_LCL_RsmRegRestore(const rsm_reg_backup_t *reg_backup_ptr)
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
         XCVR_2P4GHZ_PHY->DMD_CTRL1 = reg_backup_ptr->XCVR_2P4GHZ_PHY_DMD_CTRL1;
         XCVR_2P4GHZ_PHY->DMD_CTRL2 = reg_backup_ptr->XCVR_2P4GHZ_PHY_DMD_CTRL2;
+#endif
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+       XCVR_2P4GHZ_PHY->FSK_CFG0 = reg_backup_ptr->XCVR_2P4GHZ_PHY_FSK_CFG0;
 #endif
         /* XCVR_TXDIG */
         XCVR_TX_DIG->DATA_PADDING_CTRL   = reg_backup_ptr->XCVR_TX_DIG_DATA_PADDING_CTRL;
