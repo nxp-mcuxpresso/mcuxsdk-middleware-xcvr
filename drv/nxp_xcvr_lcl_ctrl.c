@@ -2675,14 +2675,14 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
         uint8_t temp_u8 = ((TX_DATA_FLUSH_DLY_1MBPS + t_ramp_usec) * 8U);
         offset          = (uint32_t)temp_u8;
         uint8_t add_up;
-        if ((2U * t_ramp_usec) > t_sw)
+        if ((2U * t_ramp_usec) > (uint8_t)t_sw)
         {
             add_up = 0U; 
         }
         else
         {
          /* T_SW is <= 10; t_ramp_usec is <= 4 */
-            add_up = (uint8_t)(t_sw - (2U * t_ramp_usec));
+            add_up = ((uint8_t)t_sw - (2U * t_ramp_usec));
             add_up = (add_up > 7U ? 7U : add_up); /* saturate to 7 maximum */
             add_up = (add_up > 2U ? (add_up - 2U) : 0U); /* saturate to 0 minimum */
         }
@@ -3478,27 +3478,6 @@ xcvrLclStatus_t XCVR_LCL_ProcessPhaseMeasure(int8_t *i_resid, int8_t *q_resid, u
     return status;
 }
 
-#if (0)
-xcvrLclStatus_t XCVR_LCL_RsmCompCfo(int32_t cfo_in_hz)
-{
-    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
-    if ((cfo_in_hz > 500000) || (cfo_in_hz < -500000)) /* Test CFO limitation to keep to ~20bits */
-    {
-        status = gXcvrLclStatusInvalidArgs;
-    }
-    else
-    {
-        /* Each bit in the PLL_OFFSET_CTRL register is about 0.95Hz of frequency change so convert by multiply by 67 and
-         * dividing by 64 */
-        int32_t itemp                 = -cfo_in_hz; /* Compensation is in the opposite direction of the CFO value */
-        itemp                         = itemp * 67;
-        itemp                         = itemp / 64;
-        XCVR_PLL_DIG->PLL_OFFSET_CTRL = XCVR_PLL_DIG_PLL_OFFSET_CTRL_PLL_NUMERATOR_OFFSET(itemp);
-    }
-
-    return status;
-}
-#else
 xcvrLclStatus_t XCVR_LCL_RsmCompCfo(int32_t cfo_in_hz)
 {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
@@ -3515,12 +3494,13 @@ xcvrLclStatus_t XCVR_LCL_RsmCompCfo(int32_t cfo_in_hz)
         // At 2478MHz, that's 247800 Hz of correction. 262143 is significantly larger than 247800,
         // so we can get away with 32-bit integer math.
 #if defined(USE_BUILTIN_FUNCTIONS) && (USE_BUILTIN_FUNCTIONS == 1)
-        uint32_t utemp = __builtin_abs(cfo_in_hz); /* Warning: Not supported on all compilers */
+        uint32_t utemp = (uint32_t)(__builtin_abs(cfo_in_hz)); /* Warning: Not supported on all compilers */
 #else
-        uint32_t utemp = abs(cfo_in_hz);
+        uint32_t utemp = (uint32_t)abs(cfo_in_hz);
 #endif /* USE_BUILTIN_FUNCTIONS == 1 */
-        int32_t itemp = ((utemp * 16384u) / 15625u);
-        if (cfo_in_hz >= 0) {
+        int32_t itemp = (int32_t)(((utemp * 16384U) / 15625U));
+        if (cfo_in_hz >= 0) 
+        {
             /* Compensation is in the opposite direction of the CFO value, so we negate on the way in but not the way out */
             itemp *= -1;
         }
@@ -3529,7 +3509,6 @@ xcvrLclStatus_t XCVR_LCL_RsmCompCfo(int32_t cfo_in_hz)
 
     return status;
 }
-#endif
 
 int32_t XCVR_LCL_RsmReadCfoComp(void)
 {
@@ -3544,8 +3523,8 @@ int32_t XCVR_LCL_RsmReadCfoComp(void)
       itemp = (int32_t)utemp;
       itemp = -itemp; /* make a positive integer */
     }
-    itemp = itemp * 15625u;
-    itemp = itemp / 16384u;
+    itemp = itemp * 15625;
+    itemp = itemp / 16384;
     if (negate)
     {
       itemp = -itemp;
@@ -3606,7 +3585,7 @@ uint8_t XCVR_LCL_CountPnRttSteps(const xcvr_lcl_fstep_t *fstep_settings, uint16_
 static xcvrLclStatus_t XCVR_LCL_CheckCaptureBufferParams(const xcvr_lcl_fstep_t *fstep_settings,
                                                  uint8_t num_steps,
                                                  uint16_t *dma_buffer_size,
-                                                 uint16_t *dma_seq_length_us,
+                                                 uint32_t *dma_seq_length_us,
                                                  uint8_t ant_cnt)
 {
     /* Helper function for XCVR_LCL_GetRSMCaptureBufferSize() parameter checking */
@@ -3821,7 +3800,8 @@ xcvrLclStatus_t XCVR_LCL_GetRsmDmaConfig(xcvr_lcl_rsmdma_config_t *rsm_dma_confi
 
         if (dma_mask_center > 0U) /* if dma_mask_center in use, the window duration is given by this field */
         {
-            uint8_t center_window = (uint8_t)((1U << (dma_mask_center - 1U))); /* us. dma_mask_center>0 only */
+            uint16_t center_window = 1U;
+               center_window = (center_window<< (dma_mask_center - 1U)); /* us. dma_mask_center>0 only */
             if (center_window <
                 rsm_dma_config->dma_pm_dur) /* pm duration used is the min between centering size and lcl_high_per */
             {
@@ -4289,30 +4269,28 @@ static xcvrLclStatus_t XCVR_LCL_ProcessStep(
     XCVR_RSM_T_PM_FM_SEL_T t_pm_sel,
     xcvr_lcl_calc_context_t *ctx)
 {
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
     switch (step_format)
     {
         case XCVR_RSM_STEP_FCS:
             XCVR_LCL_CalculateFcsStep(ctx);
             break;
-            
         case XCVR_RSM_STEP_PK_PK:
             XCVR_LCL_CalculatePkPkStep(ctx);
             break;
-            
         case XCVR_RSM_STEP_TN_TN:
             XCVR_LCL_CalculateTnTnStep(ctx, t_pm_sel);
             break;
-            
         case XCVR_RSM_STEP_PK_TN_TN_PK:
             XCVR_LCL_CalculatePkTnTnPkStep(ctx, t_pm_sel);
             break;
-            
         default:
             ctx->step_length_us = 0U;
-            return gXcvrLclStatusFail;
+            status = gXcvrLclStatusFail;
+            break;
     }
     
-    return gXcvrLclStatusSuccess;
+    return status;
 }
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
@@ -4348,7 +4326,7 @@ xcvrLclStatus_t XCVR_LCL_GetRSMCaptureBufferSize(xcvr_lcl_fstep_t *fstep_setting
                                                uint8_t num_steps,
                                                XCVR_RSM_RXTX_MODE_T role,
                                                uint16_t *dma_buffer_size,
-                                               uint16_t *dma_seq_length_us,
+                                               uint32_t *dma_seq_length_us,
                                                uint8_t ant_cnt)
 {
     xcvrLclStatus_t status;
@@ -4388,17 +4366,18 @@ xcvrLclStatus_t XCVR_LCL_GetRSMCaptureBufferSize(xcvr_lcl_fstep_t *fstep_setting
     // Get hardware settings
     ctx.rx_settling_latency = (uint8_t)((XCVR_TSM->WU_LATENCY & XCVR_TSM_WU_LATENCY_RX_SETTLING_LATENCY_MASK) >>
                                       XCVR_TSM_WU_LATENCY_RX_SETTLING_LATENCY_SHIFT);
-    ctx.rsm_rxlat_dig = 0U;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
     ctx.rsm_rxlat_dig = (uint8_t)((XCVR_MISC->RSM_CTRL6 & XCVR_MISC_RSM_CTRL6_RSM_RXLAT_DIG_MASK) >>
                                 XCVR_MISC_RSM_CTRL6_RSM_RXLAT_DIG_SHIFT);
+#else
+    ctx.rsm_rxlat_dig = 0U;
 #endif
     ctx.rate = (uint8_t)((XCVR_MISC->RSM_CTRL0 & XCVR_MISC_RSM_CTRL0_RSM_RATE_MASK) >> 
                        XCVR_MISC_RSM_CTRL0_RSM_RATE_SHIFT);
 
     // Setup platform-specific variables
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-    uint32_t *cfg_ram_buffer = (uint32_t *)fstep_settings;
+    uint32_t cfg_ram_buffer = (uint32_t)fstep_settings;
     uint16_t buffer_offset = 0U;
     uint8_t config_size = 0U;
 #else
@@ -4413,11 +4392,12 @@ xcvrLclStatus_t XCVR_LCL_GetRSMCaptureBufferSize(xcvr_lcl_fstep_t *fstep_setting
         
         // Read step configuration using platform-specific helper
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-        XCVR_LCL_ReadStepConfigGen470(cfg_ram_buffer, buffer_offset, &step_format, &t_pm_sel, &config_size);
+        XCVR_LCL_ReadStepConfigGen470((uint32_t *)cfg_ram_buffer, buffer_offset, &step_format, &t_pm_sel, &config_size);
+        assert(t_pm_sel <= XCVR_RSM_T_PM1_SEL);
 #else
         XCVR_LCL_ReadStepConfigKW45(fstep_ptr, &step_format, &t_pm_sel);
-#endif
         assert(t_pm_sel <= XCVR_RSM_T_PM3_SEL);
+#endif
 
         // Process this step
         ctx.step_length_us = 0U;

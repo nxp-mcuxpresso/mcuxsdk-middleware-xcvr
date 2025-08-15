@@ -110,7 +110,7 @@ uint8_t XCVR_LCL_ReadStepCfg(COM_MODE_013_CFG_HDR_Type * header_ptr,
     /* Return the length of the header as the function return value */
     t2 = (uint16_t)((XCVR_MISC->RSM_CTRL2&XCVR_MISC_RSM_CTRL2_RSM_RTT_TYPE_MASK)>>XCVR_MISC_RSM_CTRL2_RSM_RTT_TYPE_SHIFT);
     XCVR_RSM_RTT_TYPE_T rtt_type = (XCVR_RSM_RTT_TYPE_T)(t2);
-    uint8_t num_ap = ((XCVR_MISC->LCL_CFG0& XCVR_MISC_LCL_CFG0_AP_MAX_MASK)>>XCVR_MISC_LCL_CFG0_AP_MAX_SHIFT);
+    uint8_t num_ap = (uint8_t)((XCVR_MISC->LCL_CFG0& XCVR_MISC_LCL_CFG0_AP_MAX_MASK)>>XCVR_MISC_LCL_CFG0_AP_MAX_SHIFT);
     bool multi_ant_permut = false;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
     /* Read multi-ant-permut setting */
@@ -421,7 +421,10 @@ xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format
     uint8_t phase_size;
 
         status = XCVR_LCL_CalcConfig_Size(step_format, rsm_settings_ptr->rtt_type, rsm_settings_ptr->num_ant_path, rsm_settings_ptr->ant_permut_mode, config_size_words, &rtt_size, &phase_size);
-        status |= XCVR_LCL_CalcResult_Size(step_format, rsm_settings_ptr->rtt_type, rsm_settings_ptr->num_ant_path, rsm_settings_ptr->ant_permut_mode, result_size_words, &phase_size);
+        if (status == gXcvrLclStatusSuccess)
+        {
+            status = XCVR_LCL_CalcResult_Size(step_format, rsm_settings_ptr->rtt_type, rsm_settings_ptr->num_ant_path, rsm_settings_ptr->ant_permut_mode, result_size_words, &phase_size);
+        }
         (void)rtt_size; /* not using this result, only config and result size results */
         (void)phase_size; /* not using this result, only config and result size results */
     }
@@ -558,6 +561,7 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
                         /* Cast Step Header */
                         volatile COM_MODE_CFG_HDR_UNION_Type * step_header_ptr = (volatile COM_MODE_CFG_HDR_UNION_Type *)ram_address;
                         temp_status = XCVR_LCL_MakeCommonHeaderInline((COM_MODE_CFG_HDR_UNION_Type *)step_hdr_ptr, (uint16_t)(*channel_list_ptr),(uint16_t)(0U), (uint16_t)*step_cfo_ptr, (uint16_t)*hpm_cal_list_ptr, (uint16_t)*phase_add_ptr, (uint16_t)*step_cfg_list_ptr);
+                        (void)temp_status;
                         XCVR_LCL_WriteCommonHeader(step_header_ptr, step_hdr_ptr);
                         phase_add_ptr++;
 

@@ -84,7 +84,7 @@ static void XcvrCalDelay(uint32_t delaytime);
 
 #if defined(__GNUC__)
 /* Define the prototype for roundf() so it links properly */
-float32_t roundf(float32_t arg);
+float roundf(float arg);
 #endif
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN < 400)

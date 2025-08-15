@@ -24,6 +24,15 @@
 #define NUMQBITS (12U) /* define the number of fractional bits to be used. Leaves 3 integer bits & a sign bit */
 
 #if (USE_FPINLINE == 1) /* use inline functions instead of macros */
+static inline int16_t FPERRORCHECK(int16_t x, int16_t y)
+{
+    int16_t retval = 0; /* non-error return */
+    if (((y == 0) && (x == 0)) || ((x > 4095) || (x < -4096) || (y > 4095) || (y < -4096)))
+    {
+        retval = (int16_t)0xFFFF; /* invalid return value indicating an error */
+    }
+    return retval;
+};
 
 static inline int16_t FPABS(int16_t x)
 {
@@ -93,6 +102,14 @@ static inline int16_t INNERCALC(int16_t iqd, int16_t sgz, uint8_t q)
 
 /* custom inner calculation macro for atan approximation */
 #define INNERCALC(iqd, sgz, q) (FPMUL((iqd), FPADD(addfac, FPMUL((sgz), (iqd), (q))), q))
+
+#define FPERRORCHECK(x, y)  \
+    do  \
+    {    \
+    ((((y == 0) && (x == 0)) || ((x > 4095) || (x < -4096) || (y > 4095) || (y < -4096))), 0xFFFF,0) \
+    } \
+    while(false); \
+        
 #endif
 
 /*******************************************************************************
@@ -118,18 +135,16 @@ int16_t atan2fp(int16_t y, int16_t x)
 #if (NUMQBITS >= 16U)
 #error "Invalid number of fractional bits."
 #endif
-
+    
     bool calc_done = false; /* flag to control whether to perform approximation or if the error checks have triggered */
-    int16_t retval = (int16_t)0xFFFF;
+    int16_t retval;
     int16_t absx   = FPABS(x);
     int16_t absy   = FPABS(y);
 
     /* handle error cases and cases that will cause divide by zero in approximation equations */
-    if ((y == 0) && (x == 0))
-    {
-        retval = (int16_t)0xFFFF; /* invalid return value indicating an error */
-    }
-    else
+    /* Input validation for 12-bit fractional + sign bit format */
+    retval = FPERRORCHECK(x, y);
+    if (retval == 0)  /* no errors in the inputs */
     {
         /* handle special cases that fall directly on X or Y axis */
         if (x == 0)
