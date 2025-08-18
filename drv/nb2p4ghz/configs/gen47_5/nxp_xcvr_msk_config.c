@@ -508,7 +508,7 @@ const xcvr_mode_datarate_config_t xcvr_msk_1mbps_config = {
 #if RF_OSC_26MHZ == 1
     .fsk_ctrl = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1B0D) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x04F2),
 #else
-    .fsk_ctrl = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1BF9) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x0406),
+    .fsk_ctrl       = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1BF9) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x0406),
 #endif /* RF_OSC_26MHZ == 1 */
 
 /* GFSK_COEFF_0_1 configuration, dependencies: ['MD+DR', 'MD+DR'] */
@@ -1047,7 +1047,7 @@ const xcvr_mode_datarate_config_t xcvr_msk_500kbps_config = {
 #if RF_OSC_26MHZ == 1
     .fsk_ctrl = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1B0D) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x04F2),
 #else
-    .fsk_ctrl = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1BF9) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x0406),
+    .fsk_ctrl       = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1BF9) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x0406),
 #endif /* RF_OSC_26MHZ == 1 */
 
 /* GFSK_COEFF_0_1 configuration, dependencies: ['MD+DR', 'MD+DR'] */
@@ -1586,7 +1586,7 @@ const xcvr_mode_datarate_config_t xcvr_msk_250kbps_config = {
 #if RF_OSC_26MHZ == 1
     .fsk_ctrl = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1B0D) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x04F2),
 #else
-    .fsk_ctrl = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1BF9) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x0406),
+    .fsk_ctrl       = XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_0(0x1BF9) | XCVR_TX_DIG_FSK_CTRL_FSK_FDEV_1(0x0406),
 #endif /* RF_OSC_26MHZ == 1 */
 
 /* GFSK_COEFF_0_1 configuration, dependencies: ['MD+DR', 'MD+DR'] */

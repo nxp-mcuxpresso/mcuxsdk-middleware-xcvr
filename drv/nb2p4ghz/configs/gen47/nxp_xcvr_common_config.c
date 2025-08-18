@@ -99,9 +99,10 @@ const xcvr_common_config_t xcvr_common_config = {
              XCVR_ANALOG_LDO_0_LDO_VCO_BYPASS(0) | XCVR_ANALOG_LDO_0_LDO_VCO_FORCE(0) |
              XCVR_ANALOG_LDO_0_LDO_VCO_PTAT_BUMP(2),
 
-    /* LDO_1 configuration, dependencies: ['COM', 'COM', 'COM', 'COM'] */
+    /* LDO_1 configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM'] */
     .ldo_1 = XCVR_ANALOG_LDO_1_LDO_ANT_BYPASS(0) | XCVR_ANALOG_LDO_1_LDO_ANT_HIZ(0) |
-             XCVR_ANALOG_LDO_1_LDO_ANT_REF_SEL(0) | XCVR_ANALOG_LDO_1_LDO_ANT_TRIM(5),
+             XCVR_ANALOG_LDO_1_LDO_ANT_POWMOD_SEL(1) | XCVR_ANALOG_LDO_1_LDO_ANT_REF_SEL(0) |
+             XCVR_ANALOG_LDO_1_LDO_ANT_TRIM(5),
 
     /* PLL configuration, dependencies: ['COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM', 'COM'] */
     .pll = XCVR_ANALOG_PLL_LODIV_SYNC_SPARE(0) | XCVR_ANALOG_PLL_PIC_RINT1_HVAL_SM_EN(1) |
