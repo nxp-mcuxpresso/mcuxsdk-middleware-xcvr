@@ -1269,6 +1269,26 @@ xcvrStatus_t XCVR_SetManAgc(uint8_t man_agc_idx);
 void XCVR_ClearManAgc(void);
 
 /*!
+ * @brief Function to set RCCAL to a manual value.
+ *
+ * This function sets full manual control of RCCAL.
+ *
+ * @param[in] man_rccal_val  The desired manual RCCAL value to use (< 0x1F).
+ *
+ * @return The status of the manual RCCAL enable.
+ */
+xcvrStatus_t XCVR_SetManRCcal(uint8_t man_rccal_val);
+
+/*!
+ * @brief Function to release RCCAL manual setting.
+ *
+ * This function clears the enable for manual RCCAL application and allows RCCAL automatic processing to operate normally.
+ *
+ */
+ void XCVR_ReleaseManRCcal(void);
+
+
+/*!
  * @brief Function to set PA power bump to higher power level.
  *
  * This function sets the XCVR LDO registers required to support high power PA operation.

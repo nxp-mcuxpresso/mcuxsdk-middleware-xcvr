@@ -1955,6 +1955,31 @@ void XCVR_ClearManAgc(void)
     force_rx_init_pulse();
 }
 
+xcvrStatus_t XCVR_SetManRCcal(uint8_t man_rccal_val)
+{
+    xcvrStatus_t status = gXcvrSuccess_c;
+
+    if (man_rccal_val > 0x1FU)
+    {
+        status = gXcvrInvalidParameters_c;
+    }
+    else
+    {
+        uint32_t temp;
+        temp = XCVR_RX_DIG->RCCAL_CTRL1;
+        temp &= ~(XCVR_RX_DIG_RCCAL_CTRL1_RCCAL_CODE_OVRD_MASK);
+        temp |= (XCVR_RX_DIG_RCCAL_CTRL1_RCCAL_CODE_OVRD_EN_MASK | XCVR_RX_DIG_RCCAL_CTRL1_RCCAL_CODE_OVRD(man_rccal_val));
+        XCVR_RX_DIG->RCCAL_CTRL1 = temp;
+    }
+
+    return status;
+}
+
+void XCVR_ReleaseManRCcal(void)
+{
+    XCVR_RX_DIG->RCCAL_CTRL1 &= ~(XCVR_RX_DIG_RCCAL_CTRL1_RCCAL_CODE_OVRD_EN_MASK);
+}
+
 void XCVR_bumpPaPowerUp(void)
 {
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450)
