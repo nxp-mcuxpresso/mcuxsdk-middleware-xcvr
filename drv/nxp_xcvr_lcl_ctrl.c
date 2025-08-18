@@ -765,8 +765,10 @@ static xcvrLclStatus_t XCVR_LCL_SetupTSMForRanging(bool rate_is_2mbps);
 static void XCVR_LCL_SetupRSMForRanging(const xcvr_lcl_rsm_config_t *rsm_settings_ptr, bool rate_is_2mbps, bool is_sqte_mode);
 /* Platform specific helper functions */
 static xcvrLclStatus_t XCVR_LCL_SetupPARamping(const xcvr_lcl_rsm_config_t *rsm_settings_ptr);
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
 static void XCVR_LCL_ConfigureInlinePhaseReturn(const xcvr_lcl_rsm_config_t *rsm_settings_ptr);
 static void XCVR_LCL_ConfigureNADMFeature(bool rate_is_2mbps);
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 
 /* XCVR_LCL_RsmInit() helper functions -definitions */
 static void XCVR_LCL_SetupPHYRTT(const xcvr_lcl_rsm_config_t *rsm_settings_ptr, bool rate_is_2mbps, bool is_sqte_mode)
@@ -821,11 +823,11 @@ static void XCVR_LCL_SetupDemodControl(const xcvr_lcl_rsm_config_t *rsm_settings
 
 static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 {
-    uint32_t temp;
 
     XCVR_LCL_RsmPLLInit(rsm_settings_ptr->rate);
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+    uint32_t temp;
     /* HPM_CTRL */
     temp = XCVR_PLL_DIG->HPM_CTRL;
     temp &= ~(XCVR_PLL_DIG_HPM_CTRL_RX_HPM_CAL_EN_MASK |
@@ -1308,6 +1310,7 @@ static xcvrLclStatus_t XCVR_LCL_SetupPARamping(const xcvr_lcl_rsm_config_t *rsm_
     return gXcvrLclStatusSuccess;
 }
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* KW47 INPR and NADM configuration */
 static void XCVR_LCL_ConfigureInlinePhaseReturn(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 {
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) && (NXP_RADIO_GEN < 475) /* KW47 Inline Phase Return */
@@ -1403,6 +1406,7 @@ static void XCVR_LCL_ConfigureNADMFeature(bool rate_is_2mbps)
 
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 }
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 
 xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 {
