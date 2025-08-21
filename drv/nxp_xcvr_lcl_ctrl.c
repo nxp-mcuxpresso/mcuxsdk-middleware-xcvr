@@ -850,10 +850,7 @@ static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
                     XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_MANUAL(rsm_settings_ptr->hpm_cal_manual_val));
     XCVR_PLL_DIG->HPMCAL_CTRL = temp;
     
-        if (rsm_settings_ptr->enable_inpr)
-        {
-            XCVR_LCL_ConfigureInlinePhaseReturn(rsm_settings_ptr); /* Setup INPR */
-        }
+    XCVR_LCL_ConfigureInlinePhaseReturn(rsm_settings_ptr); /* Setup INPR (or ensure it is disabled)*/
 #else
     /* NOTE: This code assumes t_ip1 and t_ip2 config structures both use identical HPM CAL enable bit settings
      * (which is the case in the initial coding */
@@ -1330,7 +1327,7 @@ static void XCVR_LCL_ConfigureInlinePhaseReturn(const xcvr_lcl_rsm_config_t *rsm
     }
     else
     {
-        XCVR_PLL_DIG->LPM_SDM_CTRL2 &=  ~(XCVR_PLL_DIG_LPM_SDM_CTRL2_EN_INPR_MASK); /* Disable Inline Phase Return */
+        XCVR_PLL_DIG->LPM_SDM_CTRL2 &=  ~(XCVR_PLL_DIG_LPM_SDM_CTRL2_EN_INPR_MASK | XCVR_PLL_DIG_LPM_SDM_CTRL2_EN_INPR_RX_NORM_MASK); /* Disable Inline Phase Return */
     }
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) && ((NXP_RADIO_GEN < 475) */
 
