@@ -1408,24 +1408,49 @@ void IQMCFinalize(uint32_t iqmc_trim_reg_value)
 #endif /* defined(RADIO_IS_GEN_3P5) */
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+
+uint64_t XCVR_TRIM_ReadIFRHalfPhrase(uint32_t ifr_phrase_offset, bool upper_64_bits)
+{
+    /* Support  trim download from IFR - if programmed */
+    /* Read from IFR memory space into unit64_t (largest possible size for IQMC trim) */
+    /* Read the upper 8 octets of the IFR phrase if upper_64_bits == TRUE; Otherwise read lower 64 bits */
+    uint64_t packed_trim_value = 0xFFFFFFFFFFFFFFFFULL; /* init to all F's to emulate unprogrammed flash memory */
+    uint64_t *ifr_trim_ptr    = NULLPTR;
+    uint8_t upper_half_offset = 0U;
+    if (upper_64_bits)
+    {
+        upper_half_offset = 8U; /* pointer offset into the upper half of the IFR phrase */
+    }
+#if defined(IS_RADIO_CORE) && (IS_RADIO_CORE == 1)
+    ifr_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_NBU + (ifr_phrase_offset*16U) + upper_half_offset);
+    packed_trim_value = *ifr_trim_ptr; /* Read the contents of the IFR memory */
+#else
+    /* If NBU is started already then IFR won't be available -  only read IFR is NBU is still in reset */
+    if ((RFMC->RF2P4GHZ_CTRL & RFMC_RF2P4GHZ_CTRL_CPU_RST_MASK) == RFMC_RF2P4GHZ_CTRL_CPU_RST_MASK)
+    {
+        ifr_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_HOST + (ifr_phrase_offset*16U) + upper_half_offset);
+        packed_trim_value = *ifr_trim_ptr; /* Read the contents of the IFR memory */
+    }
+#endif /* defined(IS_RADIO_CORE) && (IS_RADIO_CORE == 1) */
+
+    return packed_trim_value;
+}
+
+uint64_t XCVR_TRIM_ReadRttIfr(void)
+{
+    /* Support IQMC trim download from IFR - if programmed */
+    /* Read from IFR memory space into unit64_t (largest possible size for IQMC trim) */
+    uint64_t packed_trim_value = 0xFFFFFFFFFFFFFFFFULL; /* init to all F's to emulate unprogrammed flash memory */
+    packed_trim_value = XCVR_TRIM_ReadIFRHalfPhrase(RTT_IFR_PHRASE_OFFSET, RTT_IFR_UPPER);
+    return packed_trim_value;
+}
+
 uint64_t XCVR_TRIM_ReadIqmcIfr(void)
 {
     /* Support IQMC trim download from IFR - if programmed */
     /* Read from IFR memory space into unit64_t (largest possible size for IQMC trim) */
     uint64_t packed_trim_value = 0xFFFFFFFFFFFFFFFFULL; /* init to all F's to emulate unprogrammed flash memory */
-    uint64_t *iqmc_trim_ptr    = NULLPTR;
-#if defined(IS_RADIO_CORE) && (IS_RADIO_CORE == 1)
-    iqmc_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_NBU + IQMC_IFR_PHRASE_OFFSET);
-    packed_trim_value = *iqmc_trim_ptr; /* Read the contents of the IFR memory */
-#else
-    /* If NBU is started already then IFR won't be available -  only read IFR is NBU is still in reset */
-    if ((RFMC->RF2P4GHZ_CTRL & RFMC_RF2P4GHZ_CTRL_CPU_RST_MASK) == RFMC_RF2P4GHZ_CTRL_CPU_RST_MASK)
-    {
-        iqmc_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_HOST + IQMC_IFR_PHRASE_OFFSET);
-        packed_trim_value = *iqmc_trim_ptr; /* Read the contents of the IFR memory */
-    }
-#endif /* defined(IS_RADIO_CORE) && (IS_RADIO_CORE == 1) */
-
+    packed_trim_value = XCVR_TRIM_ReadIFRHalfPhrase(IQMC_IFR_PHRASE_OFFSET, IQMC_IFR_UPPER);
     return packed_trim_value;
 }
 
