@@ -1440,7 +1440,7 @@ uint64_t XCVR_TRIM_ReadRttIfr(void)
 {
     /* Support IQMC trim download from IFR - if programmed */
     /* Read from IFR memory space into unit64_t (largest possible size for IQMC trim) */
-    uint64_t packed_trim_value = 0xFFFFFFFFFFFFFFFFULL; /* init to all F's to emulate unprogrammed flash memory */
+    uint64_t packed_trim_value; 
     packed_trim_value = XCVR_TRIM_ReadIFRHalfPhrase(RTT_IFR_PHRASE_OFFSET, RTT_IFR_UPPER);
     return packed_trim_value;
 }
@@ -1449,7 +1449,7 @@ uint64_t XCVR_TRIM_ReadIqmcIfr(void)
 {
     /* Support IQMC trim download from IFR - if programmed */
     /* Read from IFR memory space into unit64_t (largest possible size for IQMC trim) */
-    uint64_t packed_trim_value = 0xFFFFFFFFFFFFFFFFULL; /* init to all F's to emulate unprogrammed flash memory */
+    uint64_t packed_trim_value; 
     packed_trim_value = XCVR_TRIM_ReadIFRHalfPhrase(IQMC_IFR_PHRASE_OFFSET, IQMC_IFR_UPPER);
     return packed_trim_value;
 }
