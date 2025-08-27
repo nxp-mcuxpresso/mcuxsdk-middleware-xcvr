@@ -755,7 +755,7 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLRestore(const rsm_reg_backup_t *reg_backup_ptr)
     return status;
 }
 
-/* XCVR_LCL_RsmInit() helper functions -prototypes */
+    /* Error checking for NULL pointer */
 static void XCVR_LCL_SetupPHYRTT(const xcvr_lcl_rsm_config_t *rsm_settings_ptr, bool rate_is_2mbps, bool is_sqte_mode);
 static void XCVR_LCL_SetupDemodControl(const xcvr_lcl_rsm_config_t *rsm_settings_ptr);
 static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_settings_ptr);
@@ -772,478 +772,483 @@ static void XCVR_LCL_ConfigureNADMFeature(bool rate_is_2mbps);
 
 /* XCVR_LCL_RsmInit() helper functions -definitions */
 static void XCVR_LCL_SetupPHYRTT(const xcvr_lcl_rsm_config_t *rsm_settings_ptr, bool rate_is_2mbps, bool is_sqte_mode)
-{
+    {
     if (is_sqte_mode)
     {
         XCVR_2P4GHZ_PHY->RTT_CTRL |= GEN4PHY_RTT_CTRL_EN_HIGH_ACC_RTT_MASK;
         
 #if defined(SUPPORT_RSM_LONG_PN) && (SUPPORT_RSM_LONG_PN == 1)
-        if (rsm_settings_ptr->rtt_len == XCVR_RSM_SQTE_PN64)
-        {
-            XCVR_2P4GHZ_PHY->RTT_CTRL |= GEN4PHY_RTT_CTRL_RTT_SEQ_LEN_MASK;
+            if (rsm_settings_ptr->rtt_len == XCVR_RSM_SQTE_PN64)
+            {
+                XCVR_2P4GHZ_PHY->RTT_CTRL |= GEN4PHY_RTT_CTRL_RTT_SEQ_LEN_MASK; /* Select 64 bit PN sequences */
             XCVR_RX_DIG->CTRL1 &= ~(XCVR_RX_DIG_CTRL1_DIS_WB_NORM_AA_FOUND_MASK);
-        }
-        else
-        {
-            XCVR_RX_DIG->CTRL1 |= XCVR_RX_DIG_CTRL1_DIS_WB_NORM_AA_FOUND_MASK;
-        }
-#endif
-
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN < 470)
-        if (rate_is_2mbps)
-        {
+            }
+            else
+            {
+                XCVR_RX_DIG->CTRL1 |= XCVR_RX_DIG_CTRL1_DIS_WB_NORM_AA_FOUND_MASK; /* Must be set for 32 bit PNs */
+            }
+#endif /* defined(SUPPORT_RSM_LONG_PN) && (SUPPORT_RSM_LONG_PN == 1) */
+            /* the 1Mbps case is programmed in the normal settings configuration process */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN < 470) /* only apply custom settings for KW45 */
+            if (rate_is_2mbps)
+            {
             XCVR_2P4GHZ_PHY->RTT_REF = GEN4PHY_RTT_REF_FM_REF_010(0x3AU) | 
                                        GEN4PHY_RTT_REF_FM_REF_110(0x5EU) |
-                                       GEN4PHY_RTT_REF_FM_REF_111(0x80U);
-            XCVR_2P4GHZ_PHY->RTT_CTRL &= ~(GEN4PHY_RTT_CTRL_HA_RTT_THRESHOLD_MASK);
-            XCVR_2P4GHZ_PHY->RTT_CTRL |= GEN4PHY_RTT_CTRL_HA_RTT_THRESHOLD(0x166);
-        }
-#endif
+                                           GEN4PHY_RTT_REF_FM_REF_111(0x80U);
+                XCVR_2P4GHZ_PHY->RTT_CTRL &= ~(GEN4PHY_RTT_CTRL_HA_RTT_THRESHOLD_MASK);
+                XCVR_2P4GHZ_PHY->RTT_CTRL |= GEN4PHY_RTT_CTRL_HA_RTT_THRESHOLD(0x166);
+            }
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN < 470) */
     }
-}
+        }
 
 static void XCVR_LCL_SetupDemodControl(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 {
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* KW47 demod control */
     uint32_t temp = XCVR_2P4GHZ_PHY->DMD_CTRL1;
-    temp &= ~(GEN4PHY_DMD_CTRL1_TTRK_INT_RANGE_MASK);
-    temp |= GEN4PHY_DMD_CTRL1_TTRK_INT_RANGE(2U);
-    XCVR_2P4GHZ_PHY->DMD_CTRL1 = temp;
-    
-    temp = XCVR_2P4GHZ_PHY->DMD_CTRL2;
-    temp &= ~(GEN4PHY_DMD_CTRL2_WAIT_DMD_CLKEN_ADJ_MASK);
-    temp |= GEN4PHY_DMD_CTRL2_WAIT_DMD_CLKEN_ADJ(6U);
-    XCVR_2P4GHZ_PHY->DMD_CTRL2 = temp;       
+        temp &= ~(GEN4PHY_DMD_CTRL1_TTRK_INT_RANGE_MASK);
+        temp |= GEN4PHY_DMD_CTRL1_TTRK_INT_RANGE(2U);
+        XCVR_2P4GHZ_PHY->DMD_CTRL1 = temp;
+        temp = XCVR_2P4GHZ_PHY->DMD_CTRL2;
+        temp &= ~(GEN4PHY_DMD_CTRL2_WAIT_DMD_CLKEN_ADJ_MASK);
+        temp |= GEN4PHY_DMD_CTRL2_WAIT_DMD_CLKEN_ADJ(6U);
+        XCVR_2P4GHZ_PHY->DMD_CTRL2 = temp;       
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
-
+        /* ************** */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) 
     XCVR_2P4GHZ_PHY->FSK_CFG0 &= ~(GEN4PHY_FSK_CFG0_AA_OUT_SEL_MASK);
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) */
 }
-
+        /* Setup PLL for ranging */
 static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 {
 
-    XCVR_LCL_RsmPLLInit(rsm_settings_ptr->rate);
+        XCVR_LCL_RsmPLLInit(rsm_settings_ptr->rate);
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
     uint32_t temp;
-    /* HPM_CTRL */
-    temp = XCVR_PLL_DIG->HPM_CTRL;
-    temp &= ~(XCVR_PLL_DIG_HPM_CTRL_RX_HPM_CAL_EN_MASK |
-                    XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_RX_PKT_TABLE_MASK |
-                    XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_RX_TONE_TABLE_MASK |
-                    XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_SEL_MASK);
-    temp |= (XCVR_PLL_DIG_HPM_CTRL_RX_HPM_CAL_EN(0) |
-                   XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_RX_PKT_TABLE(1)  |
-                   XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_RX_TONE_TABLE(0) |
-                   XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_SEL(1) );
-    XCVR_PLL_DIG->HPM_CTRL = temp;
-    
-    /* HPMCAL_CTRL */
-    temp = XCVR_PLL_DIG->HPMCAL_CTRL;
-    temp &= ~(XCVR_PLL_DIG_HPMCAL_CTRL_HP_CAL_DISABLE_MASK |
-                    XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_SKIP_MASK |
-                    XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_MANUAL_MASK);
-    temp |= (XCVR_PLL_DIG_HPMCAL_CTRL_HP_CAL_DISABLE(1U) |
-                    XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_SKIP(1U) |
-                    XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_MANUAL(rsm_settings_ptr->hpm_cal_manual_val));
-    XCVR_PLL_DIG->HPMCAL_CTRL = temp;
-    
+        /* HPM_CTRL */
+        temp = XCVR_PLL_DIG->HPM_CTRL;
+        temp &= ~(XCVR_PLL_DIG_HPM_CTRL_RX_HPM_CAL_EN_MASK |
+                        XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_RX_PKT_TABLE_MASK |
+                        XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_RX_TONE_TABLE_MASK |
+                        XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_SEL_MASK);
+        temp |= (XCVR_PLL_DIG_HPM_CTRL_RX_HPM_CAL_EN(0) |
+                       XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_RX_PKT_TABLE(1)  |
+                       XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_RX_TONE_TABLE(0) |
+                       XCVR_PLL_DIG_HPM_CTRL_HPM_DYNAMIC_SEL(1) );
+        XCVR_PLL_DIG->HPM_CTRL = temp;
+        /* HPMCAL_CTRL */
+        temp = XCVR_PLL_DIG->HPMCAL_CTRL;
+        temp &= ~(XCVR_PLL_DIG_HPMCAL_CTRL_HP_CAL_DISABLE_MASK |
+                        XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_SKIP_MASK |
+                        XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_MANUAL_MASK);
+        temp |= (XCVR_PLL_DIG_HPMCAL_CTRL_HP_CAL_DISABLE(1U) |
+                        XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_SKIP(1U) |
+                        XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_MANUAL(rsm_settings_ptr->hpm_cal_manual_val));
+        XCVR_PLL_DIG->HPMCAL_CTRL = temp;
+
     XCVR_LCL_ConfigureInlinePhaseReturn(rsm_settings_ptr); /* Setup INPR (or ensure it is disabled)*/
 #else
-    /* NOTE: This code assumes t_ip1 and t_ip2 config structures both use identical HPM CAL enable bit settings
-     * (which is the case in the initial coding */
-    /* KW45 HPM CAL support */
-    bool do_hpm_cal = ((xcvr_lcl_rsm_generic_config.RSM_CTRL3 & XCVR_MISC_RSM_CTRL3_RSM_HPM_CAL_MASK) ==
-                       0U); /* RSM isn't providing HPM CAL values */
-    if (do_hpm_cal)
-    {
-        XCVR_PLL_DIG->HPM_CTRL |=
-            XCVR_PLL_DIG_HPM_CTRL_RX_HPM_CAL_EN_MASK; /* RSM is not providing the HPM CAL values so PLL must perform
-                                                         calibration. */
-    }
-    else
-    {
-        XCVR_PLL_DIG->HPM_CTRL &= ~(XCVR_PLL_DIG_HPM_CTRL_RX_HPM_CAL_EN_MASK); /* RSM forces HPM CAL values so PLL
-                                                                                  does not perform calibration.  */
-    }
+        /* NOTE: This code assumes t_ip1 and t_ip2 config structures both use identical HPM CAL enable bit settings
+         * (which is the case in the initial coding */
+        /* KW45 HPM CAL support */
+        bool do_hpm_cal = ((xcvr_lcl_rsm_generic_config.RSM_CTRL3 & XCVR_MISC_RSM_CTRL3_RSM_HPM_CAL_MASK) ==
+                           0U); /* RSM isn't providing HPM CAL values */
+        if (do_hpm_cal)
+        {
+            XCVR_PLL_DIG->HPM_CTRL |=
+                XCVR_PLL_DIG_HPM_CTRL_RX_HPM_CAL_EN_MASK; /* RSM is not providing the HPM CAL values so PLL must perform
+                                                             calibration. */
+        }
+        else
+        {
+            XCVR_PLL_DIG->HPM_CTRL &= ~(XCVR_PLL_DIG_HPM_CTRL_RX_HPM_CAL_EN_MASK); /* RSM forces HPM CAL values so PLL
+                                                                                      does not perform calibration.  */
+        }
 #endif
-}
+
+        }
 
 static xcvrLclStatus_t XCVR_LCL_SetupTXDIGForRanging(const xcvr_lcl_rsm_config_t *rsm_settings_ptr, bool rate_is_2mbps)
-{
+        {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
     uint32_t temp;
-
-    /* save for later restore */
-    xcvr_settings.tx_dig_data_padding_ctrl   = XCVR_TX_DIG->DATA_PADDING_CTRL;
-    xcvr_settings.tx_dig_data_padding_ctrl_1 = XCVR_TX_DIG->DATA_PADDING_CTRL_1;
-    xcvr_settings.tx_dig_pa_ctrl             = XCVR_TX_DIG->PA_CTRL;
+        
+        /* ************** */
+        /* Setup TXDIG for ranging */
+        /* ************** */
+        /* save for later restore */
+        xcvr_settings.tx_dig_data_padding_ctrl   = XCVR_TX_DIG->DATA_PADDING_CTRL;
+        xcvr_settings.tx_dig_data_padding_ctrl_1 = XCVR_TX_DIG->DATA_PADDING_CTRL_1;
+        xcvr_settings.tx_dig_pa_ctrl             = XCVR_TX_DIG->PA_CTRL;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-    xcvr_settings.analog_tx_dac_pa = XCVR_ANALOG->TX_DAC_PA;
+        xcvr_settings.analog_tx_dac_pa = XCVR_ANALOG->TX_DAC_PA;
 #endif
-    
+        
     /* Setup PA ramping */
     status = XCVR_LCL_SetupPARamping(rsm_settings_ptr);
     if (status != gXcvrLclStatusSuccess)
-    {
+        {
         return status;
-    }
+        }
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-    /* Ensure PA ramp analog is disabled since enabled by default (CONNRF-1412) */
-    temp = xcvr_settings.analog_tx_dac_pa;
-    temp &= ~(XCVR_ANALOG_TX_DAC_PA_PA_SMOOTHER_EN_MASK | XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_CFBK_MASK); /* CONNRF-1474 zero out DAC_TRIM_CFBK */
-    XCVR_ANALOG->TX_DAC_PA = temp;
+        /* Ensure PA ramp analog is disabled since enabled by default (CONNRF-1412) */
+        temp = xcvr_settings.analog_tx_dac_pa;
+        temp &= ~(XCVR_ANALOG_TX_DAC_PA_PA_SMOOTHER_EN_MASK | XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_CFBK_MASK); /* CONNRF-1474 zero out DAC_TRIM_CFBK */
+        XCVR_ANALOG->TX_DAC_PA = temp;
 
-    /* KW47 specific padding settings for modulation bandwidth testing */
-    temp = xcvr_settings.tx_dig_data_padding_ctrl;
-    temp &= ~(XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_MASK | XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN_MASK |
-              XCVR_TX_DIG_DATA_PADDING_CTRL_DATA_PADDING_SEL_MASK);
-    temp |=
-        (XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY(RSM_PA_PAD_DLY_VAL) |
-            XCVR_TX_DIG_DATA_PADDING_CTRL_DATA_PADDING_SEL(2U) |  /* 2 = negative Fdev ramp; 1 = positive Fdev ramp */
-             XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN_MASK); /* Adjust PA RAMP timing using PAD_DLY */
-    XCVR_TX_DIG->DATA_PADDING_CTRL = temp;
+        /* KW47 specific padding settings for modulation bandwidth testing */
+        temp = xcvr_settings.tx_dig_data_padding_ctrl;
+        temp &= ~(XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_MASK | XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN_MASK |
+                  XCVR_TX_DIG_DATA_PADDING_CTRL_DATA_PADDING_SEL_MASK);
+        temp |=
+            (XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY(RSM_PA_PAD_DLY_VAL) |
+                XCVR_TX_DIG_DATA_PADDING_CTRL_DATA_PADDING_SEL(2U) |  /* 2 = negative Fdev ramp; 1 = positive Fdev ramp */
+                 XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN_MASK); /* Adjust PA RAMP timing using PAD_DLY */
+        XCVR_TX_DIG->DATA_PADDING_CTRL = temp;
 
-    temp = xcvr_settings.tx_dig_data_padding_ctrl_1;
-    temp &= ~(XCVR_TX_DIG_DATA_PADDING_CTRL_1_RAMP_UP_DLY_MASK |
-              XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY_MASK);
-    temp |= XCVR_TX_DIG_DATA_PADDING_CTRL_1_RAMP_UP_DLY(TX_DIG_RAMP_UP_DLY);
-    if (rate_is_2mbps)
-    {
-        temp |=
-            XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY(TX_DATA_FLUSH_DLY_2MBPS); /* Setup for 2Mbps rate */
-    }
-    else
-    {
-        temp |=
-            XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY(TX_DATA_FLUSH_DLY_1MBPS); /* Setup for 1Mbps rate */
-    }
-    XCVR_TX_DIG->DATA_PADDING_CTRL_1 = temp;
-    XCVR_TX_DIG->DATA_PADDING_CTRL_2 =XCVR_TX_DIG_DATA_PADDING_CTRL_2_DATA_PAD_MFDEV(0x1DCDU) |
-                                      XCVR_TX_DIG_DATA_PADDING_CTRL_2_DATA_PAD_PFDEV(0x233U);
+        temp = xcvr_settings.tx_dig_data_padding_ctrl_1;
+        temp &= ~(XCVR_TX_DIG_DATA_PADDING_CTRL_1_RAMP_UP_DLY_MASK |
+                  XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY_MASK);
+        temp |= XCVR_TX_DIG_DATA_PADDING_CTRL_1_RAMP_UP_DLY(TX_DIG_RAMP_UP_DLY);
+        if (rate_is_2mbps)
+        {
+            temp |=
+                XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY(TX_DATA_FLUSH_DLY_2MBPS); /* Setup for 2Mbps rate */
+        }
+        else
+        {
+            temp |=
+                XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY(TX_DATA_FLUSH_DLY_1MBPS); /* Setup for 1Mbps rate */
+        }
+        XCVR_TX_DIG->DATA_PADDING_CTRL_1 = temp;
+        XCVR_TX_DIG->DATA_PADDING_CTRL_2 =XCVR_TX_DIG_DATA_PADDING_CTRL_2_DATA_PAD_MFDEV(0x1DCDU) |
+                                          XCVR_TX_DIG_DATA_PADDING_CTRL_2_DATA_PAD_PFDEV(0x233U);
+
+
 
 #else
-    temp = xcvr_settings.tx_dig_data_padding_ctrl;
-    temp &= ~(XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_MASK | XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN_MASK |
-              XCVR_TX_DIG_DATA_PADDING_CTRL_DATA_PADDING_SEL_MASK);
-    temp |= (XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY(RSM_PA_PAD_DLY_VAL) |
-             XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN_MASK); /* Adjust PA RAMP timing using PAD_DLY */
-    XCVR_TX_DIG->DATA_PADDING_CTRL = temp;
+        temp = xcvr_settings.tx_dig_data_padding_ctrl;
+        temp &= ~(XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_MASK | XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN_MASK |
+                  XCVR_TX_DIG_DATA_PADDING_CTRL_DATA_PADDING_SEL_MASK);
+        temp |= (XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY(RSM_PA_PAD_DLY_VAL) |
+                 XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN_MASK); /* Adjust PA RAMP timing using PAD_DLY */
+        XCVR_TX_DIG->DATA_PADDING_CTRL = temp;
 
-    temp = xcvr_settings.tx_dig_data_padding_ctrl_1;
-    temp &= ~(XCVR_TX_DIG_DATA_PADDING_CTRL_1_RAMP_UP_DLY_MASK |
-              XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY_MASK);
-    temp |= XCVR_TX_DIG_DATA_PADDING_CTRL_1_RAMP_UP_DLY(TX_DIG_RAMP_UP_DLY);
-    if (rate_is_2mbps)
-    {
-        temp |=
-            XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY(TX_DATA_FLUSH_DLY_2MBPS); /* Setup for 2Mbps rate */
-    }
-    else
-    {
-        temp |=
-            XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY(TX_DATA_FLUSH_DLY_1MBPS); /* Setup for 1Mbps rate */
-    }
-    XCVR_TX_DIG->DATA_PADDING_CTRL_1 = temp;
+        temp = xcvr_settings.tx_dig_data_padding_ctrl_1;
+        temp &= ~(XCVR_TX_DIG_DATA_PADDING_CTRL_1_RAMP_UP_DLY_MASK |
+                  XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY_MASK);
+        temp |= XCVR_TX_DIG_DATA_PADDING_CTRL_1_RAMP_UP_DLY(TX_DIG_RAMP_UP_DLY);
+        if (rate_is_2mbps)
+        {
+            temp |=
+                XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY(TX_DATA_FLUSH_DLY_2MBPS); /* Setup for 2Mbps rate */
+        }
+        else
+        {
+            temp |=
+                XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY(TX_DATA_FLUSH_DLY_1MBPS); /* Setup for 1Mbps rate */
+        }
+        XCVR_TX_DIG->DATA_PADDING_CTRL_1 = temp;
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
 
     return status;
 }
-
+        /* ************** */
 static void XCVR_LCL_SetupRXDIGForRanging(const xcvr_lcl_rsm_config_t *rsm_settings_ptr, bool rate_is_2mbps)
 {
     uint32_t temp;
-
-    /* If RCCAL is not performed, setup the CBPF override value */
-    temp = XCVR_RX_DIG->RCCAL_CTRL1;
-    if (!xcvr_lcl_rsm_generic_config.do_rxdig_rccal)
-    {
-        temp |= XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD_EN_MASK; /* Enable override of CBPF value */
-        temp &= ~(XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD_MASK);
-        if (rate_is_2mbps)
+        /* ************** */
+        /* If RCCAL is not performed, setup the CBPF override value */
+        temp = XCVR_RX_DIG->RCCAL_CTRL1;
+        if (!xcvr_lcl_rsm_generic_config.do_rxdig_rccal)
         {
-            temp |= XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD(0x2BU); /* Setup for 2Mbps rate */
+            temp |= XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD_EN_MASK; /* Enable override of CBPF value */
+            temp &= ~(XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD_MASK);
+            if (rate_is_2mbps)
+            {
+                temp |= XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD(0x2BU); /* Setup for 2Mbps rate */
+            }
+            else
+            {
+                temp |= XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD(0x4DU); /* Setup for 1Mbps rate */
+            }
+            
         }
         else
         {
-            temp |= XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD(0x4DU); /* Setup for 1Mbps rate */
+            temp &= ~(XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD_EN_MASK); /* Disable override of CBPF value */
         }
-        
-    }
-    else
-    {
-        temp &= ~(XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD_EN_MASK); /* Disable override of CBPF value */
-    }
-    XCVR_RX_DIG->RCCAL_CTRL1 = temp;
+        XCVR_RX_DIG->RCCAL_CTRL1 = temp;
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* NADM only available on KW47 */
     /* Setup NADM feature */
     XCVR_LCL_ConfigureNADMFeature(rate_is_2mbps);
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 
-    /* Setup RSSI and RXDIG output to DMA */
-    temp = XCVR_RX_DIG->DFT_CTRL;
-    temp &= ~(XCVR_RX_DIG_DFT_CTRL_DFT_RSSI_OUT_SEL_MASK | XCVR_RX_DIG_DFT_CTRL_DFT_RSSI_MAG_OUT_SEL_MASK |
-              XCVR_RX_DIG_DFT_CTRL_DFT_RX_PH_OUT_SEL_MASK | XCVR_RX_DIG_DFT_CTRL_DFT_RX_IQ_OUT_SEL_MASK);
-    temp |= XCVR_RX_DIG_DFT_CTRL_DFT_RSSI_OUT_SEL(4U) | XCVR_RX_DIG_DFT_CTRL_DFT_RSSI_MAG_OUT_SEL(7U) |
-            XCVR_RX_DIG_DFT_CTRL_DFT_RX_IQ_OUT_SEL(rsm_settings_ptr->iq_out_sel);
-    XCVR_RX_DIG->DFT_CTRL = temp;
-    
-    temp = XCVR_RX_DIG->CTRL1;
-    temp |= XCVR_RX_DIG_CTRL1_RX_IQ_PH_OUTPUT_COND_MASK;
-    temp &= ~(XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN_MASK);
-    /* Setup averager (in the same register) */
-    temp |= XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN(
-        rsm_settings_ptr->averaging_win); /* Setup according to input structure */
+        /* Setup RSSI and RXDIG output to DMA */
+        temp = XCVR_RX_DIG->DFT_CTRL;
+        temp &= ~(XCVR_RX_DIG_DFT_CTRL_DFT_RSSI_OUT_SEL_MASK | XCVR_RX_DIG_DFT_CTRL_DFT_RSSI_MAG_OUT_SEL_MASK |
+                  XCVR_RX_DIG_DFT_CTRL_DFT_RX_PH_OUT_SEL_MASK | XCVR_RX_DIG_DFT_CTRL_DFT_RX_IQ_OUT_SEL_MASK);
+        temp |= XCVR_RX_DIG_DFT_CTRL_DFT_RSSI_OUT_SEL(4U) | XCVR_RX_DIG_DFT_CTRL_DFT_RSSI_MAG_OUT_SEL(7U) |
+                XCVR_RX_DIG_DFT_CTRL_DFT_RX_IQ_OUT_SEL(rsm_settings_ptr->iq_out_sel);
+        XCVR_RX_DIG->DFT_CTRL = temp;
+        temp                  = XCVR_RX_DIG->CTRL1;
+        temp |= XCVR_RX_DIG_CTRL1_RX_IQ_PH_OUTPUT_COND_MASK;
+        temp &= ~(XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN_MASK);
+        /* Setup averager (in the same register) */
+        temp |= XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN(
+            rsm_settings_ptr->averaging_win); /* Setup according to input structure */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* Only applies to KW47 */
-    temp |= XCVR_RX_DIG_CTRL1_RX_DFT_IQ_OUT_AVERAGED_MASK |
-        XCVR_RX_DIG_CTRL1_RX_IQ_AVG_WIN_PCT(
-                rsm_settings_ptr
-                    ->pct_averaging_win); /* Setup according to input structure for second stage of averaging */
+        temp |= XCVR_RX_DIG_CTRL1_RX_DFT_IQ_OUT_AVERAGED_MASK |
+            XCVR_RX_DIG_CTRL1_RX_IQ_AVG_WIN_PCT(
+                    rsm_settings_ptr
+                        ->pct_averaging_win); /* Setup according to input structure for second stage of averaging */
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
-    XCVR_RX_DIG->CTRL1 = temp;
+        XCVR_RX_DIG->CTRL1 = temp;
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
-    temp = XCVR_RX_DIG->AGC_CTRL;
-    temp &= ~(XCVR_RX_DIG_AGC_CTRL_AGC_HOLD_EN_MASK);  // to avoid quick changes for stable localisation 
-    temp |=XCVR_RX_DIG_AGC_CTRL_AGC_HOLD_EN_MASK ;    // to avoid AGC computation at the end of a RX packet
-    XCVR_RX_DIG->AGC_CTRL = temp;
+        temp = XCVR_RX_DIG->AGC_CTRL;
+        temp &= ~(XCVR_RX_DIG_AGC_CTRL_AGC_HOLD_EN_MASK);  // to avoid quick changes for stable localisation 
+        temp |=XCVR_RX_DIG_AGC_CTRL_AGC_HOLD_EN_MASK ;    // to avoid AGC computation at the end of a RX packet
+        XCVR_RX_DIG->AGC_CTRL = temp;
 #endif
 }
 
+        /* TQI registers configured in XCVR_LCL_ConfigLclBlock() */
+
 static xcvrLclStatus_t XCVR_LCL_SetupTSMForRanging(bool rate_is_2mbps)
-{
+        {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
     uint32_t temp;
 
-    status = XCVR_LCL_ReprogramTsmTimings(
-        &xcvr_lcl_tsm_generic_config); /* TSM settings are stored in const config structures */
+            status = XCVR_LCL_ReprogramTsmTimings(
+                &xcvr_lcl_tsm_generic_config); /* TSM settings are stored in const config structures */
 
-    temp = XCVR_RX_DIG->DFT_CTRL;
+        temp = XCVR_RX_DIG->DFT_CTRL;
 #if (1) /* TSM OVERRIDES for preserving PLL constant phase */
-    xcvr_settings.tsm_ovrd0 = XCVR_TSM->OVRD0;
-    xcvr_settings.tsm_ovrd1 = XCVR_TSM->OVRD1;
-    xcvr_settings.tsm_ovrd2 = XCVR_TSM->OVRD2;
-    xcvr_settings.tsm_ovrd3 = XCVR_TSM->OVRD3;
+        xcvr_settings.tsm_ovrd0 = XCVR_TSM->OVRD0;
+        xcvr_settings.tsm_ovrd1 = XCVR_TSM->OVRD1;
+        xcvr_settings.tsm_ovrd2 = XCVR_TSM->OVRD2;
+        xcvr_settings.tsm_ovrd3 = XCVR_TSM->OVRD3;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
-    xcvr_settings.tsm_ovrd4 = XCVR_TSM->OVRD4;
+        xcvr_settings.tsm_ovrd4 = XCVR_TSM->OVRD4;
 #endif
 
-    temp |= XCVR_RX_DIG_DFT_CTRL_CGM_OVRD(4); // to maintain rx_dig_mixer_clk
+        temp |= XCVR_RX_DIG_DFT_CTRL_CGM_OVRD(4); // to maintain rx_dig_mixer_clk
 #endif
-    XCVR_RX_DIG->DFT_CTRL = temp;
+        XCVR_RX_DIG->DFT_CTRL = temp;
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-    /* Configure RX_SETTLING_LATENCY */
-    temp = XCVR_TSM->WU_LATENCY;
-    temp &= ~(XCVR_TSM_WU_LATENCY_RX_SETTLING_LATENCY_MASK);
-    if (rate_is_2mbps)
-    {
-        temp |= XCVR_TSM_WU_LATENCY_RX_SETTLING_LATENCY(RX_SETTLING_LATENCY_2MBPS);
-    }
-    else
-    {
-        temp |= XCVR_TSM_WU_LATENCY_RX_SETTLING_LATENCY(RX_SETTLING_LATENCY_1MBPS);
-    }
-    XCVR_TSM->WU_LATENCY = temp;
+        /* Configure RX_SETTLING_LATENCY */
+        temp = XCVR_TSM->WU_LATENCY;
+        temp &= ~(XCVR_TSM_WU_LATENCY_RX_SETTLING_LATENCY_MASK);
+        if (rate_is_2mbps)
+        {
+            temp |= XCVR_TSM_WU_LATENCY_RX_SETTLING_LATENCY(RX_SETTLING_LATENCY_2MBPS);
+        }
+        else
+        {
+            temp |= XCVR_TSM_WU_LATENCY_RX_SETTLING_LATENCY(RX_SETTLING_LATENCY_1MBPS);
+        }
+        XCVR_TSM->WU_LATENCY = temp;
 #endif
 
     return status;
 }
-
+        /* ************** */
 static void XCVR_LCL_SetupRSMForRanging(const xcvr_lcl_rsm_config_t *rsm_settings_ptr, bool rate_is_2mbps, bool is_sqte_mode)
 {
     uint32_t temp;
-    
-    /* Customize RSM and TSM settings for 655usec long tone using 2 step sequence */
-    uint8_t temp_t_fcs_usec; 
-    uint8_t temp_t_fm_reg_setting; 
+        /* ************** */
+                /* Customize RSM and TSM settings for 655usec long tone using 2 step sequence */
+        uint8_t temp_t_fcs_usec; 
+        uint8_t temp_t_fm_reg_setting; 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)  /* Stable phase test workaround for KW45 */
     bool is_sqte_stable_phase_mode = (rsm_settings_ptr->op_mode == XCVR_RSM_SQTE_STABLE_PHASE_TEST_MODE);
-    if (is_sqte_stable_phase_mode)
-    {
-        /* customize T_FC and T_FM settings for stable phase testing */
-        if (rsm_settings_ptr->t_fc < 130U)
+        if (is_sqte_stable_phase_mode)
         {
-            /* Shorter sequence configuration */
-            temp_t_fcs_usec =rsm_settings_ptr->t_fc+15U;  /* T_FCS 15usec longer */
-            temp_t_fm_reg_setting = 7U; /* Keep default T_FM */
+            /* customize T_FC and T_FM settings for stable phase testing */
+            if (rsm_settings_ptr->t_fc < 130U)
+            {
+                /* Shorter sequence configuration */
+                temp_t_fcs_usec =rsm_settings_ptr->t_fc+15U;  /* T_FCS 15usec longer */
+                temp_t_fm_reg_setting = 7U; /* Keep default T_FM */
+            }
+            else
+            {
+                /* Longer sequence configuration */
+                temp_t_fcs_usec =
+                    rsm_settings_ptr->t_fc - 5U; /* T_FCS 20usec shorter then 15usec longer (ends up 5usec shorter) */
+                temp_t_fm_reg_setting = 9U; /* Extend T_FM by 20usec (2 counts in the register) */
+            }
+        }
+        else
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450) */
+        {
+                temp_t_fcs_usec =rsm_settings_ptr->t_fc;  /* T_FCS unchanged */
+                temp_t_fm_reg_setting = 7U; /* Keep default T_FM */
+        }
+
+        /* RSM_CTRL0 */
+        temp = xcvr_lcl_rsm_generic_config.RSM_CTRL0; /* Structure based configuration for the RSM_CTRL0 register;  */
+        temp &= ~(XCVR_MISC_RSM_CTRL0_RSM_MODE_MASK | /* Zero out all fields being modified by logic */
+                  XCVR_MISC_RSM_CTRL0_RSM_RATE_MASK | XCVR_MISC_RSM_CTRL0_RSM_TRIG_SEL_MASK |
+                  XCVR_MISC_RSM_CTRL0_RSM_TRIG_DLY_MASK | XCVR_MISC_RSM_CTRL0_RSM_STEPS_MASK);
+        /* Configure mode */
+        if (!is_sqte_mode)
+        {
+            temp |= XCVR_MISC_RSM_CTRL0_RSM_MODE_MASK; /* PDE mode */
+        }
+        /* Configure rate */
+        if (rate_is_2mbps)
+        {
+            temp |= XCVR_MISC_RSM_CTRL0_RSM_RATE_MASK; /* Setup for 2Mbps rate */
+        }
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
+        if (rsm_settings_ptr->sniffer_mode_en)
+        {
+            temp &= ~(XCVR_MISC_RSM_CTRL0_RSM_TX_EN_MASK); /* Turn off TX in sniffer mode */
+            temp |= XCVR_MISC_RSM_CTRL0_RSM_SN_EN_MASK; /* Enable sniffer mode */
+        }
+#endif
+        /* Configure trigger select, trigger delay and number of steps */
+        temp |= (XCVR_MISC_RSM_CTRL0_RSM_TRIG_SEL((uint32_t)rsm_settings_ptr->trig_sel) |
+                 XCVR_MISC_RSM_CTRL0_RSM_TRIG_DLY((uint32_t)rsm_settings_ptr->trig_delay) |
+                 XCVR_MISC_RSM_CTRL0_RSM_STEPS((uint32_t)rsm_settings_ptr->num_steps));
+        /* For hardware triggers, RX or TX enable can be set in this routine. For SW triggered, XCVR_LCL_RsmGo() *must*
+         * be called to set the role and trigger the start. */
+        if (rsm_settings_ptr->trig_sel != XCVR_RSM_TRIG_SW)
+        {
+            temp |= (rsm_settings_ptr->role == XCVR_RSM_TX_MODE ? XCVR_MISC_RSM_CTRL0_RSM_TX_EN_MASK :
+                                                                  XCVR_MISC_RSM_CTRL0_RSM_RX_EN_MASK);
+        }
+        XCVR_MISC->RSM_CTRL0 = temp;
+
+        /* RSM_CTRL1 */
+        /* Write T_FC/T_IP values - writing the entire register so no need for stored config */
+        XCVR_MISC->RSM_CTRL1 =
+            (XCVR_MISC_RSM_CTRL1_RSM_T_FC((uint8_t)((temp_t_fcs_usec + T_RD) / T_FC_INCMT)) |
+                                 XCVR_MISC_RSM_CTRL1_RSM_T_IP1((uint8_t)((rsm_settings_ptr->t_ip1 + T_RD) / T_IP_INCMT)) |
+                                 XCVR_MISC_RSM_CTRL1_RSM_T_IP2((uint8_t)((rsm_settings_ptr->t_ip2 + T_RD) / T_IP_INCMT)) |
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)  
+                                XCVR_MISC_RSM_CTRL1_RSM_T_FM0(temp_t_fm_reg_setting) |
+             XCVR_MISC_RSM_CTRL1_RSM_T_FM1(temp_t_fm_reg_setting) | XCVR_MISC_RSM_CTRL1_RSM_T_S(2U)
+#else
+                                /* T_FM field (collapsed to 1) is moved to RSM_CTRL5 in KW47 */
+                                XCVR_MISC_RSM_CTRL1_RSM_T_S(0xAU) 
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)   */
+                                );
+
+        /* RSM_CTRL2 */
+        /* Configure T_PM0 and T_PM1 fields */
+        temp = xcvr_lcl_rsm_generic_config.RSM_CTRL2; /* Structure based configuration for the RSM_CTRL2 register; Later
+                                                      logic will configure additional fields */
+        temp &= ~(XCVR_MISC_RSM_CTRL2_RSM_T_PM0_MASK | XCVR_MISC_RSM_CTRL2_RSM_T_PM1_MASK);
+        /*Input T_PM setting is the T_PM total duration for mult. antenna and tone extension slot */
+        uint16_t t_pm0_setting = (rsm_settings_ptr->t_pm0 / T_PM_INCMT) - ZERO_BASIS;
+        temp |= XCVR_MISC_RSM_CTRL2_RSM_T_PM0((uint32_t)(t_pm0_setting)) |
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)  
+                XCVR_MISC_RSM_CTRL2_RSM_T_PM1((uint32_t)(t_pm0_setting) + 1U);
+#else
+                XCVR_MISC_RSM_CTRL2_RSM_RTT_TYPE(rsm_settings_ptr->rtt_type) |
+                XCVR_MISC_RSM_CTRL2_RSM_T_PM1((uint32_t)(t_pm0_setting) + 10U);
+#endif
+        XCVR_MISC->RSM_CTRL2 = temp;
+
+        /* RSM_CTRL3 */
+        /* Configure RSM_DT_RX_SYNC_DLY & RSM_DMA_RX_EN & RSM_DMA_DUR */
+        temp = xcvr_lcl_rsm_generic_config.RSM_CTRL3; /* Structure based configuration for the RSM_CTRL3 register; Later
+                                                      logic will configure additional fields */
+        temp &= ~(XCVR_MISC_RSM_CTRL3_RSM_DMA_RX_EN_MASK | XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DLY_MASK |
+                  XCVR_MISC_RSM_CTRL3_RSM_DMA_DUR_MASK |
+                  XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DIS_MASK|
+                  XCVR_MISC_RSM_CTRL3_RSM_HPM_CAL_MASK); /* Zero out all fields being modified by logic */
+        if (rate_is_2mbps)
+        {
+            temp |= XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DLY(
+                RX_SYNC_DLY_2MBPS); /* Original setting for both 1Mbps & 2Mbps rates (now testing only for 2Mbps) */
         }
         else
         {
-            /* Longer sequence configuration */
-            temp_t_fcs_usec =
-                rsm_settings_ptr->t_fc - 5U; /* T_FCS 20usec shorter then 15usec longer (ends up 5usec shorter) */
-            temp_t_fm_reg_setting = 9U; /* Extend T_FM by 20usec (2 counts in the register) */
+            temp |= XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DLY(
+                RX_SYNC_DLY_1MBPS); /* Decreased by 1 for 1Mbps to test shifting sync point */
         }
-    }
-    else
-#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450) */
-    {
-            temp_t_fcs_usec =rsm_settings_ptr->t_fc;  /* T_FCS unchanged */
-            temp_t_fm_reg_setting = 7U; /* Keep default T_FM */
-    }
-
-    /* RSM_CTRL0 */
-    temp = xcvr_lcl_rsm_generic_config.RSM_CTRL0; /* Structure based configuration for the RSM_CTRL0 register;  */
-    temp &= ~(XCVR_MISC_RSM_CTRL0_RSM_MODE_MASK | /* Zero out all fields being modified by logic */
-              XCVR_MISC_RSM_CTRL0_RSM_RATE_MASK | XCVR_MISC_RSM_CTRL0_RSM_TRIG_SEL_MASK |
-              XCVR_MISC_RSM_CTRL0_RSM_TRIG_DLY_MASK | XCVR_MISC_RSM_CTRL0_RSM_STEPS_MASK);
-    /* Configure mode */
-    if (!is_sqte_mode)
-    {
-        temp |= XCVR_MISC_RSM_CTRL0_RSM_MODE_MASK; /* PDE mode */
-    }
-    /* Configure rate */
-    if (rate_is_2mbps)
-    {
-        temp |= XCVR_MISC_RSM_CTRL0_RSM_RATE_MASK; /* Setup for 2Mbps rate */
-    }
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
-    if (rsm_settings_ptr->sniffer_mode_en)
-    {
-        temp &= ~(XCVR_MISC_RSM_CTRL0_RSM_TX_EN_MASK); /* Turn off TX in sniffer mode */
-        temp |= XCVR_MISC_RSM_CTRL0_RSM_SN_EN_MASK; /* Enable sniffer mode */
-    }
-#endif
-    /* Configure trigger select, trigger delay and number of steps */
-    temp |= (XCVR_MISC_RSM_CTRL0_RSM_TRIG_SEL((uint32_t)rsm_settings_ptr->trig_sel) |
-             XCVR_MISC_RSM_CTRL0_RSM_TRIG_DLY((uint32_t)rsm_settings_ptr->trig_delay) |
-             XCVR_MISC_RSM_CTRL0_RSM_STEPS((uint32_t)rsm_settings_ptr->num_steps));
-    /* For hardware triggers, RX or TX enable can be set in this routine. For SW triggered, XCVR_LCL_RsmGo() *must*
-     * be called to set the role and trigger the start. */
-    if (rsm_settings_ptr->trig_sel != XCVR_RSM_TRIG_SW)
-    {
-        temp |= (rsm_settings_ptr->role == XCVR_RSM_TX_MODE ? XCVR_MISC_RSM_CTRL0_RSM_TX_EN_MASK :
-                                                              XCVR_MISC_RSM_CTRL0_RSM_RX_EN_MASK);
-    }
-    XCVR_MISC->RSM_CTRL0 = temp;
-
-    /* RSM_CTRL1 */
-    /* Write T_FC/T_IP values - writing the entire register so no need for stored config */
-    XCVR_MISC->RSM_CTRL1 =
-        (XCVR_MISC_RSM_CTRL1_RSM_T_FC((uint8_t)((temp_t_fcs_usec + T_RD) / T_FC_INCMT)) |
-                             XCVR_MISC_RSM_CTRL1_RSM_T_IP1((uint8_t)((rsm_settings_ptr->t_ip1 + T_RD) / T_IP_INCMT)) |
-                             XCVR_MISC_RSM_CTRL1_RSM_T_IP2((uint8_t)((rsm_settings_ptr->t_ip2 + T_RD) / T_IP_INCMT)) |
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)  
-                            XCVR_MISC_RSM_CTRL1_RSM_T_FM0(temp_t_fm_reg_setting) |
-         XCVR_MISC_RSM_CTRL1_RSM_T_FM1(temp_t_fm_reg_setting) | XCVR_MISC_RSM_CTRL1_RSM_T_S(2U)
-#else
-                            /* T_FM field (collapsed to 1) is moved to RSM_CTRL5 in KW47 */
-                            XCVR_MISC_RSM_CTRL1_RSM_T_S(0xAU) 
-#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)   */
-                            );
-
-    /* RSM_CTRL2 */
-    /* Configure T_PM0 and T_PM1 fields */
-    temp = xcvr_lcl_rsm_generic_config.RSM_CTRL2; /* Structure based configuration for the RSM_CTRL2 register; Later
-                                                  logic will configure additional fields */
-    temp &= ~(XCVR_MISC_RSM_CTRL2_RSM_T_PM0_MASK | XCVR_MISC_RSM_CTRL2_RSM_T_PM1_MASK);
-    /*Input T_PM setting is the T_PM total duration for mult. antenna and tone extension slot */
-    uint16_t t_pm0_setting = (rsm_settings_ptr->t_pm0 / T_PM_INCMT) - ZERO_BASIS;
-    temp |= XCVR_MISC_RSM_CTRL2_RSM_T_PM0((uint32_t)(t_pm0_setting)) |
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)  
-            XCVR_MISC_RSM_CTRL2_RSM_T_PM1((uint32_t)(t_pm0_setting) + 1U);
-#else
-            XCVR_MISC_RSM_CTRL2_RSM_RTT_TYPE(rsm_settings_ptr->rtt_type) |
-            XCVR_MISC_RSM_CTRL2_RSM_T_PM1((uint32_t)(t_pm0_setting) + 10U);
-#endif
-    XCVR_MISC->RSM_CTRL2 = temp;
-
-    /* RSM_CTRL3 */
-    /* Configure RSM_DT_RX_SYNC_DLY & RSM_DMA_RX_EN & RSM_DMA_DUR */
-    temp = xcvr_lcl_rsm_generic_config.RSM_CTRL3; /* Structure based configuration for the RSM_CTRL3 register; Later
-                                                  logic will configure additional fields */
-    temp &= ~(XCVR_MISC_RSM_CTRL3_RSM_DMA_RX_EN_MASK | XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DLY_MASK |
-              XCVR_MISC_RSM_CTRL3_RSM_DMA_DUR_MASK |
-              XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DIS_MASK|
-              XCVR_MISC_RSM_CTRL3_RSM_HPM_CAL_MASK); /* Zero out all fields being modified by logic */
-    if (rate_is_2mbps)
-    {
-        temp |= XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DLY(
-            RX_SYNC_DLY_2MBPS); /* Original setting for both 1Mbps & 2Mbps rates (now testing only for 2Mbps) */
-    }
-    else
-    {
-        temp |= XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DLY(
-            RX_SYNC_DLY_1MBPS); /* Decreased by 1 for 1Mbps to test shifting sync point */
-    }
-    if (rsm_settings_ptr->use_rsm_dma_mask)
-    {
-        temp |= XCVR_MISC_RSM_CTRL3_RSM_DMA_RX_EN_MASK |
-                XCVR_MISC_RSM_CTRL3_RSM_DMA_DUR(
-                    rsm_settings_ptr
-                        ->rsm_dma_dur_pm); /* Setup to use the RSM DMA mask and set the duration for that mask */
-    }
-    else
-    {
-        temp &= ~(XCVR_MISC_RSM_CTRL3_RSM_DMA_RX_EN_MASK |
-                  XCVR_MISC_RSM_CTRL3_RSM_DMA_DUR_MASK); /* Setup to use the LCL DMA mask control */
-        XCVR_MISC->RSM_CTRL4 = 0U; /* Clear all DMA duration and delay from RSM when LCL is in use - to prevent
-                                      non-interference of RSM signals on LCL */
-    }
-    if (rsm_settings_ptr->disable_rx_sync)
-    {
-        temp |= XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DIS_MASK;
-    }
+        if (rsm_settings_ptr->use_rsm_dma_mask)
+        {
+            temp |= XCVR_MISC_RSM_CTRL3_RSM_DMA_RX_EN_MASK |
+                    XCVR_MISC_RSM_CTRL3_RSM_DMA_DUR(
+                        rsm_settings_ptr
+                            ->rsm_dma_dur_pm); /* Setup to use the RSM DMA mask and set the duration for that mask */
+        }
+        else
+        {
+            temp &= ~(XCVR_MISC_RSM_CTRL3_RSM_DMA_RX_EN_MASK |
+                      XCVR_MISC_RSM_CTRL3_RSM_DMA_DUR_MASK); /* Setup to use the LCL DMA mask control */
+            XCVR_MISC->RSM_CTRL4 = 0U; /* Clear all DMA duration and delay from RSM when LCL is in use - to prevent
+                                          non-interference of RSM signals on LCL */
+        }
+        if (rsm_settings_ptr->disable_rx_sync)
+        {
+            temp |= XCVR_MISC_RSM_CTRL3_RSM_DT_RX_SYNC_DIS_MASK;
+        }
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)
-    temp |= XCVR_MISC_RSM_CTRL3_RSM_HPM_CAL(1);
+        temp |= XCVR_MISC_RSM_CTRL3_RSM_HPM_CAL(1);
 #else
-    temp |= XCVR_MISC_RSM_CTRL3_RSM_HPM_CAL(0);
+        temp |= XCVR_MISC_RSM_CTRL3_RSM_HPM_CAL(0);
 #endif
-    XCVR_MISC->RSM_CTRL3 = temp;
+        XCVR_MISC->RSM_CTRL3 = temp;
 
-    /* RSM_CTRL4 */
-    /* Configure RSM_DMA_DUR0 & RSM_DMA_DLY0 independent of whether using dma mask (these are always used for
-     * FCS sequence)*/
-    temp = XCVR_MISC_RSM_CTRL4_RSM_DMA_DLY0(rsm_settings_ptr->rsm_dma_dly_fm_ext) |
-           XCVR_MISC_RSM_CTRL4_RSM_DMA_DUR0(rsm_settings_ptr->rsm_dma_dur_fm_ext);
-    /* Configure RSM_DMA_DLY  if using dma mask */
-    if (rsm_settings_ptr->use_rsm_dma_mask)
-    {
-        temp |= XCVR_MISC_RSM_CTRL4_RSM_DMA_DLY(rsm_settings_ptr->rsm_dma_dly_pm);
-    }
-    XCVR_MISC->RSM_CTRL4 = temp;
+        /* RSM_CTRL4 */
+        /* Configure RSM_DMA_DUR0 & RSM_DMA_DLY0 independent of whether using dma mask (these are always used for
+         * FCS sequence)*/
+        temp = XCVR_MISC_RSM_CTRL4_RSM_DMA_DLY0(rsm_settings_ptr->rsm_dma_dly_fm_ext) |
+               XCVR_MISC_RSM_CTRL4_RSM_DMA_DUR0(rsm_settings_ptr->rsm_dma_dur_fm_ext);
+        /* Configure RSM_DMA_DLY  if using dma mask */
+        if (rsm_settings_ptr->use_rsm_dma_mask)
+        {
+            temp |= XCVR_MISC_RSM_CTRL4_RSM_DMA_DLY(rsm_settings_ptr->rsm_dma_dly_pm);
+        }
+        XCVR_MISC->RSM_CTRL4 = temp;
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
-    /* RSM_CTRL5 */
-    XCVR_MISC->RSM_CTRL5 =
-        xcvr_lcl_rsm_generic_config.RSM_CTRL5; /* T_FM is the only field in this register and is always 80usec  */
-    (void)temp_t_fm_reg_setting; /* Touch the variable because it isn't being used in this case */
+        /* RSM_CTRL5 */
+        XCVR_MISC->RSM_CTRL5 =
+            xcvr_lcl_rsm_generic_config.RSM_CTRL5; /* T_FM is the only field in this register and is always 80usec  */
+        (void)temp_t_fm_reg_setting; /* Touch the variable because it isn't being used in this case */
 
-    /* RSM_CTRL6 */
-    temp = xcvr_lcl_rsm_generic_config.RSM_CTRL6; /* Structure based configuration for the RSM_CTRL0 register;  */
-    temp &= ~(XCVR_MISC_RSM_CTRL6_RSM_RXLAT_DIG_MASK | XCVR_MISC_RSM_CTRL6_RSM_MODE0_TIMEOUT_MASK);
+        /* RSM_CTRL6 */
+        temp = xcvr_lcl_rsm_generic_config.RSM_CTRL6; /* Structure based configuration for the RSM_CTRL0 register;  */
+        temp &= ~(XCVR_MISC_RSM_CTRL6_RSM_RXLAT_DIG_MASK | XCVR_MISC_RSM_CTRL6_RSM_MODE0_TIMEOUT_MASK);
     temp |=
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) /* CONNRF-1472 optimize timings for KW43 */
         (XCVR_MISC_RSM_CTRL6_RSM_RXLAT_DIG(5U) | /* give time for latency for HARTT to complete */
 #else
         (XCVR_MISC_RSM_CTRL6_RSM_RXLAT_DIG(3U) |                /* give time for latency for HARTT to complete */
 #endif
-         XCVR_MISC_RSM_CTRL6_RSM_EARLY_MOD_DIS_MASK |    // disable_lpm_mod for tones and pkts
-         XCVR_MISC_RSM_CTRL6_RSM_SKIP_RECYCLE_R2R_MASK | // skip recycle at end of pkts (skip rx_init, to avoid
-                                                         // hartt lost and also pulse can occur
-                                                         // hartt lost and also pulse can occur on AA_det
-                                                         // instead of maintained level)
-         XCVR_MISC_RSM_CTRL6_RSM_MODE0_TIMEOUT(rsm_settings_ptr->mode0_timeout_usec));
-    XCVR_MISC->RSM_CTRL6 = temp;
+                        XCVR_MISC_RSM_CTRL6_RSM_EARLY_MOD_DIS_MASK |  // disable_lpm_mod for tones and pkts 
+                 XCVR_MISC_RSM_CTRL6_RSM_SKIP_RECYCLE_R2R_MASK | // skip recycle at end of pkts (skip rx_init, to avoid
+                                                                 // hartt lost and also pulse can occur on AA_det
+                                                                 // instead of maintained level)
+                        XCVR_MISC_RSM_CTRL6_RSM_MODE0_TIMEOUT(rsm_settings_ptr->mode0_timeout_usec));
+        XCVR_MISC->RSM_CTRL6 = temp;
 
-    /* RSM_CTRL7 */
-    temp = xcvr_lcl_rsm_generic_config.RSM_CTRL7; /* Structure based configuration for the RSM_CTRL7 register;  */
-    /* Configure TIME_ALIGN for reflector role only */
-    if (rsm_settings_ptr->role == XCVR_RSM_RX_MODE)
-    {
-        temp |= XCVR_MISC_RSM_CTRL7_RSM_TIME_ALIGN_MODE(1U);
-    }
-    else
-    {
-        temp &= ~(XCVR_MISC_RSM_CTRL7_RSM_TIME_ALIGN_MODE_MASK);
-    }
-    XCVR_MISC->RSM_CTRL7 = temp;
-#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)   */
+        /* RSM_CTRL7 */
+        // TODO: add any RSM_CTRL7customization
+        temp = xcvr_lcl_rsm_generic_config.RSM_CTRL7; /* Structure based configuration for the RSM_CTRL0 register;  */
+        /* Configure TIME_ALIGN for reflector role only */
+        if (rsm_settings_ptr->role == XCVR_RSM_RX_MODE)
+        {
+            temp |= XCVR_MISC_RSM_CTRL7_RSM_TIME_ALIGN_MODE(1U);
+        }
+        else
+        {
+            temp &= ~(XCVR_MISC_RSM_CTRL7_RSM_TIME_ALIGN_MODE_MASK);
+        }
+        XCVR_MISC->RSM_CTRL7 = temp;
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN > 450)   */
 }
 
 static xcvrLclStatus_t XCVR_LCL_SetupPARamping(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
@@ -1373,7 +1378,7 @@ static void XCVR_LCL_ConfigureNADMFeature(bool rate_is_2mbps)
         temp &= ~(XCVR_RX_DIG_RCCAL_CTRL0_CBPF_SC_CODE_DRS_MASK | XCVR_RX_DIG_RCCAL_CTRL0_CBPF_BW_CODE_DRS_MASK);
         temp |= (XCVR_RX_DIG_RCCAL_CTRL0_CBPF_SC_CODE_DRS(0U) | XCVR_RX_DIG_RCCAL_CTRL0_CBPF_BW_CODE_DRS(0U));
         XCVR_RX_DIG->RCCAL_CTRL0 = temp;
-        
+
         /* Revised ACQ filter taps OVERDROOP with correct gain (LL-1913 & MCV-8628) */
         XCVR_RX_DIG->ACQ_FILT_0_3_DRS =
             XCVR_RX_DIG_ACQ_FILT_0_3_DRS_H0(0x11) | XCVR_RX_DIG_ACQ_FILT_0_3_DRS_H1(0x03) |
@@ -1408,8 +1413,6 @@ static void XCVR_LCL_ConfigureNADMFeature(bool rate_is_2mbps)
 xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
-    
-    // Input validation
     if (rsm_settings_ptr == NULLPTR)
     {
         return gXcvrLclStatusInvalidArgs;
@@ -1449,16 +1452,16 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
     XCVR_LCL_SetupRSMForRanging(rsm_settings_ptr, rate_is_2mbps, is_sqte_mode);
 
     uint32_t temp = RADIO_CTRL->RF_CTRL;
-    temp |= RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_EN_MASK; /* Enable overriding the radio rate selection */
-    if (rate_is_2mbps)
-    {
-        temp |= RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_MASK;
-    }
-    else
-    {
-        temp &= ~(RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_MASK);
-    }
-    RADIO_CTRL->RF_CTRL = temp;
+        temp |= RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_EN_MASK; /* Enable overriding the radio rate selection */
+        if (rate_is_2mbps)
+        {
+            temp |= RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_MASK;
+        }
+        else
+        {
+            temp &= ~(RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_MASK);
+        }
+        RADIO_CTRL->RF_CTRL = temp;
 
     return status;
 }
@@ -4329,15 +4332,19 @@ static xcvrLclStatus_t XCVR_LCL_ProcessStep(
         case XCVR_RSM_STEP_FCS:
             XCVR_LCL_CalculateFcsStep(ctx);
             break;
+            
         case XCVR_RSM_STEP_PK_PK:
             XCVR_LCL_CalculatePkPkStep(ctx);
             break;
+            
         case XCVR_RSM_STEP_TN_TN:
             XCVR_LCL_CalculateTnTnStep(ctx, t_pm_sel);
             break;
+            
         case XCVR_RSM_STEP_PK_TN_TN_PK:
             XCVR_LCL_CalculatePkTnTnPkStep(ctx, t_pm_sel);
             break;
+            
         default:
             ctx->step_length_us = 0U;
             status = gXcvrLclStatusFail;
@@ -4733,7 +4740,7 @@ xcvrLclStatus_t XCVR_LCL_InitRttPayloadDemod(void)
                   | GENFSK_PACKET_CFG_SYNC_ADDR_SZ_MASK);      /* reduces AA size to 1 byte */
     packet_cfg |= GENFSK_PACKET_CFG_AA_PLAYBACK_CNT(1);        /* indicates that AA is playback to Link Layer */
     GENFSK->PACKET_CFG = packet_cfg;
-    GENFSK->MULT_PKT_CTRL |= GENFSK_MULT_PKT_CTRL_MULT_PKT_EN_MASK;  /* enables feature ï¿½Send and Receive multiple packetsï¿½ in GENFSK link Layer */
+    GENFSK->MULT_PKT_CTRL |= GENFSK_MULT_PKT_CTRL_MULT_PKT_EN_MASK;  /* enables feature “Send and Receive multiple packets” in GENFSK link Layer */
     GENFSK->MULT_PKT_CTRL &= ~(GENFSK_MULT_PKT_CTRL_SEG_SZ_MASK);    /* reduces the Segment depth to 32 bytes (minimum) */
 
     RBME->CRCW_CFG3 &= ~RBME_CRCW_CFG3_CRC_SZ_MASK;            /* indicates there is no CRC field in Packet */
