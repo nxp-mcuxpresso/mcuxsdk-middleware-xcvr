@@ -1436,13 +1436,33 @@ uint64_t XCVR_TRIM_ReadIFRHalfPhrase(uint32_t ifr_phrase_offset, bool upper_64_b
     return packed_trim_value;
 }
 
-uint64_t XCVR_TRIM_ReadRttIfr(void)
+bool  XCVR_TRIM_ReadRttIfr(rf_ifr_rtt_trim_t * rtt_trim_values)
 {
     /* Support IQMC trim download from IFR - if programmed */
-    /* Read from IFR memory space into unit64_t (largest possible size for IQMC trim) */
-    uint64_t packed_trim_value; 
-    packed_trim_value = XCVR_TRIM_ReadIFRHalfPhrase(RTT_IFR_PHRASE_OFFSET, RTT_IFR_UPPER);
-    return packed_trim_value;
+    bool status = true;
+    if (rtt_trim_values == NULLPTR)
+    {
+        status = false;
+    }
+    else
+    {
+        /* Read from IFR memory space into unit64_t (largest possible size for IQMC trim) */
+        uint64_t packed_trim_value; 
+        packed_trim_value = XCVR_TRIM_ReadIFRHalfPhrase(RTT_IFR_PHRASE_OFFSET, RTT_IFR_LOWER);
+        /* Extract rf_rtt_trim_localisation*** trims from lower half of IFR phrase */
+        packed_trim_value = packed_trim_value>>RTT_TRIM_LOC_1MBPS_SHIFT; /* Get 1Mbps trim value to lower byte */
+        rtt_trim_values->rf_rtt_trim_localisation_1mbps = (uint8_t)(packed_trim_value&RTT_TRIM_LOC_WIDTH_MASK);
+        packed_trim_value = packed_trim_value>>(RTT_TRIM_LOC_2MBPS_SHIFT-RTT_TRIM_LOC_1MBPS_SHIFT); /* Get 2Mbps trim value to lower byte - incremental shift amount */
+        rtt_trim_values->rf_rtt_trim_localisation_2mbps = (uint8_t)(packed_trim_value&RTT_TRIM_LOC_WIDTH_MASK);
+        rtt_trim_values->rf_rtt_trim_localisation_2mbps_2BT = 0xFFU;  /* Default value for 2Mbps 2BT */
+        /* Extract rf_rtt_tg_*** trims from upper half of IFR phrase */
+        packed_trim_value = XCVR_TRIM_ReadIFRHalfPhrase(RTT_IFR_PHRASE_OFFSET, RTT_IFR_UPPER);
+        rtt_trim_values->rf_rtt_tg_trim_rccal = (uint8_t)((packed_trim_value>>RTT_TRIM_TG_RCCAL_SHIFT)&RTT_TRIM_TG_RCCAL_WIDTH_MASK);
+        rtt_trim_values->rf_rtt_tg_attenuation_1mbps = (uint8_t)((packed_trim_value>>RTT_TRIM_TG_1MBPS_ATTEN_SHIFT)&RTT_TRIM_TG_ATTEN_WIDTH_MASK);
+        rtt_trim_values->rf_rtt_tg_attenuation_2mbps = (uint8_t)((packed_trim_value>>RTT_TRIM_TG_2MBPS_ATTEN_SHIFT)&RTT_TRIM_TG_ATTEN_WIDTH_MASK);
+    }
+    
+    return status;
 }
 
 uint64_t XCVR_TRIM_ReadIqmcIfr(void)
