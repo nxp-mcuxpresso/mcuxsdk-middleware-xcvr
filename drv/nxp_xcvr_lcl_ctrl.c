@@ -455,6 +455,8 @@ xcvrLclStatus_t XCVR_LCL_ValidateRsmSettings(const xcvr_lcl_rsm_config_t *rsm_se
         tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->pct_averaging_win >= XCVR_RSM_PCT_AVG_WIN_ERROR);
         /* PA ramp time */
         tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->pa_ramp_time >= XCVR_RSM_PA_RAMP_ERROR);
+        /* Manual RCCAL */
+        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->use_rccal_manual_override && (rsm_settings_ptr->manual_rccal_value> 0x1F));
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 
         if (tmp_logic_sum != 0U)  /* If any of the above logic statements is true then the argument is invalid */
@@ -961,25 +963,18 @@ static void XCVR_LCL_SetupRXDIGForRanging(const xcvr_lcl_rsm_config_t *rsm_setti
 {
     uint32_t temp;
         /* ************** */
-        /* If RCCAL is not performed, setup the CBPF override value */
+        /* If RCCAL is not performed, setup the RCCAL override value */
         temp = XCVR_RX_DIG->RCCAL_CTRL1;
-        if (!xcvr_lcl_rsm_generic_config.do_rxdig_rccal)
+        if (rsm_settings_ptr->use_rccal_manual_override)
         {
-            temp |= XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD_EN_MASK; /* Enable override of CBPF value */
-            temp &= ~(XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD_MASK);
-            if (rate_is_2mbps)
-            {
-                temp |= XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD(0x2BU); /* Setup for 2Mbps rate */
-            }
-            else
-            {
-                temp |= XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD(0x4DU); /* Setup for 1Mbps rate */
-            }
-            
+            temp &= ~(XCVR_RX_DIG_RCCAL_CTRL1_RCCAL_CODE_OVRD_MASK);
+            /* Enable override of CBPF and RCCAL value and write RCCAL_CODE value */
+            temp |= (XCVR_RX_DIG_RCCAL_CTRL1_RCCAL_CODE_OVRD_EN_MASK |
+                XCVR_RX_DIG_RCCAL_CTRL1_RCCAL_CODE_OVRD(rsm_settings_ptr->manual_rccal_value)); 
         }
         else
         {
-            temp &= ~(XCVR_RX_DIG_RCCAL_CTRL1_CBPF_CCODE_OVRD_EN_MASK); /* Disable override of CBPF value */
+            temp &= ~(XCVR_RX_DIG_RCCAL_CTRL1_RCCAL_CODE_OVRD_EN_MASK); /* Disable override of CBPF and RCCAL value */
         }
         XCVR_RX_DIG->RCCAL_CTRL1 = temp;
 
