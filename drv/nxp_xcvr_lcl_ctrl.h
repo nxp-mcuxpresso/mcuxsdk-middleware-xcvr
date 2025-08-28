@@ -181,9 +181,9 @@ extern "C" {
 #define TX_DATA_FLUSH_DLY_1MBPS (3U)
 #define TX_DATA_FLUSH_DLY_2MBPS (3U)
 #define RX_SYNC_DLY_1MBPS (6U) /* Must change when RX_SETTLING_LATENCY_1MBPS changes */
-#define RX_SYNC_DLY_2MBPS (4U) /* Must change when RX_SETTLING_LATENCY_2MBPS changes */   
+#define RX_SYNC_DLY_2MBPS (5U) /* Must change when RX_SETTLING_LATENCY_2MBPS changes */   
 #define RX_SETTLING_LATENCY_1MBPS (7U)
-#define RX_SETTLING_LATENCY_2MBPS (4U)
+#define RX_SETTLING_LATENCY_2MBPS (5U)
 #endif /* defined(FPGA_TARGET) && (FPGA_TARGET==1) */
       
 #else /* (NXP_RADIO_GEN < 470) */

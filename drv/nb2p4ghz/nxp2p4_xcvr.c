@@ -1199,9 +1199,11 @@ xcvrStatus_t XCVR_OverrideFrequency(uint32_t freq)
         temp &= ~XCVR_PLL_DIG_LPM_SDM_CTRL1_LPM_INTG_MASK;
         temp |= (XCVR_PLL_DIG_LPM_SDM_CTRL1_LPM_INTG(integer_to_use) | XCVR_PLL_DIG_LPM_SDM_CTRL1_SDM_MAP_DISABLE_MASK);
         XCVR_PLL_DIG->LPM_SDM_CTRL1 = temp;
-        assert((numerator_rounded > -134217727) && (numerator_rounded < 134217728));
-        XCVR_PLL_DIG->LPM_SDM_CTRL2 =
-            (uint32_t)numerator_rounded; /* putting the signed quantity into a 32 bit (unsigned) register */
+        assert((numerator_rounded > -134217727) && (numerator_rounded < 134217728)); /* ensure data fits into 28 bits */
+        temp = XCVR_PLL_DIG->LPM_SDM_CTRL2;
+        temp &= ~(XCVR_PLL_DIG_LPM_SDM_CTRL2_LPM_NUM_MASK);
+        temp |= XCVR_PLL_DIG_LPM_SDM_CTRL2_LPM_NUM((uint32_t)numerator_rounded); /* putting the signed quantity into a 28 bit (unsigned) register */
+        XCVR_PLL_DIG->LPM_SDM_CTRL2 = temp;
 
         /* Ensure that the TSM does not allow Fast warmup */
         XCVR_TSM->FAST_CTRL1 |= XCVR_TSM_FAST_CTRL1_PWRSAVE_WU_CLEAR_MASK; /* Must assert the bit first */
