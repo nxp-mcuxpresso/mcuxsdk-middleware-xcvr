@@ -1458,8 +1458,8 @@ bool  XCVR_TRIM_ReadRttIfr(rf_ifr_rtt_trim_t * rtt_trim_values)
         /* Extract rf_rtt_tg_*** trims from upper half of IFR phrase */
         packed_trim_value = XCVR_TRIM_ReadIFRHalfPhrase(RTT_IFR_PHRASE_OFFSET, RTT_IFR_UPPER);
         rtt_trim_values->rf_rtt_tg_trim_rccal = (uint8_t)((packed_trim_value>>RTT_TRIM_TG_RCCAL_SHIFT)&RTT_TRIM_TG_RCCAL_WIDTH_MASK);
-        rtt_trim_values->rf_rtt_tg_attenuation_1mbps = (uint8_t)((packed_trim_value>>RTT_TRIM_TG_1MBPS_ATTEN_SHIFT)&RTT_TRIM_TG_ATTEN_WIDTH_MASK);
-        rtt_trim_values->rf_rtt_tg_attenuation_2mbps = (uint8_t)((packed_trim_value>>RTT_TRIM_TG_2MBPS_ATTEN_SHIFT)&RTT_TRIM_TG_ATTEN_WIDTH_MASK);
+        rtt_trim_values->rf_rtt_tg_attenuation_1mbps = (uint16_t)((packed_trim_value>>RTT_TRIM_TG_1MBPS_ATTEN_SHIFT)&RTT_TRIM_TG_ATTEN_WIDTH_MASK);
+        rtt_trim_values->rf_rtt_tg_attenuation_2mbps = (uint16_t)((packed_trim_value>>RTT_TRIM_TG_2MBPS_ATTEN_SHIFT)&RTT_TRIM_TG_ATTEN_WIDTH_MASK);
     }
     
     return status;

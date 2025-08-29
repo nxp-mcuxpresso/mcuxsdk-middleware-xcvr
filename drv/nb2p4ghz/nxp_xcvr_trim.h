@@ -111,7 +111,7 @@ typedef uint8_t DAC_SWEEP_STEP2_t;
 #define RTT_TRIM_TG_1MBPS_ATTEN_SHIFT  (69U-64U)  /* location of the 1Mbps atten trim within the IFR phrase (upper half) */
 #define RTT_TRIM_TG_2MBPS_ATTEN_SHIFT  (86U-64U)  /* location of the 2Mbps atten trim within the IFR phrase (upper half) */
 #define RTT_TRIM_TG_2MBPS2BT_ATTEN_SHIFT  (86U-64U)  /* location of the 2Mbps 2BT atten trim within the IFR phrase (upper half) */
-#define RTT_TRIM_TG_ATTEN_WIDTH_MASK  (0xFFFFFFU)  /* 12 bit field width mask - ONLY FOR USE AFTER SHIFTING! */
+#define RTT_TRIM_TG_ATTEN_WIDTH_MASK  (0xFFFU)  /* 12 bit field width mask - ONLY FOR USE AFTER SHIFTING! */
 
 
 /* Address constants for IQMC & RTT trim download from IFR */
