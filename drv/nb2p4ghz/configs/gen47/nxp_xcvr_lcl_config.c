@@ -161,7 +161,6 @@ const xcvr_lcl_rsm_reg_config_t xcvr_lcl_rsm_generic_config = {
                  XCVR_MISC_RSM_CTRL7_RSM_TIME_ALIGN_OFFSET(0x0U),
 
 #endif
-    .do_rxdig_rccal = (bool)true
     /***********************************************/
     /************ END OF GENERATED CODE ************/
     /*********** xcvr_lcl_rsm_generic_config **********/

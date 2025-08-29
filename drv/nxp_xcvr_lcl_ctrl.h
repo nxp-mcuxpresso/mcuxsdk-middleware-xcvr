@@ -446,6 +446,8 @@ typedef struct
     bool enable_inpr;                     /*!< Choose whether Inline Phase Return feature should be enabled. */
     uint16_t hpm_cal_manual_val;  /*!< The value for HPM_CAL_FACTOR_MANUAL to be used when ::hpm_cal_mode uses the manual value (alone or in combination with PKT RAM values. */
     bool ant_permut_mode;  /* when set, antenna permutation is provided by RSM config in packet RAM and allow support up to 16 paths. Use False for radio_gen 4.70 */
+    bool use_rccal_manual_override; /* when set, RCCAL from TSM seq. is ignored and manual value is used; when cleared, TSM RCCAL is active */
+    uint8_t manual_rccal_value; /* unsigned 5 bit value used to override the RCCAL CODE when use_rccal_manual_override is true */
 #endif                                    /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 } xcvr_lcl_rsm_config_t;
 
