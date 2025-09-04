@@ -145,7 +145,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.xcvr)
 			drv/nxp_xcvr_lcl_step_mgr.h
 			drv/nxp_xcvr_lcl_step_structs.h
 		DEVICE_IDS ${KW43_FAMILY}
-		CORE_IDS "cm33" "cm33_core"
+		CORE_IDS "cm33" "cm33_core0"
 	)
 	mcux_add_include(
 		INCLUDES
