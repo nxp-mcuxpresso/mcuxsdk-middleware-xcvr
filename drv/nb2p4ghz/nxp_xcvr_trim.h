@@ -103,11 +103,36 @@ typedef uint8_t DAC_SWEEP_STEP2_t;
 #define IQMC_PHASE_SZ   (12)
 #define IQMC_PACK_GAIN_MASK    (0x7FFU)
 #define IQMC_PACK_PHASE_MASK   (0xFFFU)
+#define RTT_TRIM_LOC_1MBPS_SHIFT  (48U)  /* location of the 1Mbps trim within the IFR phrase (lower half) */
+#define RTT_TRIM_LOC_2MBPS_SHIFT  (56U)  /* location of the 2Mbps trim within the IFR phrase (lower half) */
+#define RTT_TRIM_LOC_WIDTH_MASK  (0xFFU)  /* 8 bit field width mask - ONLY FOR USE AFTER SHIFTING! */
+#define RTT_TRIM_TG_RCCAL_SHIFT  (64U-64U)  /* location of the RCCAL trim within the IFR phrase (upper half) */
+#define RTT_TRIM_TG_RCCAL_WIDTH_MASK  (0x1FU)  /* 5 bit field width mask - ONLY FOR USE AFTER SHIFTING! */
+#define RTT_TRIM_TG_1MBPS_ATTEN_SHIFT  (69U-64U)  /* location of the 1Mbps atten trim within the IFR phrase (upper half) */
+#define RTT_TRIM_TG_2MBPS_ATTEN_SHIFT  (86U-64U)  /* location of the 2Mbps atten trim within the IFR phrase (upper half) */
+#define RTT_TRIM_TG_2MBPS2BT_ATTEN_SHIFT  (86U-64U)  /* location of the 2Mbps 2BT atten trim within the IFR phrase (upper half) */
+#define RTT_TRIM_TG_ATTEN_WIDTH_MASK  (0xFFFU)  /* 12 bit field width mask - ONLY FOR USE AFTER SHIFTING! */
 
-/* Address constants for IQMC trim download from IFR */
-#define IQMC_IFR_PHRASE_OFFSET 0x182U * 16U /* Base for 16 octet phrase is 0x182 (msf_soctrim2 field) */
+
+/* Address constants for IQMC & RTT trim download from IFR */
+#define IQMC_IFR_PHRASE_OFFSET (0x182U) /* Base for 16 octet phrase is 0x182 (msf_soctrim2 field) */
+#define RTT_IFR_PHRASE_OFFSET (0x182U) /* Base for 16 octet phrase is 0x182 (msf_soctrim2 field) */
+#define IQMC_IFR_UPPER (false) /* Select lower half of the phrase for IQMC */
+#define RTT_IFR_LOWER (false)    /* Select lower half of the phrase for part of RTT */
+#define RTT_IFR_UPPER (true)    /* Select upper half of the phrase for part of RTT */
 #define RADIO_IFR_BASE_ADDR_NBU 0x00088000U  
 #define RADIO_IFR_BASE_ADDR_HOST 0x48888000U  
+
+/* \brief  Defines a struct for IFR RTT trims. */
+typedef struct
+{
+    uint8_t rf_rtt_trim_localisation_1mbps;  /*!< RTT trim 1Mbps. Signed value with 0.5ns resolution */
+    uint8_t rf_rtt_trim_localisation_2mbps;  /*!< RTT trim 2Mbps. Signed value with 0.5ns resolution */
+    uint8_t rf_rtt_trim_localisation_2mbps_2BT;  /*!< RTT trim 2Mbps, 2BT. Signed value with 0.5ns resolution */
+    uint8_t rf_rtt_tg_trim_rccal;   /*!< RCCAL value for RTT estimation. Unsigned value between 0-31 */
+    uint16_t rf_rtt_tg_attenuation_1mbps;   /*!< CBPF 1Mbps attenuation value in dBx100. Unsigned attenuation value (loss)  */
+    uint16_t rf_rtt_tg_attenuation_2mbps;  /*!< CBPF 2Mbps attenuation value in dBx100. Unsigned attenuation value (loss)  */
+} rf_ifr_rtt_trim_t;
 
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=470) */
 
@@ -123,6 +148,7 @@ typedef struct
     int8_t step_value;            /* The offset from nominal DAC value (see sweep_step_values[]) */
     int16_t internal_measurement; /* The value (average code) measured from DMA samples. */
 } GAIN_CALC_TBL_ENTRY2_T;
+
 
 /*******************************************************************************
  * Definitions
@@ -346,23 +372,55 @@ xcvrTrimStatus_t IQMCCalcResult(const xcvr_iqmc_trials_t *trials_data, uint8_t n
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=470)
 /*! *********************************************************************************
+* \brief  This function reads  a packed from the upper or lower half of an IFR phrase
+*
+* This function is supporting production trim of IQMC and RTT values stored in the Radio IFR space. A packed 64
+* bit field is read and returned to the caller for futher unpacking.
+*
+* \param[in] ifr_phrase_offset - the IFR phrase offset, indicating a 16 octet phrase.
+*
+* \return the 64 bit packed IFR contents.
+*
+* \ingroup PublicAPIs
+*
+* \note This routine only attempts to read the radio IFR space from the CM33 core 0 if the CM33 core 1 (radio
+* CPU) is still in reset. If the CM33 core 1 core is not in reset then the radio IFR space is no longer available
+* to the CM33 core 0.
+***********************************************************************************/
+uint64_t XCVR_TRIM_ReadIFRHalfPhrase(uint32_t ifr_phrase_offset, bool upper_64_bits);
+
+/*! *********************************************************************************
 * \brief  This function reads  a packed IQMC trim value from IFR for 1Mbps and 2Mbps rates
 *
 * This function is supporting production trim of IQMC values stored in the Radio IFR space. A packed 64
 * bit field is read even though only 46 bits are in used
 *
-* \param[in] packed_trim_value - the number of trials to run. Must match the size of the arrays in the structure.
-*
 * \return the 64 bit packed trim values for 1Mbps and 2Mbps rates.
 *
 * \ingroup PublicAPIs
 *
-* \note This routine only attempts to read the radio IFR space from the CM33 core if the CM3 (radio
-* CPU) is still in reset. If the CM3 core is not in reset then the radio IFR space is no longer available
-* to the CM33 core.
+* \note This routine only attempts to read the radio IFR space from the CM33 core 0 if the CM33 core 1 (radio
+* CPU) is still in reset. If the CM33 core 1 core is not in reset then the radio IFR space is no longer available
+* to the CM33 core 0.
 ***********************************************************************************/
 uint64_t XCVR_TRIM_ReadIqmcIfr(void);
 
+/*! *********************************************************************************
+* \brief  This function reads  a packed RTT trim value from IFR and unpacks to a struct
+*
+* This function is supporting production trim of RTT values stored in the Radio IFR space. 
+*
+* \[out] rtt_trim_values - struct containing the trim values read from IFR. Note that caller must detect if the trim values are default values.
+*
+* \return True if read of IFR is successful. False if IFR cannot be read or if NULLPTR is passed in.
+*
+* \ingroup PublicAPIs
+*
+* \note This routine only attempts to read the radio IFR space from the CM33 core 0 if the CM33 core 1 (radio
+* CPU) is still in reset. If the CM33 core 1 core is not in reset then the radio IFR space is no longer available
+* to the CM33 core 0.
+***********************************************************************************/
+bool  XCVR_TRIM_ReadRttIfr(rf_ifr_rtt_trim_t * rtt_trim_values);
 
 /*! *********************************************************************************
 * \brief  This function applies a IQMC trim value from IFR for 1Mbps and 2Mbps rates

@@ -1408,24 +1408,69 @@ void IQMCFinalize(uint32_t iqmc_trim_reg_value)
 #endif /* defined(RADIO_IS_GEN_3P5) */
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-uint64_t XCVR_TRIM_ReadIqmcIfr(void)
+
+uint64_t XCVR_TRIM_ReadIFRHalfPhrase(uint32_t ifr_phrase_offset, bool upper_64_bits)
 {
-    /* Support IQMC trim download from IFR - if programmed */
+    /* Support  trim download from IFR - if programmed */
     /* Read from IFR memory space into unit64_t (largest possible size for IQMC trim) */
+    /* Read the upper 8 octets of the IFR phrase if upper_64_bits == TRUE; Otherwise read lower 64 bits */
     uint64_t packed_trim_value = 0xFFFFFFFFFFFFFFFFULL; /* init to all F's to emulate unprogrammed flash memory */
-    uint64_t *iqmc_trim_ptr    = NULLPTR;
+    uint64_t *ifr_trim_ptr    = NULLPTR;
+    uint8_t upper_half_offset = 0U;
+    if (upper_64_bits)
+    {
+        upper_half_offset = 8U; /* pointer offset into the upper half of the IFR phrase */
+    }
 #if defined(IS_RADIO_CORE) && (IS_RADIO_CORE == 1)
-    iqmc_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_NBU + IQMC_IFR_PHRASE_OFFSET);
-    packed_trim_value = *iqmc_trim_ptr; /* Read the contents of the IFR memory */
+    ifr_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_NBU + (ifr_phrase_offset*16U) + upper_half_offset);
+    packed_trim_value = *ifr_trim_ptr; /* Read the contents of the IFR memory */
 #else
     /* If NBU is started already then IFR won't be available -  only read IFR is NBU is still in reset */
     if ((RFMC->RF2P4GHZ_CTRL & RFMC_RF2P4GHZ_CTRL_CPU_RST_MASK) == RFMC_RF2P4GHZ_CTRL_CPU_RST_MASK)
     {
-        iqmc_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_HOST + IQMC_IFR_PHRASE_OFFSET);
-        packed_trim_value = *iqmc_trim_ptr; /* Read the contents of the IFR memory */
+        ifr_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_HOST + (ifr_phrase_offset*16U) + upper_half_offset);
+        packed_trim_value = *ifr_trim_ptr; /* Read the contents of the IFR memory */
     }
 #endif /* defined(IS_RADIO_CORE) && (IS_RADIO_CORE == 1) */
 
+    return packed_trim_value;
+}
+
+bool  XCVR_TRIM_ReadRttIfr(rf_ifr_rtt_trim_t * rtt_trim_values)
+{
+    /* Support IQMC trim download from IFR - if programmed */
+    bool status = true;
+    if (rtt_trim_values == NULLPTR)
+    {
+        status = false;
+    }
+    else
+    {
+        /* Read from IFR memory space into unit64_t (largest possible size for IQMC trim) */
+        uint64_t packed_trim_value; 
+        packed_trim_value = XCVR_TRIM_ReadIFRHalfPhrase(RTT_IFR_PHRASE_OFFSET, RTT_IFR_LOWER);
+        /* Extract rf_rtt_trim_localisation*** trims from lower half of IFR phrase */
+        packed_trim_value = packed_trim_value>>RTT_TRIM_LOC_1MBPS_SHIFT; /* Get 1Mbps trim value to lower byte */
+        rtt_trim_values->rf_rtt_trim_localisation_1mbps = (uint8_t)(packed_trim_value&RTT_TRIM_LOC_WIDTH_MASK);
+        packed_trim_value = packed_trim_value>>(RTT_TRIM_LOC_2MBPS_SHIFT-RTT_TRIM_LOC_1MBPS_SHIFT); /* Get 2Mbps trim value to lower byte - incremental shift amount */
+        rtt_trim_values->rf_rtt_trim_localisation_2mbps = (uint8_t)(packed_trim_value&RTT_TRIM_LOC_WIDTH_MASK);
+        rtt_trim_values->rf_rtt_trim_localisation_2mbps_2BT = 0xFFU;  /* Default value for 2Mbps 2BT */
+        /* Extract rf_rtt_tg_*** trims from upper half of IFR phrase */
+        packed_trim_value = XCVR_TRIM_ReadIFRHalfPhrase(RTT_IFR_PHRASE_OFFSET, RTT_IFR_UPPER);
+        rtt_trim_values->rf_rtt_tg_trim_rccal = (uint8_t)((packed_trim_value>>RTT_TRIM_TG_RCCAL_SHIFT)&RTT_TRIM_TG_RCCAL_WIDTH_MASK);
+        rtt_trim_values->rf_rtt_tg_attenuation_1mbps = (uint16_t)((packed_trim_value>>RTT_TRIM_TG_1MBPS_ATTEN_SHIFT)&RTT_TRIM_TG_ATTEN_WIDTH_MASK);
+        rtt_trim_values->rf_rtt_tg_attenuation_2mbps = (uint16_t)((packed_trim_value>>RTT_TRIM_TG_2MBPS_ATTEN_SHIFT)&RTT_TRIM_TG_ATTEN_WIDTH_MASK);
+    }
+    
+    return status;
+}
+
+uint64_t XCVR_TRIM_ReadIqmcIfr(void)
+{
+    /* Support IQMC trim download from IFR - if programmed */
+    /* Read from IFR memory space into unit64_t (largest possible size for IQMC trim) */
+    uint64_t packed_trim_value; 
+    packed_trim_value = XCVR_TRIM_ReadIFRHalfPhrase(IQMC_IFR_PHRASE_OFFSET, IQMC_IFR_UPPER);
     return packed_trim_value;
 }
 

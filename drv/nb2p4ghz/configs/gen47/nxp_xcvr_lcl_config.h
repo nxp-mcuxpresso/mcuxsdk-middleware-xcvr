@@ -128,7 +128,6 @@ typedef struct
     uint32_t RSM_CTRL5;
     uint32_t RSM_CTRL6;
     uint32_t RSM_CTRL7;
-    bool do_rxdig_rccal; /*!<  True indicates PLL will perform RCCAL in this T_IP scenario  */
 } xcvr_lcl_rsm_reg_config_t;
 /*******************************************************************************
  * Prototypes
