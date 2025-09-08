@@ -1446,20 +1446,28 @@ bool  XCVR_TRIM_ReadRttIfr(rf_ifr_rtt_trim_t * rtt_trim_values)
     }
     else
     {
-        /* Read from IFR memory space into unit64_t (largest possible size for IQMC trim) */
+        /* Read from IFR memory space into unit64_t which represents half of an IFR phrase */
+        /* Extract fields by first shifting and then masking, to avoid multiple masks for fields with identical widths */
         uint64_t packed_trim_value; 
+#if !defined(GCOV_DO_COVERAGE) /* testability */
         packed_trim_value = XCVR_TRIM_ReadIFRHalfPhrase(RTT_IFR_PHRASE_OFFSET, RTT_IFR_LOWER);
-        /* Extract rf_rtt_trim_localisation*** trims from lower half of IFR phrase */
-        packed_trim_value = packed_trim_value>>RTT_TRIM_LOC_1MBPS_SHIFT; /* Get 1Mbps trim value to lower byte */
-        rtt_trim_values->rf_rtt_trim_localisation_1mbps = (uint8_t)(packed_trim_value&RTT_TRIM_LOC_WIDTH_MASK);
-        packed_trim_value = packed_trim_value>>(RTT_TRIM_LOC_2MBPS_SHIFT-RTT_TRIM_LOC_1MBPS_SHIFT); /* Get 2Mbps trim value to lower byte - incremental shift amount */
-        rtt_trim_values->rf_rtt_trim_localisation_2mbps = (uint8_t)(packed_trim_value&RTT_TRIM_LOC_WIDTH_MASK);
-        rtt_trim_values->rf_rtt_trim_localisation_2mbps_2BT = 0xFFU;  /* Default value for 2Mbps 2BT */
-        /* Extract rf_rtt_tg_*** trims from upper half of IFR phrase */
+#else
+        packed_trim_value = 0xa462b2d92c4b841c;
+#endif /* !defined(GCOV_DO_COVERAGE) */
+        /* Extract rf_rtt_trim_localisation*** trims from LOWER half of IFR phrase */
+        rtt_trim_values->rf_rtt_trim_localisation_1mbps = (uint8_t)((packed_trim_value>>RTT_TRIM_LOC_1MBPS_SHIFT)&RTT_TRIM_LOC_WIDTH_MASK);
+        rtt_trim_values->rf_rtt_trim_localisation_2mbps = (uint8_t)((packed_trim_value>>RTT_TRIM_LOC_2MBPS_SHIFT)&RTT_TRIM_LOC_WIDTH_MASK);
+        /* Extract rf_rtt_tg_*** trims from UPPER half of IFR phrase */
+#if !defined(GCOV_DO_COVERAGE) /* testability */
         packed_trim_value = XCVR_TRIM_ReadIFRHalfPhrase(RTT_IFR_PHRASE_OFFSET, RTT_IFR_UPPER);
+#else
+        packed_trim_value = 0x40815e24b83246d9;
+#endif /* !defined(GCOV_DO_COVERAGE) */
+        rtt_trim_values->rf_rtt_trim_localisation_2mbps_2BT =(uint8_t)((packed_trim_value>>RTT_TRIM_LOC_2MBPS_2BT_SHIFT)&RTT_TRIM_LOC_WIDTH_MASK);
         rtt_trim_values->rf_rtt_tg_trim_rccal = (uint8_t)((packed_trim_value>>RTT_TRIM_TG_RCCAL_SHIFT)&RTT_TRIM_TG_RCCAL_WIDTH_MASK);
         rtt_trim_values->rf_rtt_tg_attenuation_1mbps = (uint16_t)((packed_trim_value>>RTT_TRIM_TG_1MBPS_ATTEN_SHIFT)&RTT_TRIM_TG_ATTEN_WIDTH_MASK);
         rtt_trim_values->rf_rtt_tg_attenuation_2mbps = (uint16_t)((packed_trim_value>>RTT_TRIM_TG_2MBPS_ATTEN_SHIFT)&RTT_TRIM_TG_ATTEN_WIDTH_MASK);
+        rtt_trim_values->rf_rtt_tg_attenuation_2mbps_2BT = (uint16_t)((packed_trim_value>>RTT_TRIM_TG_2MBPS2BT_ATTEN_SHIFT)&RTT_TRIM_TG_ATTEN_WIDTH_MASK);
     }
     
     return status;

@@ -106,11 +106,12 @@ typedef uint8_t DAC_SWEEP_STEP2_t;
 #define RTT_TRIM_LOC_1MBPS_SHIFT  (48U)  /* location of the 1Mbps trim within the IFR phrase (lower half) */
 #define RTT_TRIM_LOC_2MBPS_SHIFT  (56U)  /* location of the 2Mbps trim within the IFR phrase (lower half) */
 #define RTT_TRIM_LOC_WIDTH_MASK  (0xFFU)  /* 8 bit field width mask - ONLY FOR USE AFTER SHIFTING! */
-#define RTT_TRIM_TG_RCCAL_SHIFT  (64U-64U)  /* location of the RCCAL trim within the IFR phrase (upper half) */
+#define RTT_TRIM_LOC_2MBPS_2BT_SHIFT  (64U-64U)  /* location of the 2Mbps 2BT trim within the IFR phrase (UPPER half) */
+#define RTT_TRIM_TG_RCCAL_SHIFT  (72U-64U)  /* location of the RCCAL trim within the IFR phrase (UPPER half) */
 #define RTT_TRIM_TG_RCCAL_WIDTH_MASK  (0x1FU)  /* 5 bit field width mask - ONLY FOR USE AFTER SHIFTING! */
-#define RTT_TRIM_TG_1MBPS_ATTEN_SHIFT  (69U-64U)  /* location of the 1Mbps atten trim within the IFR phrase (upper half) */
-#define RTT_TRIM_TG_2MBPS_ATTEN_SHIFT  (86U-64U)  /* location of the 2Mbps atten trim within the IFR phrase (upper half) */
-#define RTT_TRIM_TG_2MBPS2BT_ATTEN_SHIFT  (86U-64U)  /* location of the 2Mbps 2BT atten trim within the IFR phrase (upper half) */
+#define RTT_TRIM_TG_1MBPS_ATTEN_SHIFT  (77U-64U)  /* location of the 1Mbps atten trim within the IFR phrase (UPPER half) */
+#define RTT_TRIM_TG_2MBPS_ATTEN_SHIFT  (89U-64U)  /* location of the 2Mbps atten trim within the IFR phrase (UPPER half) */
+#define RTT_TRIM_TG_2MBPS2BT_ATTEN_SHIFT  (101U-64U)  /* location of the 2Mbps 2BT atten trim within the IFR phrase (UPPER half) */
 #define RTT_TRIM_TG_ATTEN_WIDTH_MASK  (0xFFFU)  /* 12 bit field width mask - ONLY FOR USE AFTER SHIFTING! */
 
 
@@ -132,6 +133,7 @@ typedef struct
     uint8_t rf_rtt_tg_trim_rccal;   /*!< RCCAL value for RTT estimation. Unsigned value between 0-31 */
     uint16_t rf_rtt_tg_attenuation_1mbps;   /*!< CBPF 1Mbps attenuation value in dBx100. Unsigned attenuation value (loss)  */
     uint16_t rf_rtt_tg_attenuation_2mbps;  /*!< CBPF 2Mbps attenuation value in dBx100. Unsigned attenuation value (loss)  */
+    uint16_t rf_rtt_tg_attenuation_2mbps_2BT;  /*!< CBPF 2Mbps attenuation value in dBx100. Unsigned attenuation value (loss)  */
 } rf_ifr_rtt_trim_t;
 
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=470) */
