@@ -1458,10 +1458,12 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         }
         RADIO_CTRL->RF_CTRL = temp;
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* KW47 INPR and NADM configuration */
     if (status == gXcvrLclStatusSuccess)
     {
         status = XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY ,false); /* Enable PIC feature by default */
     }
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 
     return status;
 }
