@@ -25,9 +25,15 @@ static uint32_t buffer_size = 0; /* Static storage for buffer size to support mu
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+void DSB0_IRQHandler(void);
+
+void DSB0_IRQHandler(void)
+#else
 void DSB_IRQHandler(void);
 
 void DSB_IRQHandler(void)
+#endif
 {
     uint16_t curr_count = 0;
     
