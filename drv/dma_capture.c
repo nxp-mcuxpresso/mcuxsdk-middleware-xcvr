@@ -103,6 +103,48 @@ dmaStatus_t dma_refresh(const dsb_config_t *dsb_configuration)
     return status;
 }
 
+static void dsb_clock_enable(void)
+{
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 400)
+    IPC->IPC_DATA_STREAM_2P4 = IPC_IPC_DATA_STREAM_2P4_RSTB_MASK | IPC_IPC_DATA_STREAM_2P4_CC(1U);
+#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && (NXP_RADIO_GEN < 475)
+    MRCC->MRCC_DATA_STREAM_2P4 = MRCC_MRCC_DATA_STREAM_2P4_RSTB_MASK | MRCC_MRCC_DATA_STREAM_2P4_CC(1U);
+#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+    MRCC->MRCC_DATA_STREAM_2P4_CLKSEL = MRCC_MRCC_DATA_STREAM_2P4_CLKSEL_RSTB_MASK | MRCC_MRCC_DATA_STREAM_2P4_CLKSEL_CC(1U);
+#else
+    SIM->SCGC5 |= SIM_SCGC5_DSB_MASK;
+#endif
+}
+
+static void dsb_clock_disable(void)
+{
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 400)
+    IPC->IPC_DATA_STREAM_2P4 = IPC_IPC_DATA_STREAM_2P4_RSTB_MASK | IPC_IPC_DATA_STREAM_2P4_CC(0U);
+#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && (NXP_RADIO_GEN < 475)
+    MRCC->MRCC_DATA_STREAM_2P4 = MRCC_MRCC_DATA_STREAM_2P4_RSTB_MASK | MRCC_MRCC_DATA_STREAM_2P4_CC(0U);
+#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+    MRCC->MRCC_DATA_STREAM_2P4_CLKSEL = MRCC_MRCC_DATA_STREAM_2P4_CLKSEL_RSTB_MASK | MRCC_MRCC_DATA_STREAM_2P4_CLKSEL_CC(0U);
+#else
+    SIM->SCGC5 &= ~SIM_SCGC5_DSB_MASK;
+#endif
+}
+
+static bool dsb_is_clock_active(void)
+{
+    bool dsb_clk_en;
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 400)
+    dsb_clk_en = ((IPC->IPC_DATA_STREAM_2P4 & IPC_IPC_DATA_STREAM_2P4_CC_MASK) > 0U);
+#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && (NXP_RADIO_GEN < 475)
+    dsb_clk_en = ((MRCC->MRCC_DATA_STREAM_2P4 & MRCC_MRCC_DATA_STREAM_2P4_CC_MASK) > 0U);
+#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+    dsb_clk_en = ((MRCC->MRCC_DATA_STREAM_2P4_CLKSEL & MRCC_MRCC_DATA_STREAM_2P4_CLKSEL_CC_MASK) > 0U);
+#else
+    dsb_clk_en = ((SIM->SCGC5 & SIM_SCGC5_DSB_MASK) == SIM_SCGC5_DSB_MASK);
+#endif
+    return dsb_clk_en;
+}
+
+
 dmaStatus_t dma_init(const dsb_config_t *dsb_configuration)
 {
     dmaStatus_t status = DMA_SUCCESS;
@@ -144,15 +186,7 @@ dmaStatus_t dma_init(const dsb_config_t *dsb_configuration)
             dsb_handler.g_Transfer_Done = false;
 
             /* Initialize DSB */
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 400)
-            IPC->IPC_DATA_STREAM_2P4 = IPC_IPC_DATA_STREAM_2P4_RSTB_MASK | IPC_IPC_DATA_STREAM_2P4_CC(1U);
-#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && (NXP_RADIO_GEN < 475)
-            MRCC->MRCC_DATA_STREAM_2P4 = MRCC_MRCC_DATA_STREAM_2P4_RSTB_MASK | MRCC_MRCC_DATA_STREAM_2P4_CC(1U);
-#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-            MRCC->MRCC_DATA_STREAM_2P4_CLKSEL = MRCC_MRCC_DATA_STREAM_2P4_CLKSEL_RSTB_MASK | MRCC_MRCC_DATA_STREAM_2P4_CLKSEL_CC(1U);
-#else
-            SIM->SCGC5 |= SIM_SCGC5_DSB_MASK;
-#endif
+            dsb_clock_enable();
             /* Put DSB into reset to ensure clean state */
             DSB->CSR |= DSB_CSR_SFTRST_MASK;
             /* Release DSB from reset */
@@ -266,15 +300,7 @@ void dma_abort(void)
 
 void dma_release(void)
 {
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 400)
-    bool dsb_clk_en = ((IPC->IPC_DATA_STREAM_2P4 & IPC_IPC_DATA_STREAM_2P4_CC_MASK) > 0U);
-#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && (NXP_RADIO_GEN < 475)
-    bool dsb_clk_en = ((MRCC->MRCC_DATA_STREAM_2P4 & MRCC_MRCC_DATA_STREAM_2P4_CC_MASK) > 0U);
-#elif defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-    bool dsb_clk_en = ((MRCC->MRCC_DATA_STREAM_2P4_CLKSEL & MRCC_MRCC_DATA_STREAM_2P4_CLKSEL_CC_MASK) > 0U);
-#else
-    bool dsb_clk_en = ((SIM->SCGC5 & SIM_SCGC5_DSB_MASK) == SIM_SCGC5_DSB_MASK);
-#endif
+    bool dsb_clk_en = dsb_is_clock_active();
 
     /* Restart flag */
     dsb_handler.g_Transfer_Done = false;
@@ -300,6 +326,7 @@ void dma_release(void)
         /* Turns off clocking to DMA/DBG blocks */
         XCVR_RX_DIG->RX_DIG_CTRL &= ~XCVR_RX_DIG_RX_DIG_CTRL_RX_DMA_DTEST_EN_MASK;
 #endif
+        dsb_clock_disable();
     }
 }
 
@@ -323,6 +350,7 @@ dmaStatus_t dma_start_capture(const dma_capture_config_t *dma_configuration)
         {
             status = DMA_FAIL_PAGE_ERROR;
         }
+        dsb_clock_enable();
 
         /* check for invalid start trigger */
         if (
@@ -475,3 +503,4 @@ void dma_test_config_static_state(uint32_t *addr, uint32_t size)
     buffer_size         = size; /* no error checks */
 }
 #endif
+
