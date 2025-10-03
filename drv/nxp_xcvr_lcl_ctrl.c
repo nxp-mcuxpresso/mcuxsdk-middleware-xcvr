@@ -851,7 +851,12 @@ static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
                         XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_MANUAL(rsm_settings_ptr->hpm_cal_manual_val));
         XCVR_PLL_DIG->HPMCAL_CTRL = temp;
 
-    XCVR_LCL_ConfigureInlinePhaseReturn(rsm_settings_ptr); /* Setup INPR (or ensure it is disabled)*/
+        XCVR_LCL_ConfigureInlinePhaseReturn(rsm_settings_ptr); /* Setup INPR (or ensure it is disabled)*/
+
+        /* Phase continuity defaults to ON */
+        XCVR_LCL_EnaLpmClkSwitch(1);
+        XCVR_LCL_EnaDividerSync(true);        
+        
 #else
         /* NOTE: This code assumes t_ip1 and t_ip2 config structures both use identical HPM CAL enable bit settings
          * (which is the case in the initial coding */
