@@ -646,6 +646,16 @@ typedef struct
     bool dt_rx_mask_ena;     /*!< True if  the T_DT DMA mask is used for a capture mask */
 } xcvr_lcl_rsmdma_config_t;
 
+/*! @brief Structure for storing DCOC cal results for both coarse anf fine adjustments */
+typedef struct 
+{
+    int16_t i_cal_offset; /*!< I offset from coarse DCOC calibration (extracted from DCOC_CTRL2 register) */
+    int16_t q_cal_offset; /*!< Q offset from coarse DCOC calibration (extracted from DCOC_CTRL2 register) */
+    int8_t adc_offset_ovrd_i_fine_adjust;  /*!< Fine adjustment to apply for I channel for AGC index 11, after threshold is applied. */
+    int8_t adc_offset_ovrd_q_fine_adjust;  /*!< Fine adjustment to apply for I channel for AGC index 11, after threshold is applied. */
+    uint32_t dcoc_ctrl2_value; /*!< full value of  DCOC_CTRL2 register from coarse (HW) DCOC calibration */
+} xcvr_dc_cal_results_t;
+
 /* RSM-related register backup structure. Stores registers that must be changed in different peripherals for RSM to
  * work. */
 typedef struct
@@ -1549,7 +1559,7 @@ XCVR_LCL_SetupManualDcoc().
 uint32_t XCVR_LCL_SetupManualDcoc(void);
 
 /*!
- * @brief Function to c override DCOC DAC and ADC to manual values.
+ * @brief Function to override DCOC DAC and ADC to manual values.
  *
  * This function forces the DCOC_CTRL2 register to a new value and sets the override bits to make these manual values
  * active
@@ -1557,9 +1567,36 @@ uint32_t XCVR_LCL_SetupManualDcoc(void);
  * @param dcoc_ctrl2_value override value for both ADC and DAC values
  * @param override if TRUE, performs the override; if FALSE, releases the override
  *
- * @note
  */
 void XCVR_LCL_OverrideDcoc(uint32_t dcoc_ctrl2_value, bool override);
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+/*!
+ * @brief Function to to integrate fine and coarse DC offset measurements into one routine.
+ *
+ * This function combines both the coarse DCOC calibration and fine DC offset measurements into
+ * one routine for later use in manual overrides.
+ *
+ * @param dcoc_cal_results pointer to the structure where results should be returned
+ *
+ * @return the status of the measurement process
+ */
+xcvrLclStatus_t XCVR_LCL_CalibrateDcocCompleteFine(xcvr_dc_cal_results_t * dcoc_cal_results);
+
+/*!
+ * @brief Function to to combine (additive) fine and coarse DC offset measurements the register format for override usage.
+ *
+ * This function combines both the coarse DCOC calibration and fine DC offset measurements into
+ * a uint32_t formatted to be used in DCOC_CTRL2 register for overriding DCOC. It is intended for use in Channel Sounding
+ * after AGC is locked.
+ *
+ * @param dcoc_cal_results the DCOC_CTRL2 value and coarse and fine DC values from the fine offset calibration routine
+ * @param agc_index the AGC index active in the system (after Mode 0 steps.
+ *
+ * @return the combined DCOC_CTRL2 override value
+ */
+uint32_t XCVR_LCL_CombineCoarseFineDc(xcvr_dc_cal_results_t * dcoc_cal_results, uint32_t agc_index);
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
 
 /*!
  * @brief Function to configure TSM override signals to measure the current PLL phase angle.
@@ -1567,7 +1604,6 @@ void XCVR_LCL_OverrideDcoc(uint32_t dcoc_ctrl2_value, bool override);
  * This function sets up the TSM overrides needed to prepare for measuring the current PLL phase. It must be called
  * every time before a phase measurement is performed (i.e. before the DCOC calibration)
  *
- * @note
  */
 void XCVR_LCL_EnablePhaseMeasure(void);
 

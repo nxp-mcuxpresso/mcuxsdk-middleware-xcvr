@@ -5,6 +5,7 @@
  */
 #include "nxp2p4_xcvr.h"
 #include "nxp_xcvr_lcl_ctrl.h"
+#include "nxp_xcvr_trim.h"
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
 #include "nxp_xcvr_lcl_step_mgr.h"  /* Support for PKT RAM based CONFIG and RESULT circular buffers only on KW47 */
 #include "nxp_xcvr_common_config.h" /* Support TSM reset to BLE configuration */
@@ -456,7 +457,7 @@ xcvrLclStatus_t XCVR_LCL_ValidateRsmSettings(const xcvr_lcl_rsm_config_t *rsm_se
         /* PA ramp time */
         tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->pa_ramp_time >= XCVR_RSM_PA_RAMP_ERROR);
         /* Manual RCCAL */
-        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->use_rccal_manual_override && (rsm_settings_ptr->manual_rccal_value> 0x1F));
+        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->use_rccal_manual_override && (rsm_settings_ptr->manual_rccal_value > 0x1FU));
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 
         if (tmp_logic_sum != 0U)  /* If any of the above logic statements is true then the argument is invalid */
@@ -3387,6 +3388,128 @@ xcvrLclStatus_t XCVR_LCL_CalibrateDcocComplete(void)
     }
     return status;
 }
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
+xcvrLclStatus_t XCVR_LCL_CalibrateDcocCompleteFine(xcvr_dc_cal_results_t * dcoc_cal_results)
+{
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    xcvrStatus_t xcvr_status = gXcvrSuccess_c;
+
+    if (dcoc_cal_results == NULLPTR)
+    {
+        status = gXcvrLclStatusInvalidArgs;
+    }
+    else
+    {
+        /* Wait for completion of RX WU that was started in XCVR_LCL_CalibrateDcocStart() */
+        XCVR_WaitRxWu();
+        
+        /* Capture main DCOC offsets */
+        uint32_t dcoc2_result;
+        dcoc2_result = XCVR_LCL_SetupManualDcoc();
+
+        /* Perform fine DC measurement */
+        xcvr_fine_dc_trim_t fine_offsets;
+        xcvrTrimStatus_t tmp_status;
+        tmp_status = XCVR_TRIM_MeasDcResid(&fine_offsets);
+        if (tmp_status != gXcvrTrimSuccess_c)
+        {
+            status = gXcvrLclStatusFail;
+        }
+
+        /* Assemble results in return struct */
+        dcoc_cal_results->adc_offset_ovrd_i_fine_adjust = fine_offsets.adc_offset_ovrd_i_fine_adjust;
+        dcoc_cal_results->adc_offset_ovrd_q_fine_adjust = fine_offsets.adc_offset_ovrd_q_fine_adjust;
+        dcoc_cal_results->dcoc_ctrl2_value = dcoc2_result;
+        /* Unpack ADC offset fields to int16_t to support later fine offset calculations */
+        uint16_t temp; 
+        temp = ((dcoc2_result&XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_I_MASK)>>XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_I_SHIFT); /* Extract 7 bit field (signed) to uint16_t */
+        temp |= ((temp&0x40U) != 0U ? 0xFF80U : 0U); /* Sign extend within the uint16_t */
+        dcoc_cal_results->i_cal_offset = (int16_t)(temp); /* Cast to a signed */
+        temp = ((dcoc2_result&XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_Q_MASK)>>XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_Q_SHIFT); /* Extract 7 bit field (signed) to uint16_t */
+        temp |= ((temp&0x40U) != 0U ? 0xFF80U : 0U); /* Sign extend within the uint16_t */
+        dcoc_cal_results->q_cal_offset = (int16_t)(temp); /* Cast to a signed */
+        
+        /* RX WD */
+        XCVR_ForceRxWd();
+        XCVR_WaitRxTxWd();
+
+        /* Restore TSM state */
+        XCVR_TSM->TIMING09 = timing09_backup;
+        XCVR_TSM->TIMING13 = timing13_backup;
+        XCVR_TSM->FAST_CTRL2 = fast_ctrl2_backup;
+
+        /* Restore RF_CTRL state */
+        RADIO_CTRL->RF_CTRL = rf_ctrl_backup;
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
+        /* Release channel over-rides and return PLL to Link Layer Control */
+        /* Remove any PLL settings that caused out-of-band receive operations (for safety) */
+        xcvr_status = XCVR_OverrideRxFrequency((uint32_t)(2402000000UL), (int32_t)(-1000000L));
+        assert(xcvr_status == gXcvrSuccess_c);
+        (void)xcvr_status;
+
+        XCVR_ReleasePLLOverride();
+#else
+        (void)xcvr_status;
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
+
+        if ((XCVR_RX_DIG->DCOC_STAT == 0x00002020U) && (XCVR_RX_DIG->DCOC_DIG_CORR_RESULT == 0U))
+        {
+            status = gXcvrLclStatusFail;
+        }
+
+        /* Implement limits check on coarse + fine adjust values */
+        int16_t limit_check_sum;
+        limit_check_sum = dcoc_cal_results->i_cal_offset + fine_offsets.adc_offset_ovrd_i_fine_adjust;
+         if ((limit_check_sum > 63) || (limit_check_sum < -64))
+        {
+            status = gXcvrLclStatusFail;
+        }
+        limit_check_sum = dcoc_cal_results->q_cal_offset + fine_offsets.adc_offset_ovrd_q_fine_adjust;
+         if ((limit_check_sum > 63) || (limit_check_sum < -64))
+        {
+            status = gXcvrLclStatusFail;
+        }
+
+    }
+    
+    return status;
+}
+
+uint32_t XCVR_LCL_CombineCoarseFineDc(xcvr_dc_cal_results_t * dcoc_cal_results, uint32_t agc_index)
+{
+    assert(dcoc_cal_results != NULLPTR);
+    uint32_t temp_ctrl2_val = dcoc_cal_results->dcoc_ctrl2_value;
+
+    /* Combine the coarse and fine values */
+    /* DCOC fine adjustement needs to be scaled based on gain */
+    int8_t fine_adj_i = 0;
+    int8_t fine_adj_q = 0;
+    if (agc_index == 11)
+    {
+        fine_adj_i = dcoc_cal_results->adc_offset_ovrd_i_fine_adjust;
+        fine_adj_q = dcoc_cal_results->adc_offset_ovrd_q_fine_adjust;
+    }
+    if (agc_index == 10)
+    {
+        fine_adj_i = dcoc_cal_results->adc_offset_ovrd_i_fine_adjust/2;
+        fine_adj_q = dcoc_cal_results->adc_offset_ovrd_q_fine_adjust/2;
+    }
+    /* The result is cast back to unsigned for the final ADC register value */    
+    uint32_t adc_offset_i = (uint32_t)((int32_t)dcoc_cal_results->i_cal_offset+ fine_adj_i);    
+    uint32_t adc_offset_q = (uint32_t)((int32_t)dcoc_cal_results->q_cal_offset + fine_adj_q);
+    
+    /* Update the temporary dcoc_ctrl2 value (retain DAC corrections that don't change) */
+    temp_ctrl2_val = ((temp_ctrl2_val & (XCVR_RX_DIG_DCOC_CTRL2_DCOC_DAC_OVRD_I_MASK | XCVR_RX_DIG_DCOC_CTRL2_DCOC_DAC_OVRD_Q_MASK)) |
+                    XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_I(adc_offset_i) |
+                      XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_Q(adc_offset_q));  
+        
+    return temp_ctrl2_val;
+}
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
+
+
 
 void XCVR_LCL_ContPhaseOvrd(void)
 {

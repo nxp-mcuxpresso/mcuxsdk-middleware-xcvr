@@ -511,6 +511,135 @@ uint8_t rx_dc_sample_average(int16_t *i_avg, int16_t *q_avg, const int16_t *buff
     return status;
 }
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+
+xcvrTrimStatus_t XCVR_TRIM_MeasDcResid(xcvr_fine_dc_trim_t * fine_offsets)
+{
+    xcvrTrimStatus_t status = gXcvrTrimSuccess_c;
+
+    if (fine_offsets == NULLPTR)
+    {
+        status = gXcvrTrimInvalidInputs;
+    }
+    else
+    {
+#define NUM_IQ_SAMPLES  (8U)
+#define DCOC_FINE_MEAS_HI_THRESH (25) /* Upper limit of the residual IQ DC absolute value to be considered valid. Must be < 127 */
+#define DCOC_FINE_MEAS_LO_THRESH (3) /* Lower limit of the residual IQ DC absolute value to be considered for adjustment. Values below this are forced to zero. Must be < 127 */
+#define IQ_UNPACK_SCALE     (32) /* Scaling factor for integer divide when unpacking IQs into int16_t */
+        dbg_ram_capture_config_t dbg_ram_capture_config;
+        dbg_ram_trigger_config_t trig_dbg_ram_capt;
+        uint32_t temp;
+        /* Setup IQ capture to PKT RAM with averaging enabled */
+        /* Assumes all PKT RAM is available */
+        dbg_ram_capture_config.buffer_sz_bytes = NUM_IQ_SAMPLES*4U; 
+        dbg_ram_capture_config.result_buffer = (int16_t *)(TX_PACKET_RAM_BASE); /* Unpack to here if needed */
+        dbg_ram_capture_config.dbg_ram_start_addr = (int16_t *)(RX_PACKET_RAM_BASE); /* Raw capture here */
+        trig_dbg_ram_capt.out_sel = DBG_RAM_OUT_DC_RESID_IQ_CORR;
+        trig_dbg_ram_capt.start_trig = NO_START_TRIG;
+        trig_dbg_ram_capt.stop_trig = NO_STOP_TRIG;
+        trig_dbg_ram_capt.start_capture_edge = DBG_RAM_EDGE_RISING;
+        trig_dbg_ram_capt.stop_capture_edge = DBG_RAM_EDGE_RISING;
+        trig_dbg_ram_capt.decimation = DBG_RAM_NO_DECIMATE;
+        trig_dbg_ram_capt.start_delay = 0U;
+        temp = XCVR_RX_DIG->CTRL1;
+        temp &= ~(XCVR_RX_DIG_CTRL1_RX_DFT_IQ_OUT_AVERAGED_MASK | XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN_MASK);
+        temp |= (XCVR_RX_DIG_CTRL1_RX_DFT_IQ_OUT_AVERAGED_MASK | XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN(7U)); 
+        XCVR_RX_DIG->CTRL1 = temp;
+        
+        /* Force channel to "quiet" RF frequency? */
+        
+        /* Force RX warmup (if not already warmed up */
+        if ((XCVR_MISC->XCVR_STATUS&XCVR_MISC_XCVR_STATUS_RX_MODE_MASK) != XCVR_MISC_XCVR_STATUS_RX_MODE_MASK) /* Not already in RX */
+        {
+            if ((XCVR_MISC->XCVR_STATUS&XCVR_MISC_XCVR_STATUS_TX_MODE_MASK) != XCVR_MISC_XCVR_STATUS_TX_MODE_MASK)
+            {
+                XCVR_ForceRxWu();
+                XCVR_WaitRxWu();  /* Ensure no race condition to completion of RX warmup before measurements start */
+            }
+            else 
+            {
+                status = gXcvrTrimInvalidInputs; /* Can't request RX when TX is already active */
+            }
+                
+        }
+
+        if (status == gXcvrTrimSuccess_c)
+        {
+            dbgRamStatus_t ramstatus = dbg_ram_init(&dbg_ram_capture_config);
+            assert(ramstatus == DBG_RAM_SUCCESS);
+            (void)ramstatus;
+            
+            ramstatus = dbg_ram_start_capture(DBG_RAM_PAGE_RXDIGIQ, &trig_dbg_ram_capt);
+            assert(ramstatus == DBG_RAM_SUCCESS); 
+            (void)ramstatus;
+
+            /* Poll on IQ capture completion (DSB) */
+            dbg_ram_wait_for_complete();
+            
+            /* Force RX warmdown */
+            XCVR_ForceRxWd();
+            /* calculate average of samples for I and Q */
+            uint8_t i;
+            int16_t temp_iq;
+            int16_t * sample_ptr = (int16_t *)(RX_PACKET_RAM_BASE);
+            int32_t i_sum = 0;
+            int32_t q_sum = 0;
+            for (i= 0U;i<NUM_IQ_SAMPLES;i++)
+            {
+              /* Lower 4 bits are not part of IQ value. Conversion to int16_t works because IQ is in top 12 bits */
+              temp_iq = *sample_ptr;  
+              temp_iq = temp_iq/IQ_UNPACK_SCALE;  /* This integer division also removes the 5 LSbits that are not part of the IQ value */
+              i_sum += (int32_t)(temp_iq);
+              sample_ptr++;
+              temp_iq = *sample_ptr;  
+              temp_iq = temp_iq/IQ_UNPACK_SCALE;  /* This integer division also removes the 5  LSbits that are not part of the IQ value */
+              q_sum += (int32_t)(temp_iq);
+              sample_ptr++;          
+            }
+            /* Calculate residual values from the averages unsigned 7 bits stored in uint8_t */       
+            i_sum = i_sum / (int32_t)NUM_IQ_SAMPLES; /* Average is performed  */
+            q_sum = q_sum / (int32_t)NUM_IQ_SAMPLES; /* Average is performed  */
+            /* Error checks to ensure DC residual is within expected range */
+#if defined(DC_FINE_MEASUREMENTS) && (DC_FINE_MEASUREMENTS==1)
+            fine_offsets->adc_offset_ovrd_i_measured = (int8_t)(i_sum);
+            fine_offsets->adc_offset_ovrd_q_measured = (int8_t)(q_sum);
+#endif /* defined(DC_FINE_MEASUREMENTS) && (DC_FINE_MEASUREMENTS==1)  */    
+            if ((abs(i_sum) > DCOC_FINE_MEAS_HI_THRESH) || (abs(q_sum) > DCOC_FINE_MEAS_HI_THRESH))
+            {
+                status = gXcvrTrimOutOfRange_c;  /* Residual shouldn't be too big */
+                i_sum = 0;  /* Harmless output value in case calling code doesn't notice the error result */
+                q_sum = 0;  /* Harmless output value in case calling code doesn't notice the error result */
+            }
+            else
+            {
+                if (abs(i_sum) <= DCOC_FINE_MEAS_LO_THRESH) 
+                {
+                    i_sum = 0;  /* Below the low threshold, measurement is in the noise so there should be no resulting adjustment */
+                }
+                if (abs(q_sum) <= DCOC_FINE_MEAS_LO_THRESH) 
+                {
+                    q_sum = 0;  /* Below the low threshold, measurement is in the noise so there should be no resulting adjustment */
+                }
+            }
+            fine_offsets->adc_offset_ovrd_i_fine_adjust = (int8_t)(i_sum);
+            fine_offsets->adc_offset_ovrd_q_fine_adjust = (int8_t)(q_sum);
+        }
+    }
+
+    return status;
+}
+
+
+
+
+
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
+
+
+
+
+
 #if defined(RADIO_IS_GEN_3P5)
 uint8_t rx_dc_est_average(int16_t *i_avg, int16_t *q_avg, uint16_t num_samples)
 {

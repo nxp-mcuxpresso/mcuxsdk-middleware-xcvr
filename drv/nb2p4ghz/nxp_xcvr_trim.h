@@ -42,9 +42,11 @@ typedef enum
     gXcvrTrimSuccess_c        = 0U, /*!< Trim successful */
     gXcvrTrimInvalidMode_c    = 1U, /*!< The radio mode for IQMC calibration is invalid. */
     gXcvrTrimInvalidChannel_c = 2U, /*!< The radio channel for IQMC calibration is invalid. */
+    gXcvrTrimOutOfRange_c = 3U, /*!< The trim has failed to any out of range value during the process. */
     gXcvrTrimIqmcCalOutOfRange_c =
         6U, /*!<  The IQMC_GAIN_ADJ or IQMC_PHASE_ADJ value(s) are out of the target range. */
-    gXcvrTrimIqmcCalValFailRanges_c = 7U /*!<The validation of IQCM calibration failed. */
+    gXcvrTrimIqmcCalValFailRanges_c = 7U, /*!<The validation of IQCM calibration failed. */
+    gXcvrTrimInvalidInputs = 8U /*!< Invalid input to the trim routine (including NULLPTR inputs) */
 } xcvrTrimStatus_t;
 
 #if defined(GCOV_DO_COVERAGE)      /* definition is local except when testing code coverage */
@@ -124,6 +126,8 @@ typedef uint8_t DAC_SWEEP_STEP2_t;
 #define RADIO_IFR_BASE_ADDR_NBU 0x00088000U  
 #define RADIO_IFR_BASE_ADDR_HOST 0x48888000U  
 
+#define DC_FINE_MEASUREMENTS (1)  /* default the feature setting to off. Set this to true in the project defines to get measurement reports without threshold applied.  */
+
 /* \brief  Defines a struct for IFR RTT trims. */
 typedef struct
 {
@@ -151,6 +155,18 @@ typedef struct
     int16_t internal_measurement; /* The value (average code) measured from DMA samples. */
 } GAIN_CALC_TBL_ENTRY2_T;
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+/* \brief  Defines the fine DC offset overrides for tuning out DC after manual DC calibration. */
+typedef struct
+{
+    int8_t adc_offset_ovrd_i_fine_adjust;  /*!< Fine adjustment to apply for I channel for AGC index 11, after threshold is applied. */
+    int8_t adc_offset_ovrd_q_fine_adjust;  /*!< Fine adjustment to apply for I channel for AGC index 11, after threshold is applied. */
+#if defined(DC_FINE_MEASUREMENTS) && (DC_FINE_MEASUREMENTS==1)
+    int8_t adc_offset_ovrd_i_measured;  /*!< Measured value for I channel fine DCOC from IQ samples, no threshold applied. */
+    int8_t adc_offset_ovrd_q_measured;  /*!< Measured value for I channel fine DCOC from IQ samples, no threshold applied.  */
+#endif /* defined(DC_FINE_MEASUREMENTS) && (DC_FINE_MEASUREMENTS==1)  */    
+} xcvr_fine_dc_trim_t;
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
 
 /*******************************************************************************
  * Definitions
@@ -236,6 +252,26 @@ uint8_t rx_bba_dcoc_dac_trim_DCest(void);
 void DCOC_DAC_INIT_Cal(bool standalone_operation);
 
 #endif /* !defined(RADIO_IS_GEN_3P5) */
+
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+/*! *********************************************************************************
+ * @brief  This function measures the residual DC using IQ capture to PKT RAM
+ *
+ * \param[out] fine_offsets - The structure containing the fine offset values for gains steps 11 and 10.
+ * \return xcvrTrimStatus_t - Success or failure of the function.
+ *
+ * \note
+ *   Requires the radio to be configured to the desired operational settings, whether normal Bluetooth or
+ *   Channel Sounding (including 1Mbps or 2Mbps rate selection) before calling this routine.
+ *   This routine assumes all of TX and RX PKT RAM are available for use and may be corrupted.
+ *
+ ***********************************************************************************/
+xcvrTrimStatus_t XCVR_TRIM_MeasDcResid(xcvr_fine_dc_trim_t * fine_offsets);
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
+
+
+
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN < 400)
 #if defined(GCOV_DO_COVERAGE) /* routine is local except when testing code coverage */
