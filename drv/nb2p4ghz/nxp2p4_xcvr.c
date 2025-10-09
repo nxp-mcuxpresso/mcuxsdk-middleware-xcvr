@@ -129,7 +129,21 @@ xcvrStatus_t XCVR_RadioRegSetup(const xcvr_config_t **xcvr_config)
     if (xcvr_config != NULLPTR)
     {
         /* Configure Radio registers */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && (NXP_RADIO_GEN <= 470)
+        /* backup LDO_0 */
+        uint32_t ldo_0_backup = XCVR_ANALOG->LDO_0;
+#endif
         status = XCVR_RadioGenRegSetup(*xcvr_config);
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && (NXP_RADIO_GEN <= 470)
+        /* restore LDO_0 force */
+        uint32_t const ldo_0_force_mask = XCVR_ANALOG_LDO_0_LDO_PLL_FORCE_MASK | XCVR_ANALOG_LDO_0_LDO_VCO_FORCE_MASK |
+                                          XCVR_ANALOG_LDO_0_LDO_RXTXHF_FORCE_MASK | XCVR_ANALOG_LDO_0_LDO_RXTXLF_FORCE_MASK |
+                                          XCVR_ANALOG_LDO_0_LDO_CAL_FORCE_MASK;
+        uint32_t temp = XCVR_ANALOG->LDO_0;
+        temp &= ~ldo_0_force_mask;
+        temp |= (ldo_0_backup & ldo_0_force_mask);
+        XCVR_ANALOG->LDO_0 = temp;
+#endif
     }
     else
     {
