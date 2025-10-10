@@ -130,8 +130,9 @@ xcvrStatus_t XCVR_RadioRegSetup(const xcvr_config_t **xcvr_config)
     {
         /* Configure Radio registers */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && (NXP_RADIO_GEN <= 470)
-        /* backup LDO_0 */
+        /* backup LDO_0, LDO_TRIM_0 */
         uint32_t ldo_0_backup = XCVR_ANALOG->LDO_0;
+        uint32_t ldo_trim_0_backup = XCVR_MISC->LDO_TRIM_0;
 #endif
         status = XCVR_RadioGenRegSetup(*xcvr_config);
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && (NXP_RADIO_GEN <= 470)
@@ -143,6 +144,16 @@ xcvrStatus_t XCVR_RadioRegSetup(const xcvr_config_t **xcvr_config)
         temp &= ~ldo_0_force_mask;
         temp |= (ldo_0_backup & ldo_0_force_mask);
         XCVR_ANALOG->LDO_0 = temp;
+        /* restore LDO_TRIM_0 trim offset */
+        uint32_t const ldo_0_trim_offset_mask = XCVR_MISC_LDO_TRIM_0_LDO_RXTXHF_TRIM_OFFSET_MASK | 
+                                                XCVR_MISC_LDO_TRIM_0_LDO_RXTXLF_TRIM_OFFSET_MASK |
+                                                XCVR_MISC_LDO_TRIM_0_LDO_VCO_TRIM_OFFSET_MASK |
+                                                XCVR_MISC_LDO_TRIM_0_LDO_PLL_TRIM_OFFSET_MASK;
+
+        temp = XCVR_MISC->LDO_TRIM_0;
+        temp &= ~ldo_0_trim_offset_mask;
+        temp |= (ldo_trim_0_backup & ldo_0_trim_offset_mask);
+        XCVR_MISC->LDO_TRIM_0 = temp;
 #endif
     }
     else
