@@ -2698,6 +2698,7 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
         XCVR_RSM_SQTE_RATE_T rttPhy = (rsm_settings_ptr->rate);
         uint32_t spint_us, temp, offset, sampling_rate_factor;
         uint8_t temp_tx_sw_ena;
+        uint8_t dma_mask_delay = 5U;
         xcvr_lcl_tqi_setting_tbl_t * tqi_tbl_ptr;
         /* Configure 2Mbps oversampling if needed */
         if (rttPhy == XCVR_RSM_RATE_1MBPS)
@@ -2843,14 +2844,28 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
             if (rttPhy == XCVR_RSM_RATE_1MBPS)
             {
                 offset = 3U;
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=475)
+                /* CONNRF-1504 Optimize LCL_DMA_MASK_DELAY*/
+                XCVR_LCL_DMA_MASK_DELAY_CALC(RX_SETTLING_LATENCY_1MBPS, 
+                                       TX_DATA_FLUSH_DLY_1MBPS, 
+                                       rttPhy, 
+                                       dma_mask_delay);
+#endif
             }
             else
             {
                 offset = 5U;
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=475)
+                /* CONNRF-1504 Optimize LCL_DMA_MASK_DELAY*/
+                XCVR_LCL_DMA_MASK_DELAY_CALC(RX_SETTLING_LATENCY_2MBPS, 
+                       TX_DATA_FLUSH_DLY_2MBPS, 
+                       rttPhy, 
+                       dma_mask_delay);
+#endif
             }
 
             XCVR_MISC->LCL_DMA_MASK_DELAY = XCVR_MISC_LCL_DMA_MASK_DELAY_DMA_MASK_DELAY_OFF(offset) |
-                                            XCVR_MISC_LCL_DMA_MASK_DELAY_DMA_MASK_DELAY(5U);
+                                            XCVR_MISC_LCL_DMA_MASK_DELAY_DMA_MASK_DELAY(dma_mask_delay);
 
             /* DMA mask centering & TQI setup */
             xcvr_lcl_tqi_entry_t *tqi_settings_ptr = NULLPTR;

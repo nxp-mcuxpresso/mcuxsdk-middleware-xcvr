@@ -193,6 +193,15 @@ extern "C" {
 #define RX_SYNC_DLY_2MBPS (7U)
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)   */
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) 
+      /* CONNRF-1504 Optimize LCL_DMA_MASK_DELAY*/
+#define XCVR_LCL_DMA_MASK_DELAY_CALC(rx_settling_lat, tx_data_flush, rate, dma_mask_delay)        \
+    do {                                    \
+        int8_t temp = (rx_settling_lat) - (tx_data_flush) + 1 - (rate);     \
+        (dma_mask_delay) = (temp < 0) ? 0 : temp;   \
+    } while (false)
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)   */
+
 /* DMA_MASK_CTRL Signal valid mask sel options */
 #define RSM_DMA_SIGNAL_VALID_MASK_SEL_DMA_MASK (1U << 0U) /*!< Enable capture using rsm or lcl dma mask */
 #define RSM_DMA_SIGNAL_VALID_MASK_SEL_FM_RX (1U << 1U)    /*!< Enable full fm_rx state capture */
