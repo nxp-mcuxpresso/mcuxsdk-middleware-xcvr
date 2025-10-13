@@ -2698,7 +2698,7 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
         XCVR_RSM_SQTE_RATE_T rttPhy = (rsm_settings_ptr->rate);
         uint32_t spint_us, temp, offset, sampling_rate_factor;
         uint8_t temp_tx_sw_ena;
-        uint8_t dma_mask_delay = 5U;
+        uint8_t dma_mask_delay;
         xcvr_lcl_tqi_setting_tbl_t * tqi_tbl_ptr;
         /* Configure 2Mbps oversampling if needed */
         if (rttPhy == XCVR_RSM_RATE_1MBPS)
@@ -2850,6 +2850,8 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
                                        TX_DATA_FLUSH_DLY_1MBPS, 
                                        rttPhy, 
                                        dma_mask_delay);
+#else
+                dma_mask_delay = 5U;
 #endif
             }
             else
@@ -2861,6 +2863,8 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
                        TX_DATA_FLUSH_DLY_2MBPS, 
                        rttPhy, 
                        dma_mask_delay);
+#else
+                dma_mask_delay = 5U;
 #endif
             }
 
