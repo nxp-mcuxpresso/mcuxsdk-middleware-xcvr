@@ -278,8 +278,15 @@ xcvrStatus_t XCVR_ChangeMode(const xcvr_config_t **xcvr_config, /* Change from o
     XCVR_CoexistenceSaveRestoreTimings(0x1U); /* save coex related timings to be restored later */
 #endif
 
+    /* Make LDO_ANT_TRIM persistent through mode changes (CONNRF-1505) */
+    uint32_t temp_ldo_trim;
+    temp_ldo_trim = XCVR_ANALOG->LDO_1&XCVR_ANALOG_LDO_1_LDO_ANT_TRIM_MASK; /* Zero out everything except the LDO_ANT_TRIM field */
+
     /* Performs an initialization of radio registers (all of them) */
     status = XCVR_RadioRegSetup(xcvr_config); /* Set to mode change register programming */
+
+    /* Make LDO_ANT_TRIM persistent through mode changes (CONNRF-1505) */
+    XCVR_ANALOG->LDO_1 = (XCVR_ANALOG->LDO_1 & ~(XCVR_ANALOG_LDO_1_LDO_ANT_TRIM_MASK)) | temp_ldo_trim;
 
     /* Sets up RBME only */
     if (status == gXcvrSuccess_c)
