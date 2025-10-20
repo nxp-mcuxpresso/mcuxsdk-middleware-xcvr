@@ -120,6 +120,7 @@ typedef struct
     uint16_t *phase_add_list;    /*!< List of phase_adder values for the steps. */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) 
     uint32_t *ant_permut_list;    /*!< List of (packed) antena permutations for the steps. Only supports one permutation table applied to all steps. */
+    uint16_t *phase_add_ap_list;    /*!< List of phase_adder values per antenna path for the steps. */
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
     bool multi_ant_permut;           /*!< Multi-antenna permutation in PKT RAM is enabled. */
     uint16_t *hpm_cal_list;      /*!< List of HPM CAL values for the steps. */

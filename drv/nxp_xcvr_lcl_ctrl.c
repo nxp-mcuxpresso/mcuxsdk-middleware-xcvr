@@ -457,7 +457,11 @@ xcvrLclStatus_t XCVR_LCL_ValidateRsmSettings(const xcvr_lcl_rsm_config_t *rsm_se
         /* PA ramp time */
         tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->pa_ramp_time >= XCVR_RSM_PA_RAMP_ERROR);
         /* Manual RCCAL */
-        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->use_rccal_manual_override && (rsm_settings_ptr->manual_rccal_value > 0x1FU));
+        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->use_rccal_manual_override && (rsm_settings_ptr->manual_rccal_value> 0x1F));
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+        /* Phase compensation setting limit */
+        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->phase_comp_sel >= XCVR_RSM_PHASE_COMP_ERROR);
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */       
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 
         if (tmp_logic_sum != 0U)  /* If any of the above logic statements is true then the argument is invalid */
@@ -771,6 +775,9 @@ static xcvrLclStatus_t XCVR_LCL_SetupPARamping(const xcvr_lcl_rsm_config_t *rsm_
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
 static void XCVR_LCL_ConfigureInlinePhaseReturn(const xcvr_lcl_rsm_config_t *rsm_settings_ptr);
 static void XCVR_LCL_ConfigureNADMFeature(bool rate_is_2mbps);
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) /* MW30 */
+static void XCVR_LCL_ConfigureRxTxPhaseCompensation(const xcvr_lcl_rsm_config_t *rsm_settings_ptr);
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 
 /* XCVR_LCL_RsmInit() helper functions -definitions */
@@ -851,12 +858,15 @@ static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
                         XCVR_PLL_DIG_HPMCAL_CTRL_HPM_CAL_FACTOR_MANUAL(rsm_settings_ptr->hpm_cal_manual_val));
         XCVR_PLL_DIG->HPMCAL_CTRL = temp;
 
+    XCVR_LCL_ConfigureInlinePhaseReturn(rsm_settings_ptr); /* Setup INPR (or ensure it is disabled)*/
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) /* Valid for MW30 only */
+    XCVR_LCL_ConfigureRxTxPhaseCompensation(rsm_settings_ptr); /* Set up phase compensation, this function should always be called after the INPR configuration function*/
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)*/
         XCVR_LCL_ConfigureInlinePhaseReturn(rsm_settings_ptr); /* Setup INPR (or ensure it is disabled)*/
 
         /* Phase continuity defaults to ON */
         XCVR_LCL_EnaLpmClkSwitch(1);
-        XCVR_LCL_EnaDividerSync(true);        
-        
+        XCVR_LCL_EnaDividerSync(true);               
 #else
         /* NOTE: This code assumes t_ip1 and t_ip2 config structures both use identical HPM CAL enable bit settings
          * (which is the case in the initial coding */
@@ -1355,7 +1365,7 @@ static void XCVR_LCL_ConfigureInlinePhaseReturn(const xcvr_lcl_rsm_config_t *rsm
     }
     else
     {
-        XCVR_PLL_DIG->PLL_PHASE_COMPENSATION &=  ~(XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_EN_INPR_MASK); /* Disable Inline Phase Return */
+        XCVR_PLL_DIG->PLL_PHASE_COMPENSATION &=  ~(XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_EN_INPR_MASK | XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_EN_INPR_RX_NORM_MASK); /* Disable Inline Phase Return */
     }
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) */
 }
@@ -1410,6 +1420,53 @@ static void XCVR_LCL_ConfigureNADMFeature(bool rate_is_2mbps)
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 }
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) // Rx/Tx phase compensation per antenna path available only on MW30
+static void XCVR_LCL_ConfigureRxTxPhaseCompensation(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
+{
+    uint32_t temp;
+    switch (rsm_settings_ptr->phase_comp_sel)
+      {
+        case XCVR_RSM_PHASE_COMP_DISABLED:
+          XCVR_PLL_DIG->PLL_PHASE_COMPENSATION &=  ~(XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_EN_PLL_PHASE_SHIFT_MASK); /* Disable Tx/RX phase compensation*/
+          break;
+        case XCVR_RSM_PHASE_COMP_PLL_TX:
+          {             
+            /* Enable Tx phase compensation over antenna path */
+            temp = XCVR_PLL_DIG->PLL_PHASE_COMPENSATION;
+            temp &= ~(XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_EN_PLL_PHASE_SHIFT_MASK); /* Clear value */
+            temp |= XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_EN_PLL_PHASE_SHIFT(1) | /* Enable Tx phase compensation bit 0 = 1 and bit 1 = 0 for Tx */
+                    XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_EN_INPR_MASK; /* Tx phase compensation needs INPR path enabled, bit 1 =1 for multiple antenna paths */
+                    
+            XCVR_PLL_DIG->PLL_PHASE_COMPENSATION = temp;
+          }
+        break;
+        case XCVR_RSM_PHASE_COMP_PLL_RX:
+          { 
+            /* Enable Rx phase compensation over antenna path */
+            temp = XCVR_PLL_DIG->PLL_PHASE_COMPENSATION;
+            temp &= ~( XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_EN_PLL_PHASE_SHIFT_MASK /* Clear value */
+                      | XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_RX_PHASE_COMP_DT_MASK /* Clear value */
+                      | XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_RX_PHASE_COMP_START_TUNING_MASK /* No delay */
+                      | XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_RX_COMP_INV_MASK); /* No inversion, MCV-8691 RX_COMP_INV set to 1 shows phase values on Tx slots */ 
+                  
+            temp |= XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_EN_PLL_PHASE_SHIFT(3)| /* Enable Rx phase compensation bit 0 = 1 and bit 1 = 1 for Rx */
+                    XCVR_PLL_DIG_PLL_PHASE_COMPENSATION_RX_PHASE_COMP_DT(2); /* Compensation integration period 0.25 us */
+            XCVR_PLL_DIG->PLL_PHASE_COMPENSATION = temp;
+          }
+        break;
+        case XCVR_RSM_PHASE_COMP_DIG_RX:
+          {
+            /* Enable Rx phase compensation through RX DIG mixer*/
+            XCVR_RX_DIG->CTRL0 |= XCVR_RX_DIG_CTRL0_DIG_MIXER_PH_EN_MASK;
+          }
+          break;
+        default:
+            /* Error, default case should never be encountered */
+            break;
+      }
+}
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) */
 
 xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 {

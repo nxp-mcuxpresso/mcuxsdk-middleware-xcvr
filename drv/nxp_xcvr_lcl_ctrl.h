@@ -377,6 +377,18 @@ typedef enum
     XCVR_RSM_IQ_OUT_ERROR     = 8U, /*!< Error value. */
 } XCVR_RSM_IQ_OUT_SEL_T;
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) /* Only applies to MW30 */
+/*! @brief  Phase compensation enumeration type. */
+typedef enum
+{
+    XCVR_RSM_PHASE_COMP_DISABLED        = 0U, /*!< Phase comp not disabled. */
+    XCVR_RSM_PHASE_COMP_PLL_TX          = 1U, /*!< Tx phase compensation through PLL*/
+    XCVR_RSM_PHASE_COMP_PLL_RX          = 2U, /*!< Rx phase compensation through PLL*/
+    XCVR_RSM_PHASE_COMP_DIG_RX          = 3U, /*!< Rx phase compensation through DIG mixer */
+    XCVR_RSM_PHASE_COMP_ERROR           = 4U, /*!< Error value */
+} XCVR_RSM_PHASE_COMP_SEL_T;
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
+
 /* Define callback function for RSM interrupt. */
 /*! *********************************************************************************
  * \brief  This callback is a pointer to a user routine to be called when RSM interrtupt happens.
@@ -444,7 +456,7 @@ typedef struct
     XCVR_RSM_RXTX_MODE_T
         role; /*!< Role to be used for RSM operation. Interacts with the trig_sel field because the role cannot be
                  applied in XCVR_LCL_RsmInit() if the trig_sel is set to software triggered. */
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* Only applies to KW47 */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* Only applies to KW47, MW30 */
     uint16_t mode0_timeout_usec; /*!< Timeout (in usec) for RSM in reflector role to wait for a Mode 0 step transmission
                                     from initiator. */
     XCVR_RSM_PCT_AVG_WIN_LEN_T
@@ -458,6 +470,10 @@ typedef struct
 #endif                                    /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
     bool use_rccal_manual_override; /* when set, RCCAL from TSM seq. is ignored and manual value is used; when cleared, TSM RCCAL is active */
     uint8_t manual_rccal_value; /* unsigned 5 bit value used to override the RCCAL CODE when use_rccal_manual_override is true */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) /* Only applies to MW30 */
+    XCVR_RSM_PHASE_COMP_SEL_T phase_comp_sel; /* Enables/Disables the phase compensation and selects the compensation path: PLL Tx, PLL Rx or Rx Dig Mixer 
+                                                  (phase values taken from packet RAM) */
+#endif
 } xcvr_lcl_rsm_config_t;
 
 /*! @brief RSM Frequency Step configuration structure. */
@@ -1755,7 +1771,8 @@ xcvrLclStatus_t XCVR_LCL_EnaPic(XCVR_RSM_PIC_MODE_TYPE_T mode, bool slow_bw_redu
  *
  */
 void XCVR_LCL_EnaDividerSync(bool enable);
-#endif
+
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN==470)
 #if defined(RTT_DEMOD_ENABLE) && (RTT_DEMOD_ENABLE)

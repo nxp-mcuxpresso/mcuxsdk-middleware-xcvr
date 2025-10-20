@@ -524,9 +524,12 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
         uint16_t * step_cfg_list_ptr = subevent_info_ptr->step_cfg_list;        
         uint16_t * step_cfo_ptr = subevent_info_ptr->cfo_list;        
         uint16_t * phase_add_ptr = subevent_info_ptr->phase_add_list;
+        
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) 
+        uint16_t * phase_add_ap_ptr = subevent_info_ptr->phase_add_ap_list;
         uint32_t * ant_permut_ptr = subevent_info_ptr->ant_permut_list;
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
+        
         uint32_t ram_address = 0U;
         static COM_MODE_CFG_HDR_UNION_Type step_header; /* Used to assemble header structures for write to PKT RAM */
         COM_MODE_CFG_HDR_UNION_Type * step_hdr_ptr = &step_header;
@@ -594,7 +597,7 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
                         volatile MODE2_3_CFG_BODY_Type* mode2_3_cfg_body_ptr = (volatile MODE2_3_CFG_BODY_Type *)((uint32_t*)ram_address + cfg_sz - phase_sz);
                         if((*step_type_ptr == XCVR_RSM_STEP_TN_TN) || (*step_type_ptr == XCVR_RSM_STEP_PK_TN_TN_PK ))
                         {
-                            XCVR_LCL_MakeMode23_Phase(mode2_3_cfg_body_ptr, phase_add_ptr, ant_permut_ptr, subevent_info_ptr->num_ap, subevent_info_ptr->multi_ant_permut);
+                            XCVR_LCL_MakeMode23_Phase(mode2_3_cfg_body_ptr, phase_add_ap_ptr, ant_permut_ptr, subevent_info_ptr->num_ap, subevent_info_ptr->multi_ant_permut);
                         }
 #endif
                     }
