@@ -927,9 +927,8 @@ static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)*/
 //        XCVR_LCL_ConfigureInlinePhaseReturn(rsm_settings_ptr); /* Setup INPR (or ensure it is disabled)*/
 
-        /* Phase continuity defaults to ON */
+        /* Set LPM clock Switch to fast mode for Phase continuity */
         XCVR_LCL_EnaLpmClkSwitch(1);
-        XCVR_LCL_EnaDividerSync(true);        
         
 #else
         /* NOTE: This code assumes t_ip1 and t_ip2 config structures both use identical HPM CAL enable bit settings
@@ -1603,9 +1602,10 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         }
         RADIO_CTRL->RF_CTRL = temp;
 
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* KW47 INPR and NADM configuration */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* KW47 Phase continuity configuration */
     if (status == gXcvrLclStatusSuccess)
     {
+        XCVR_LCL_EnaDividerSync(true); /* Enable dividers synchronization */
         status = XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY ,false); /* Enable PIC feature by default */
     }
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
