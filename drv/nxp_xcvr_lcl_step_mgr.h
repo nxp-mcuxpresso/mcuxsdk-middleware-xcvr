@@ -538,26 +538,26 @@ while (false)
 #define XCVR_LCL_CalcNadmMetric(fm_corr_value, tgt_fm_corr, div_fm_corr, nadm_metric)                             \
     do                                                                                                            \
     {                                                                                                             \
-        nadm_metric       = 0xFFU;                                                                                \
-        int16_t temp_calc = (int16_t)fm_corr_value; /* Working in signed values to handle subtract below zero. */ \
+        (nadm_metric)       = 0xFFU;                                                                                \
+        int16_t temp_calc = (int16_t)(fm_corr_value); /* Working in signed values to handle subtract below zero. */ \
         if (temp_calc == 0U) /* Saturation in hardware causes 255 to be reported as zero, remap to 255 */         \
         {                                                                                                         \
-            temp_calc = 255U;                                                                                     \
+            temp_calc = 255;                                                                                     \
         }                                                                                                         \
-        temp_calc = (tgt_fm_corr - temp_calc) / div_fm_corr; /* Caculate metric result */                         \
+        temp_calc = (int16_t)(((int16_t)(tgt_fm_corr) - temp_calc) / (int16_t)(div_fm_corr)); /* Caculate metric result */                         \
         if (temp_calc < 0)                                   /* Saturate anything below zero to zero */           \
         {                                                                                                         \
-            nadm_metric = 0U;                                                                                     \
+            (nadm_metric) = 0U;                                                                                     \
         }                                                                                                         \
         else                                                                                                      \
         {                                                                                                         \
             if (temp_calc > 6) /* Saturate anything above 6 to 6 */                                               \
             {                                                                                                     \
-                nadm_metric = 6;                                                                                  \
+                (nadm_metric) = 6U;                                                                                  \
             }                                                                                                     \
             else                                                                                                  \
             {                                                                                                     \
-                nadm_metric = (uint8_t)temp_calc;                                                                 \
+                (nadm_metric) = (uint8_t)temp_calc;                                                                 \
             }                                                                                                     \
         }                                                                                                         \
     } while (false)

@@ -515,12 +515,11 @@ xcvrLclStatus_t XCVR_LCL_ValidateRsmSettings(const xcvr_lcl_rsm_config_t *rsm_se
         /* PA ramp time */
         tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->pa_ramp_time >= XCVR_RSM_PA_RAMP_ERROR);
         /* Manual RCCAL */
-        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->use_rccal_manual_override && (rsm_settings_ptr->manual_rccal_value> 0x1F));
+        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->use_rccal_manual_override && (rsm_settings_ptr->manual_rccal_value> 0x1FU));
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
         /* Phase compensation setting limit */
         tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->phase_comp_sel >= XCVR_RSM_PHASE_COMP_ERROR);
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */       
-        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->use_rccal_manual_override && (rsm_settings_ptr->manual_rccal_value > 0x1FU));
 #if defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)        
         /* TX_SNR feature */
         tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->tx_snr_setting >=  XCVR_RSM_TX_SNR_ERROR);
@@ -927,7 +926,7 @@ static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)*/
 //        XCVR_LCL_ConfigureInlinePhaseReturn(rsm_settings_ptr); /* Setup INPR (or ensure it is disabled)*/
 
-        /* Set LPM clock Switch to fast mode for Phase continuity */
+        /* Phase continuity defaults to ON */
         XCVR_LCL_EnaLpmClkSwitch(1);
         
 #else
@@ -3586,10 +3585,10 @@ xcvrLclStatus_t XCVR_LCL_CalibrateDcocCompleteFine(xcvr_dc_cal_results_t * dcoc_
         dcoc_cal_results->dcoc_ctrl2_value = dcoc2_result;
         /* Unpack ADC offset fields to int16_t to support later fine offset calculations */
         uint16_t temp; 
-        temp = ((dcoc2_result&XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_I_MASK)>>XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_I_SHIFT); /* Extract 7 bit field (signed) to uint16_t */
+        temp = (uint16_t)((dcoc2_result&XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_I_MASK)>>XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_I_SHIFT); /* Extract 7 bit field (signed) to uint16_t */
         temp |= ((temp&0x40U) != 0U ? 0xFF80U : 0U); /* Sign extend within the uint16_t */
         dcoc_cal_results->i_cal_offset = (int16_t)(temp); /* Cast to a signed */
-        temp = ((dcoc2_result&XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_Q_MASK)>>XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_Q_SHIFT); /* Extract 7 bit field (signed) to uint16_t */
+        temp = (uint16_t)((dcoc2_result&XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_Q_MASK)>>XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_Q_SHIFT); /* Extract 7 bit field (signed) to uint16_t */
         temp |= ((temp&0x40U) != 0U ? 0xFF80U : 0U); /* Sign extend within the uint16_t */
         dcoc_cal_results->q_cal_offset = (int16_t)(temp); /* Cast to a signed */
         
@@ -3643,31 +3642,37 @@ xcvrLclStatus_t XCVR_LCL_CalibrateDcocCompleteFine(xcvr_dc_cal_results_t * dcoc_
 uint32_t XCVR_LCL_CombineCoarseFineDc(xcvr_dc_cal_results_t * dcoc_cal_results, uint32_t agc_index)
 {
     assert(dcoc_cal_results != NULLPTR);
-    uint32_t temp_ctrl2_val = dcoc_cal_results->dcoc_ctrl2_value;
+    uint32_t temp_ctrl2_val = 0x0U;
+    int32_t temp_offset;    
+    if (dcoc_cal_results != NULLPTR)
+    {
+        temp_ctrl2_val = dcoc_cal_results->dcoc_ctrl2_value;
 
     /* Combine the coarse and fine values */
     /* DCOC fine adjustement needs to be scaled based on gain */
     int8_t fine_adj_i = 0;
     int8_t fine_adj_q = 0;
-    if (agc_index == 11)
+        if (agc_index == 11U)
     {
         fine_adj_i = dcoc_cal_results->adc_offset_ovrd_i_fine_adjust;
         fine_adj_q = dcoc_cal_results->adc_offset_ovrd_q_fine_adjust;
     }
-    if (agc_index == 10)
+        if (agc_index == 10U)
     {
         fine_adj_i = dcoc_cal_results->adc_offset_ovrd_i_fine_adjust/2;
         fine_adj_q = dcoc_cal_results->adc_offset_ovrd_q_fine_adjust/2;
     }
     /* The result is cast back to unsigned for the final ADC register value */    
-    uint32_t adc_offset_i = (uint32_t)((int32_t)dcoc_cal_results->i_cal_offset+ fine_adj_i);    
-    uint32_t adc_offset_q = (uint32_t)((int32_t)dcoc_cal_results->q_cal_offset + fine_adj_q);
+        temp_offset = ((int32_t)dcoc_cal_results->i_cal_offset+ fine_adj_i);    
+        uint32_t adc_offset_i = (uint32_t)temp_offset;
+        temp_offset = ((int32_t)dcoc_cal_results->q_cal_offset + fine_adj_q);
+        uint32_t adc_offset_q = (uint32_t)temp_offset;
     
     /* Update the temporary dcoc_ctrl2 value (retain DAC corrections that don't change) */
     temp_ctrl2_val = ((temp_ctrl2_val & (XCVR_RX_DIG_DCOC_CTRL2_DCOC_DAC_OVRD_I_MASK | XCVR_RX_DIG_DCOC_CTRL2_DCOC_DAC_OVRD_Q_MASK)) |
                     XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_I(adc_offset_i) |
                       XCVR_RX_DIG_DCOC_CTRL2_DCOC_ADC_OFFSET_OVRD_Q(adc_offset_q));  
-        
+    }
     return temp_ctrl2_val;
 }
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
