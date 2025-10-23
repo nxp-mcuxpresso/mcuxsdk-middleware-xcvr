@@ -81,6 +81,35 @@
 #error "A0 revision of KW45 is no longer supported."
 #endif
 
+/* Workaround MCUSOC-292 - missing MODULATOR_LFSR definitions */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
+#ifndef XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN_MASK
+#define XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN_MASK (0x100U)
+#define XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN_SHIFT (8U)
+/*! TX_MODULATOR_LFSR_EN - TX modulator LFSR block enable */
+#define XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN(x) (((uint32_t)(((uint32_t)(x)) << XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN_SHIFT)) & XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN_MASK)
+
+#define XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV_MASK (0xE00U)
+#define XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV_SHIFT (9U)
+/*! TX_MODULATOR_LFSR_DIV - TX modulator LFSR output sparsity
+ *  0b000..every LFSR output value selected
+ *  0b001..every LFSR value over 2
+ *  0b010..every LFSR value over 4
+ *  0b011..every LFSR value over 8
+ *  0b100..every LFSR value over 16
+ *  0b101..every LFSR value over 32
+ *  0b110..every LFSR value over 64
+ *  0b111..every LFSR value over 128
+ */
+#define XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV(x) (((uint32_t)(((uint32_t)(x)) << XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV_SHIFT)) & XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV_MASK)
+
+#define XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE_MASK (0x7FF000U)
+#define XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE_SHIFT (12U)
+/*! TX_MODULATOR_LFSR_SCALE - TX modulator LFSR jamming magnitude */
+#define XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE(x) (((uint32_t)(((uint32_t)(x)) << XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE_SHIFT)) & XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE_MASK)
+#endif /* ifndef XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN_MASK */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
+
 #define NADM_WA_IF_1_7MHZ (0)
 #define NADM_WA_OVERDROOP (1)
 /*******************************************************************************
@@ -118,6 +147,35 @@ static xcvr_lcl_tqi_setting_tbl_t tqi_2mbps_settings = {
 };
 #endif
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* Only applies to KW47 */
+#if defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1) 
+/*! @brief TX_SNR settings structure */
+typedef struct
+{
+    uint16_t lfsr_scale;
+    uint8_t lfsr_div;
+} xcvr_lcl_rsm_tx_snr_t;
+
+/*! @brief TX_SNR LFSR settings values  */
+static xcvr_lcl_rsm_tx_snr_t tx_snr_settings[2][XCVR_RSM_TX_SNR_DISABLED] = {
+    /* 1Mbps rate */
+    {
+        {190U, 1U},  /* 18 dB LFSR SCALE and DIV */
+        {130U, 1U},  /* 21 dB LFSR SCALE and DIV */
+        {90U, 1U},  /* 24 dB LFSR SCALE and DIV */
+        {50U, 1U},  /* 27 dB LFSR SCALE and DIV */
+    }, 
+    /* 2Mbps rate */
+    {
+        // TODO: get correct 18dB number for 2Mbps
+        {203U, 1U},  /* 18 dB LFSR SCALE and DIV */
+        {140U, 1U},  /* 21 dB LFSR SCALE and DIV */
+        {70U, 1U},  /* 24 dB LFSR SCALE and DIV */
+        {5U, 1U},  /* 27 dB LFSR SCALE and DIV */
+     } 
+};
+#endif /* defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)  */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
@@ -462,6 +520,11 @@ xcvrLclStatus_t XCVR_LCL_ValidateRsmSettings(const xcvr_lcl_rsm_config_t *rsm_se
         /* Phase compensation setting limit */
         tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->phase_comp_sel >= XCVR_RSM_PHASE_COMP_ERROR);
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */       
+        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->use_rccal_manual_override && (rsm_settings_ptr->manual_rccal_value > 0x1FU));
+#if defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)        
+        /* TX_SNR feature */
+        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->tx_snr_setting >=  XCVR_RSM_TX_SNR_ERROR);
+#endif /* defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)  */
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 
         if (tmp_logic_sum != 0U)  /* If any of the above logic statements is true then the argument is invalid */
@@ -862,11 +925,12 @@ static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) /* Valid for MW30 only */
     XCVR_LCL_ConfigureRxTxPhaseCompensation(rsm_settings_ptr); /* Set up phase compensation, this function should always be called after the INPR configuration function*/
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)*/
-        XCVR_LCL_ConfigureInlinePhaseReturn(rsm_settings_ptr); /* Setup INPR (or ensure it is disabled)*/
+//        XCVR_LCL_ConfigureInlinePhaseReturn(rsm_settings_ptr); /* Setup INPR (or ensure it is disabled)*/
 
         /* Phase continuity defaults to ON */
         XCVR_LCL_EnaLpmClkSwitch(1);
-        XCVR_LCL_EnaDividerSync(true);               
+        XCVR_LCL_EnaDividerSync(true);        
+        
 #else
         /* NOTE: This code assumes t_ip1 and t_ip2 config structures both use identical HPM CAL enable bit settings
          * (which is the case in the initial coding */
@@ -945,6 +1009,24 @@ static xcvrLclStatus_t XCVR_LCL_SetupTXDIGForRanging(const xcvr_lcl_rsm_config_t
         XCVR_TX_DIG->DATA_PADDING_CTRL_2 =XCVR_TX_DIG_DATA_PADDING_CTRL_2_DATA_PAD_MFDEV(0x1DCDU) |
                                           XCVR_TX_DIG_DATA_PADDING_CTRL_2_DATA_PAD_PFDEV(0x233U);
 
+        /* TX_SNR feature support */        
+#if defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1) 
+        temp = XCVR_TX_DIG->TXDIG_CTRL;
+        if (rsm_settings_ptr->tx_snr_setting == XCVR_RSM_TX_SNR_DISABLED)
+        {
+            temp &= ~(XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN_MASK); /* Disable the LFSR */
+        }
+        else
+        {
+            /* Update TXDIG_CTRL */
+            temp &= ~(XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV_MASK |
+                        XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE_MASK);
+            temp |= (XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN_MASK |
+                XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV(tx_snr_settings[rsm_settings_ptr->rate][rsm_settings_ptr->tx_snr_setting].lfsr_div) |
+                XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE(tx_snr_settings[rsm_settings_ptr->rate][rsm_settings_ptr->tx_snr_setting].lfsr_scale));
+        }
+        XCVR_TX_DIG->TXDIG_CTRL = temp;
+#endif /* defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)  */
 
 
 #else

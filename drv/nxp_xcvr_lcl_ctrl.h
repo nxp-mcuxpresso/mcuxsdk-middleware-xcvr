@@ -35,6 +35,10 @@ extern "C" {
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && \
     (RF_OSC_26MHZ == 0) /* RSM only supported on Gen 4.5 or higher radios & with RF_OSC = 32MHz */
 
+#ifndef SUPPORT_TX_SNR
+#define SUPPORT_TX_SNR      (1)
+#endif /* SUPPORT_TX_SNR */
+
 #ifndef XCVR_SKIP_RSM_SETTINGS_CHECK
 #define XCVR_SKIP_RSM_SETTINGS_CHECK (1)
 #endif /* XCVR_SKIP_RSM_SETTINGS_CHECK */
@@ -388,7 +392,20 @@ typedef enum
     XCVR_RSM_PHASE_COMP_ERROR           = 4U, /*!< Error value */
 } XCVR_RSM_PHASE_COMP_SEL_T;
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
-
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* Only applies to KW47 */
+#if defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)        
+/*! @brief TX_SNR levels supported */
+typedef enum
+{
+    XCVR_RSM_TX_SNR_18DB   = 0U, /*!< SNR impaired to 18dB */
+    XCVR_RSM_TX_SNR_21DB   = 1U, /*!< SNR impaired to 21dB */
+    XCVR_RSM_TX_SNR_24DB  = 2U, /*!< SNR impaired to 24dB */
+    XCVR_RSM_TX_SNR_27DB  = 3U, /*!< SNR impaired to 27dB */
+    XCVR_RSM_TX_SNR_DISABLED = 4U, /*!< No SNR impairment */
+    XCVR_RSM_TX_SNR_ERROR    = 5U, /*!< Error limit. */
+} XCVR_RSM_TX_SNR_T;
+#endif /* defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)  */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
 /* Define callback function for RSM interrupt. */
 /*! *********************************************************************************
  * \brief  This callback is a pointer to a user routine to be called when RSM interrtupt happens.
@@ -456,7 +473,7 @@ typedef struct
     XCVR_RSM_RXTX_MODE_T
         role; /*!< Role to be used for RSM operation. Interacts with the trig_sel field because the role cannot be
                  applied in XCVR_LCL_RsmInit() if the trig_sel is set to software triggered. */
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* Only applies to KW47, MW30 */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* Only applies to KW47 */
     uint16_t mode0_timeout_usec; /*!< Timeout (in usec) for RSM in reflector role to wait for a Mode 0 step transmission
                                     from initiator. */
     XCVR_RSM_PCT_AVG_WIN_LEN_T
@@ -467,6 +484,9 @@ typedef struct
     bool enable_inpr;                     /*!< Choose whether Inline Phase Return feature should be enabled. */
     uint16_t hpm_cal_manual_val;  /*!< The value for HPM_CAL_FACTOR_MANUAL to be used when ::hpm_cal_mode uses the manual value (alone or in combination with PKT RAM values. */
     bool ant_permut_mode;  /* when set, antenna permutation is provided by RSM config in packet RAM and allow support up to 16 paths. Use False for radio_gen 4.70 */
+#if defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1) 
+    XCVR_RSM_TX_SNR_T tx_snr_setting;  /*!< Choose whether TX_SNR feature should be enabled (and the desired SNR value). */
+#endif /* defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)  */
 #endif                                    /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
     bool use_rccal_manual_override; /* when set, RCCAL from TSM seq. is ignored and manual value is used; when cleared, TSM RCCAL is active */
     uint8_t manual_rccal_value; /* unsigned 5 bit value used to override the RCCAL CODE when use_rccal_manual_override is true */
@@ -1584,7 +1604,7 @@ XCVR_LCL_SetupManualDcoc().
 uint32_t XCVR_LCL_SetupManualDcoc(void);
 
 /*!
- * @brief Function to override DCOC DAC and ADC to manual values.
+ * @brief Function to c override DCOC DAC and ADC to manual values.
  *
  * This function forces the DCOC_CTRL2 register to a new value and sets the override bits to make these manual values
  * active
@@ -1592,6 +1612,7 @@ uint32_t XCVR_LCL_SetupManualDcoc(void);
  * @param dcoc_ctrl2_value override value for both ADC and DAC values
  * @param override if TRUE, performs the override; if FALSE, releases the override
  *
+ * @note
  */
 void XCVR_LCL_OverrideDcoc(uint32_t dcoc_ctrl2_value, bool override);
 
@@ -1629,6 +1650,7 @@ uint32_t XCVR_LCL_CombineCoarseFineDc(xcvr_dc_cal_results_t * dcoc_cal_results, 
  * This function sets up the TSM overrides needed to prepare for measuring the current PLL phase. It must be called
  * every time before a phase measurement is performed (i.e. before the DCOC calibration)
  *
+ * @note
  */
 void XCVR_LCL_EnablePhaseMeasure(void);
 
@@ -1771,8 +1793,7 @@ xcvrLclStatus_t XCVR_LCL_EnaPic(XCVR_RSM_PIC_MODE_TYPE_T mode, bool slow_bw_redu
  *
  */
 void XCVR_LCL_EnaDividerSync(bool enable);
-
-#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
+#endif
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN==470)
 #if defined(RTT_DEMOD_ENABLE) && (RTT_DEMOD_ENABLE)
