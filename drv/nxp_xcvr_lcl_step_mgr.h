@@ -640,7 +640,7 @@ while (false)
             (int16_t)temp; /* packed data is signed 16 bits, then work in signed 32 bits for conversion to Hz */       \
         temp_cfo = (temp_cfo * 61) / cfo_div; /* 15.25Hz (or 30.5Hz) per LSB, implement in integer math as divide by 4 \
                                                  (or 2) and multiply by 61 */                                          \
-        rtt_cfo          = (int16_t)(temp_cfo);                                                                        \
+        rtt_cfo          = (int32_t)(temp_cfo);                                                                        \
         rtt_ham_dist_sat = (uint8_t)((rtt_result_packed & COM_MODE_013_RES_BODY_RTT_RESULT_RTT_HAM_DIST_SAT_MASK) >>   \
                                      COM_MODE_013_RES_BODY_RTT_RESULT_RTT_HAM_DIST_SAT_SHIFT);                         \
         uint8_t temp_adj;                                                                                              \
