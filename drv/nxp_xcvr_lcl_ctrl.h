@@ -784,7 +784,7 @@ typedef struct
     uint32_t XCVR_PLL_DIG_DELAY_MATCH;
     uint32_t XCVR_PLL_DIG_TUNING_CAP_TX_CTRL;
     uint32_t XCVR_PLL_DIG_TUNING_CAP_RX_CTRL;
-
+    uint32_t XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL2;
     uint32_t XCVR_PLL_OFFSET_CTRL;
 
     /* XCVR_TSM (used in PLL overrides) */
@@ -803,7 +803,7 @@ typedef struct
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
     uint32_t XCVR_RX_DIG_AGC_CTRL;
 #endif
-
+    uint32_t XCVR_RX_DIG_CTRL0_DRS;
     uint32_t XCVR_RX_DIG_RCCAL_CTRL1;
 
     /* RADIO_CTRL */
