@@ -3270,11 +3270,9 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
 #if (HPM_CAL_IN_RX)
             XCVR_ForceRxWu();
             XCVR_WaitRxWu();
-#if (1)
+            
             temp_count = 300U;
-#else
-            temp_count = 10000U;
-#endif
+
             while (temp_count > 0U)
             {
                 temp_count--;
@@ -3302,7 +3300,6 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
             XCVR_ForceTxWd();
 #endif      /* HPM_CAL_IN_RX */
             /* Wait for completion of warmdown (until TSM goes to idle) */
-#if (1)
             XCVR_WaitRxTxWd();
             }
             /* Capture calibrated values & warmdown */
@@ -3321,14 +3318,6 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
                     (uint16_t)(temp_count / (4U * hpm_cal_time)); /* Frequency of the calibration in MHz*/
                 hpm_cal_2442_data.hpm_cal_factor_2442 = results_ptr[i].hpm_cal_val;
             }
-#else
-            temp_count = 10000U;
-            while (temp_count > 0U)
-            {
-                temp_count--;
-            }
-#endif
-
             
             while (((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_TSM_COUNT_MASK) >>
                     XCVR_MISC_XCVR_STATUS_TSM_COUNT_SHIFT) != 0U)
