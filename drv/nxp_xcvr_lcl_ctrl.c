@@ -3295,6 +3295,19 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
                 (uint8_t)((XCVR_PLL_DIG->CTUNE_RES & XCVR_PLL_DIG_CTUNE_RES_CTUNE_SELECTED_MASK) >>
                           XCVR_PLL_DIG_CTUNE_RES_CTUNE_SELECTED_SHIFT);
 #endif /* (defined(CTUNE_MANUAL_CAL) && (CTUNE_MANUAL_CAL == 1)) */
+            
+#if (HPM_CAL_IN_RX)
+            XCVR_ForceRxWd();
+#else
+            XCVR_ForceTxWd();
+#endif      /* HPM_CAL_IN_RX */
+            /* Wait for completion of warmdown (until TSM goes to idle) */
+#if (1)
+            XCVR_WaitRxTxWd();
+            }
+            /* Capture calibrated values & warmdown */
+            results_ptr[i].hpm_cal_val = (uint16_t)(cal_avg/HPM_CAL_REPETITIONS); 
+            
             if (update_curve_fit &&
                 (list_ptr[i] ==
                  chan_2442_num)) /* Only perform the curve fit update when needed and when the frequency is 2442MHz. */
@@ -3308,17 +3321,6 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
                     (uint16_t)(temp_count / (4U * hpm_cal_time)); /* Frequency of the calibration in MHz*/
                 hpm_cal_2442_data.hpm_cal_factor_2442 = results_ptr[i].hpm_cal_val;
             }
-#if (HPM_CAL_IN_RX)
-            XCVR_ForceRxWd();
-#else
-            XCVR_ForceTxWd();
-#endif      /* HPM_CAL_IN_RX */
-            /* Wait for completion of warmdown (until TSM goes to idle) */
-#if (1)
-            XCVR_WaitRxTxWd();
-            }
-            /* Capture calibrated values & warmdown */
-            results_ptr[i].hpm_cal_val = (uint16_t)(cal_avg/HPM_CAL_REPETITIONS); 
 #else
             temp_count = 10000U;
             while (temp_count > 0U)
