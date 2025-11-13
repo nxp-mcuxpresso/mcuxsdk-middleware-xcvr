@@ -647,7 +647,7 @@ void XCVR_LCL_RsmPLLInit(XCVR_RSM_SQTE_RATE_T rate)
     else
     {
         temp |= XCVR_PLL_DIG_MOD_CTRL_MODULATION_WORD_MANUAL(
-            0x15F8U); /* 0x15F8U is the best setting for -1.5 MHz@LO with HPM_CAL_SCALE_CFG1=0x9 */
+            0x1380U); /* 0x1380U is the best setting for -1.75 MHz@LO with HPM_CAL_SCALE_CFG1=0x9, check CONNRF-1510 */
         }
         XCVR_PLL_DIG->MOD_CTRL = temp;
     
