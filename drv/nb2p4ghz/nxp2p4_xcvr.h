@@ -538,7 +538,8 @@ typedef struct
                                                        from min to max with temp_step increments */
 } xcvr_temp_comp_lut_t;
 
-
+/* IAR compiler doesn't have pre-defined float**_t types */
+#if defined(__IAR_SYSTEMS_ICC__)
 /**
  * @brief 32-bit floating-point type definition.
  */
@@ -554,6 +555,7 @@ typedef float float32_t;
 #define FLOAT_64_T_DEFINED
 typedef double float64_t;
 #endif /* float64_t */
+#endif  /* __IAR_SYSTEMS_ICC__ */
 
 /* This include must be down here rather than up top due to references to structs defined above */
 #include "nxp_xcvr_mode_config.h"
