@@ -933,7 +933,6 @@ static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) /* Valid for MW30 only */
     XCVR_LCL_ConfigureRxTxPhaseCompensation(rsm_settings_ptr); /* Set up phase compensation, this function should always be called after the INPR configuration function*/
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)*/
-//        XCVR_LCL_ConfigureInlinePhaseReturn(rsm_settings_ptr); /* Setup INPR (or ensure it is disabled)*/
 
         /* Phase continuity defaults to ON */
         XCVR_LCL_EnaLpmClkSwitch(1);
@@ -1617,11 +1616,8 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
         RADIO_CTRL->RF_CTRL = temp;
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* KW47 Phase continuity configuration */
-    if (status == gXcvrLclStatusSuccess)
-    {
         XCVR_LCL_EnaDividerSync(true); /* Enable dividers synchronization */
         status = XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY ,false); /* Enable PIC feature by default */
-    }
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 
     return status;
