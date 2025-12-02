@@ -542,16 +542,14 @@ typedef struct
 /**
  * @brief 32-bit floating-point type definition.
  */
-#ifndef FLOAT_32_T_DEFINED
-#define FLOAT_32_T_DEFINED
+#ifndef float32_t
 typedef float float32_t;
 #endif /* float32_t */
 
 /**
  * @brief 64-bit floating-point type definition.
  */
-#ifndef FLOAT_64_T_DEFINED
-#define FLOAT_64_T_DEFINED
+#ifndef float64_t
 typedef double float64_t;
 #endif /* float64_t */
 
