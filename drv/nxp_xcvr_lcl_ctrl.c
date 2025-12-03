@@ -64,6 +64,8 @@
 #define RX_SETTLE_LAT_1MBPS_SQTE (5U)
 #define RX_SETTLE_LAT_PDE (5U)
 
+#define T_SW_TX_DELAY_OFFSET (2U)
+
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  /*KW47 supports longer T_PM values */
 #define T_PM0_MAX (1023U) /*!< Max value for T_PM0 for HADM usage.  */
 #else
@@ -2850,18 +2852,23 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
         uint16_t t_sw                = (uint16_t)(rsm_settings_ptr->t_sw);
         XCVR_RSM_SQTE_RATE_T rttPhy = (rsm_settings_ptr->rate);
         uint32_t spint_us, temp, offset, sampling_rate_factor;
+        uint32_t tx_data_flush_delay;
         uint8_t temp_tx_sw_ena;
+        uint8_t temp_u8;
         uint8_t dma_mask_delay;
+        uint8_t add_up;
         xcvr_lcl_tqi_setting_tbl_t * tqi_tbl_ptr;
         /* Configure 2Mbps oversampling if needed */
         if (rttPhy == XCVR_RSM_RATE_1MBPS)
         {
             sampling_rate_factor = 1U;
+            tx_data_flush_delay = TX_DATA_FLUSH_DLY_1MBPS;
             tqi_tbl_ptr = &tqi_1mbps_settings;
         }
         else
         {
             sampling_rate_factor = SAMPLING_RATE_FACTOR_2MBPS;
+            tx_data_flush_delay = TX_DATA_FLUSH_DLY_2MBPS;
             tqi_tbl_ptr = &tqi_2mbps_settings;
         }
 
@@ -2891,21 +2898,34 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
         uint8_t t_ramp_usec =
             (uint8_t)(rsm_settings_ptr->pa_ramp_time); /* Actual PA ramping time in usec; Valid values are 1, 2, 3, 4
                                                           (note: 3 requires reprogramming PA ramping) */
-        uint8_t temp_u8 = ((TX_DATA_FLUSH_DLY_1MBPS + t_ramp_usec) * 8U);
-        offset          = (uint32_t)temp_u8;
-        uint8_t add_up;
-        if ((2U * t_ramp_usec) > (uint8_t)t_sw)
+        if (temp_tx_sw_ena == 1U)
         {
-            add_up = 0U; 
+            /* TODO: handle analog PA ramping as the duration is shorter */
+            /* Note: PA ramping occurs at the end of T_PM + TX_FLUSH_DELAY.
+               So it's not possible to active PA ramping with T_SW less than TX_DATA_FLUSH_DELAY + 2*pa_ramp_duration.
+             */
+            temp_u8 = ((tx_data_flush_delay + t_ramp_usec) * (TX_SAMPLING_RATE*sampling_rate_factor));
+            offset = (uint32_t)temp_u8;
+
+            if ((2U * t_ramp_usec) > (uint8_t)t_sw)
+            {
+                add_up = 0U;
+            }
+            else
+            {
+            /* T_SW is <= 10; t_ramp_usec is <= 4 */
+                add_up = ((uint8_t)t_sw - (2U * t_ramp_usec));
+                add_up = (add_up > 7U ? 7U : add_up); /* saturate to 7 maximum */
+                add_up = (add_up > 2U ? (add_up - 2U) : 0U); /* saturate to 0 minimum */
+            }
         }
         else
         {
-         /* T_SW is <= 10; t_ramp_usec is <= 4 */
-            add_up = ((uint8_t)t_sw - (2U * t_ramp_usec));
-            add_up = (add_up > 7U ? 7U : add_up); /* saturate to 7 maximum */
-            add_up = (add_up > 2U ? (add_up - 2U) : 0U); /* saturate to 0 minimum */
+            /* No PA ramping during T_SW. Antenna switching can be adjusted without constraint (centered) */
+            offset = T_SW_TX_DELAY_OFFSET * TX_SAMPLING_RATE * sampling_rate_factor;
+            add_up = 0U;
         }
-        
+
         /* ensure divisions do not have remainder */
         if ((rsm_settings_ptr->op_mode != XCVR_RSM_SQTE_STABLE_PHASE_TEST_MODE) &&
             ((((uint16_t)t_capture + t_sw) * (rsm_settings_ptr->num_ant_path + 1U)) != t_pm))
@@ -5039,7 +5059,7 @@ xcvrLclStatus_t XCVR_LCL_InitRttPayloadDemod(void)
                   | GENFSK_PACKET_CFG_SYNC_ADDR_SZ_MASK);      /* reduces AA size to 1 byte */
     packet_cfg |= GENFSK_PACKET_CFG_AA_PLAYBACK_CNT(1);        /* indicates that AA is playback to Link Layer */
     GENFSK->PACKET_CFG = packet_cfg;
-    GENFSK->MULT_PKT_CTRL |= GENFSK_MULT_PKT_CTRL_MULT_PKT_EN_MASK;  /* enables feature “Send and Receive multiple packets” in GENFSK link Layer */
+    GENFSK->MULT_PKT_CTRL |= GENFSK_MULT_PKT_CTRL_MULT_PKT_EN_MASK;  /* enables feature "Send and Receive multiple packets" in GENFSK link Layer */
     GENFSK->MULT_PKT_CTRL &= ~(GENFSK_MULT_PKT_CTRL_SEG_SZ_MASK);    /* reduces the Segment depth to 32 bytes (minimum) */
 
     RBME->CRCW_CFG3 &= ~RBME_CRCW_CFG3_CRC_SZ_MASK;            /* indicates there is no CRC field in Packet */
