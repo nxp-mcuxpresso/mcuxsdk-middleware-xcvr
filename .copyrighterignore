@@ -1,0 +1,19 @@
+# File and folders to ignore for Copyrighter check
+
+# Files to ignore 
+.clang-format
+.pre-commit-config.yaml
+.copyrighter.ignore
+LICENSE.txt
+README.md
+SCR.txt
+SBOM.spdx.json
+.ninja_deps
+.ninja_log
+build.ninja
+
+# Folders to ignore
+/docs
+/lib
+/drv/build/CMakeFiles/*
+/drv/build/lib

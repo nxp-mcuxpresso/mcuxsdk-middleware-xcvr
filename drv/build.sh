@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright 2025 NXP
+# SPDX-License-Identifier: BSD-3-Clause
 
 # Default values
 DEFAULT_PLATFORM="kw47_mcxw72x_nbu"
