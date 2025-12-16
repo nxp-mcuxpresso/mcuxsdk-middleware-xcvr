@@ -295,16 +295,13 @@ while (false)
     do                                                                                                 \
     {                                                                                                  \
         (cfg_entry)->payload_body.AA_INIT = (aa_init);                                                 \
-        (cfg_entry)->payload_body.AA_REF = (aa_refl);                                                 \
-        volatile uint32_t *payload_ptr    = &((cfg_entry)->payload_body.PAYLOAD[0].INIT);              \
-        for (uint8_t words = 0U; words < (num_payload_words); words++)                                 \
-        {                                                                                              \
+        (cfg_entry)->payload_body.AA_REF = (aa_refl);                                                                   \
+        volatile uint32_t *payload_ptr    = &((cfg_entry)->payload_body.PAYLOAD[0].INIT);                  \
+        for (uint8_t words = 0U; words < (num_payload_words); words++)                                       \
+        {                                                                                                                                           \
             *payload_ptr++ = *(payload_init_ptr)++; /* Increments the pointer that is passed in */     \
-        }                                                                                              \
-        for (uint8_t words2 = 0U; words2 < (num_payload_words); words2++)                              \
-        {                                                                                              \
             *payload_ptr++ = *(payload_refl_ptr)++; /* Increments the pointer that is passed in */     \
-        }                                                                                              \
+        }                                                                                                                                            \
     } while (false)
 
 /*!
