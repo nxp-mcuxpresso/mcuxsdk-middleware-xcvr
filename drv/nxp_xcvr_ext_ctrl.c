@@ -564,6 +564,55 @@ xcvrCoexStatus_t XCVR_COEX_RfNotAllowedInit(const coexRfNotAllowedConfig_t *conf
     return coex_status;
 }
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+xcvrCoexStatus_t XCVR_COEX_CsInit(coexCsConfig_t *config_ptr)
+{
+    xcvrCoexStatus_t coex_status = gXcvrCoexStatusSuccess;
+
+    if (config_ptr == NULLPTR)
+    {
+        coex_status = gXcvrCoexStatusInvalidArgs;
+    }
+    else
+    {
+        if (config_ptr->cs_coex_enable == 0U)
+        {
+            /* CS COEX is disabled */
+            XCVR_MISC->COEX_MODE &= ~XCVR_MISC_COEX_MODE_COEX_CS_EN_MASK;
+        }
+        else
+        {
+            /* CS COEX is enabled */
+            RADIO_CTRL->COEX_CTRL |= RADIO_CTRL_COEX_CTRL_RF_NOT_ALLOWED_EN(coexRfNotAllowLLCs);
+            XCVR_MISC->COEX_MODE |= XCVR_MISC_COEX_MODE_COEX_CS_EN_MASK;
+            
+            if (config_ptr->cs_allow_channel_enable != 0U)
+            {
+                /* enable allowed channels */
+                XCVR_MISC->COEX_MODE |= XCVR_MISC_COEX_MODE_COEX_ALLOW_CHANNEL_EN(1);
+                XCVR_MISC->COEX_CHANNEL0 = (uint32_t)config_ptr->cs_allow_channels[0] |
+                                           ((uint32_t)config_ptr->cs_allow_channels[1]<<8U) |
+                                           ((uint32_t)config_ptr->cs_allow_channels[2]<<16U) |
+                                           ((uint32_t)config_ptr->cs_allow_channels[3]<<24U);
+                XCVR_MISC->COEX_CHANNEL1 = (uint32_t)config_ptr->cs_allow_channels[4] |
+                                           ((uint32_t)config_ptr->cs_allow_channels[5]<<8U) |
+                                           ((uint32_t)config_ptr->cs_allow_channels[6]<<16U) |
+                                           ((uint32_t)config_ptr->cs_allow_channels[7]<<24U);
+                XCVR_MISC->COEX_CHANNEL2 = (uint32_t)config_ptr->cs_allow_channels[8] |
+                                           ((uint32_t)config_ptr->cs_allow_channels[9]<<8U) |
+                                           ((uint32_t)config_ptr->cs_allow_channels[10]<<16U) |
+                                           ((uint32_t)config_ptr->cs_allow_channels[11]<<24U);
+                XCVR_MISC->COEX_CHANNEL3 = (uint32_t)config_ptr->cs_allow_channels[12] |
+                                           ((uint32_t)config_ptr->cs_allow_channels[13]<<8U) |
+                                           ((uint32_t)config_ptr->cs_allow_channels[14]<<16U) |
+                                           ((uint32_t)config_ptr->cs_allow_channels[15]<<24U);
+            }
+        }
+    }
+    return coex_status;
+}
+#endif
+
 void XCVR_COEX_RfNotAllowedOvrd(bool override_en, bool override_val)
 {
     uint32_t temp = RADIO_CTRL->COEX_CTRL;

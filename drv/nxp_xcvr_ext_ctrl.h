@@ -344,6 +344,9 @@ typedef enum
 {
     coexRfNotAllowNoLLSel     = 0U, /*!< No LL selected for RF_NOT_ALLOWED  */
     coexRfNotAllowLLBluetooth = 1U, /*!< Enable bit for RF_NOT_ALLOWED to Bluetooth LL  */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+    coexRfNotAllowLLCs        = 2U, /*!< Enable bit for RF_NOT_ALLOWED to CS  */
+#endif
     coexRfNotAllowLLZigbee    = 4U, /*!< Enable bit for RF_NOT_ALLOWED to Zigbee LL  */
     coexRfNotAllowLLGenfsk    = 8U  /*!< Enable bit for RF_NOT_ALLOWED to GENFSK LL  */
 } coexRfNotAllowLL_t;
@@ -407,6 +410,16 @@ typedef struct
     bool rf_pri_on_rf_stat;    /*!< When set to true, RF_PRIORITY signal is muxed on  the RF_STATUS signal. */
 } coexRfPriorityConfig_t;
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+typedef struct
+{
+    uint8_t cs_coex_enable;          /*!< When set to true, coex is enabled for CS events. */
+    uint8_t cs_allow_channel_enable; /*!< When set to true, RF activity is not stopped if the current channel 
+                                          is in the allowed channel list when RF_NOT_ALLOWED is asserted. */
+    uint8_t cs_allow_channels[16];  /*!< Allowed channel list. Channel N is indicated at cs_allow_channels[N/8]&(1<<N%8). */
+} coexCsConfig_t;
+#endif
+
 /*******************************************************************************
  * API
  ******************************************************************************/
@@ -447,6 +460,20 @@ xcvrCoexStatus_t XCVR_COEX_SelectController(bool tsm_controls_coex,
  *
  */
 xcvrCoexStatus_t XCVR_COEX_RfNotAllowedInit(const coexRfNotAllowedConfig_t *config_ptr);
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+/*!
+ * @brief Function to initialize support for RF_NOT_ALLOWED coexistence signal for CS events.
+ *
+ * This function initializes the RF_NOT_ALLOWED coexistence signal for CS events.
+ *
+ * @param config_ptr the pointer to a settings structure for CS RF_NOT_ALLOWED initialization.
+ *
+ * @return The status of the init process.
+ *
+ */
+xcvrCoexStatus_t XCVR_COEX_CsInit(coexCsConfig_t *config_ptr);
+#endif
 
 /*!
  * @brief Function to override the state of the  RF_NOT_ALLOWED coexistence signal .
