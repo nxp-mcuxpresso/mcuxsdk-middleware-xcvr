@@ -97,11 +97,30 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.xcvr)
 	)
 	
 	# Add headers for library used on core 1
+	# Add source for files NOT included in library
 	mcux_add_source(
 		SOURCES
-			drv/nb2p4ghz/configs/gen47/*.h
 			drv/nxp_xcvr_lcl_step_mgr.h
 			drv/nxp_xcvr_lcl_step_structs.h
+			drv/nxp_xcvr_lcl_ctrl.h
+
+			drv/nb2p4ghz/configs/gen47/*.h
+			drv/nb2p4ghz/configs/gen47/*.c
+
+			drv/nb2p4ghz/nxp2p4_xcvr.c
+			drv/nb2p4ghz/nxp2p4_xcvr.h
+			drv/nb2p4ghz/nxp_xcvr_trim.c
+			drv/nb2p4ghz/nxp_xcvr_trim.h
+			drv/rfmc_ctrl.c
+			drv/rfmc_ctrl.h
+			drv/nxp_xcvr_ext_ctrl.c
+			drv/nxp_xcvr_ext_ctrl.h
+			drv/dbg_ram_capture.c
+			drv/dbg_ram_capture.h
+			drv/dma_capture.c
+			drv/dma_capture.h
+			drv/mathfp.c
+			drv/mathfp.h
 		DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY}
 		CORE_IDS "cm33_core1"
 	)
@@ -155,19 +174,30 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.xcvr)
 	)
 	
 	# Add headers for library used on core 1
+	# Add source for files NOT included in library
 	mcux_add_source(
 		SOURCES
-            drv/nb2p4ghz/nxp2p4_xcvr.h
-            drv/nb2p4ghz/nxp_xcvr_trim.h
-            drv/rfmc_ctrl.h
-            drv/nxp_xcvr_lcl_ctrl.h
-            drv/nxp_xcvr_ext_ctrl.h
-            drv/dbg_ram_capture.h
-            drv/dma_capture.h
-            drv/mathfp.h
-			drv/nb2p4ghz/configs/gen47_5/*.h
 			drv/nxp_xcvr_lcl_step_mgr.h
 			drv/nxp_xcvr_lcl_step_structs.h
+            drv/nxp_xcvr_lcl_ctrl.h
+
+			drv/nb2p4ghz/configs/gen47_5/*.h
+			drv/nb2p4ghz/configs/gen47_5/*.c
+
+			drv/nb2p4ghz/nxp2p4_xcvr.c
+			drv/nb2p4ghz/nxp2p4_xcvr.h
+			drv/nb2p4ghz/nxp_xcvr_trim.c
+			drv/nb2p4ghz/nxp_xcvr_trim.h
+			drv/rfmc_ctrl.c
+			drv/rfmc_ctrl.h
+			drv/nxp_xcvr_ext_ctrl.c
+			drv/nxp_xcvr_ext_ctrl.h
+			drv/dbg_ram_capture.c
+			drv/dbg_ram_capture.h
+			drv/dma_capture.c
+			drv/dma_capture.h
+			drv/mathfp.c
+			drv/mathfp.h
 		DEVICE_IDS ${KW43_NBU_FAMILY}
 		CORE_IDS "cm33_core1" "cm33"
 	)

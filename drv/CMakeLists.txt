@@ -1,4 +1,4 @@
-# Copyright 2025 NXP
+# Copyright 2026 NXP
 # SPDX-License-Identifier: BSD-3-Clause
 
 cmake_minimum_required(VERSION 3.16)
@@ -28,22 +28,8 @@ endif()
 
 # Common source files (platform independent)
 set(COMMON_SOURCES
-	nb2p4ghz/nxp2p4_xcvr.c
-	nb2p4ghz/nxp2p4_xcvr.h
-	nb2p4ghz/nxp_xcvr_trim.c
-	nb2p4ghz/nxp_xcvr_trim.h
-	rfmc_ctrl.c
-	rfmc_ctrl.h
 	nxp_xcvr_lcl_ctrl.c
 	nxp_xcvr_lcl_ctrl.h
-	nxp_xcvr_ext_ctrl.c
-	nxp_xcvr_ext_ctrl.h
-	dbg_ram_capture.c
-	dbg_ram_capture.h
-	dma_capture.c
-	dma_capture.h
-	mathfp.c
-	mathfp.h
 	nxp_xcvr_lcl_step_mgr.c
 	nxp_xcvr_lcl_step_mgr.h
 	nxp_xcvr_lcl_step_structs.h
