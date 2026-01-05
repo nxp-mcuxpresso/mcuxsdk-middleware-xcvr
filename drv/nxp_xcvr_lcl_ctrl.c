@@ -136,19 +136,9 @@ static struct
 xcvr_lcl_hpm_cal_interp_t hpm_cal_2442_data;
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-/* TQI register settings for 1Mbps and 2Mbps rates */
-static xcvr_lcl_tqi_setting_tbl_t tqi_1mbps_settings = {
-    .t_slot_10usec_tqi = {.iq_depth=0U, .mag_depth=3U, .t1=0x20U, .t2=0x20U},
-    .t_slot_20usec_tqi = {.iq_depth=1U, .mag_depth=3U, .t1=0x20U, .t2=0x20U},
-    .t_slot_40usec_tqi = {.iq_depth=2U, .mag_depth=3U, .t1=0x20U, .t2=0x20U},
-};
-
-static xcvr_lcl_tqi_setting_tbl_t tqi_2mbps_settings = {
-    .t_slot_10usec_tqi = {.iq_depth=1U, .mag_depth=3U, .t1=0x20U, .t2=0x20U},
-    .t_slot_20usec_tqi = {.iq_depth=2U, .mag_depth=3U, .t1=0x20U, .t2=0x20U},
-    .t_slot_40usec_tqi = {.iq_depth=3U, .mag_depth=3U, .t1=0x20U, .t2=0x20U},
-};
-#endif
+#define XCVR_TQI_THRESHOLD_BAD  (32U)   /* in Q9 (0.063 in decimal) */
+#define XCVR_TQI_THRESHOLD_MEDIUM  (XCVR_TQI_THRESHOLD_BAD)
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* Only applies to KW47 */
 #if defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1) 
@@ -2850,19 +2840,16 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
         uint8_t temp_u8;
         uint8_t dma_mask_delay;
         uint8_t add_up;
-        xcvr_lcl_tqi_setting_tbl_t * tqi_tbl_ptr;
         /* Configure 2Mbps oversampling if needed */
         if (rttPhy == XCVR_RSM_RATE_1MBPS)
         {
             sampling_rate_factor = 1U;
             tx_data_flush_delay = TX_DATA_FLUSH_DLY_1MBPS;
-            tqi_tbl_ptr = &tqi_1mbps_settings;
         }
         else
         {
             sampling_rate_factor = SAMPLING_RATE_FACTOR_2MBPS;
             tx_data_flush_delay = TX_DATA_FLUSH_DLY_2MBPS;
-            tqi_tbl_ptr = &tqi_2mbps_settings;
         }
 
         /* Configure SPINT to 1 interval per usec */
@@ -3038,8 +3025,6 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
                                             XCVR_MISC_LCL_DMA_MASK_DELAY_DMA_MASK_DELAY(dma_mask_delay);
 
             /* DMA mask centering & TQI setup */
-            xcvr_lcl_tqi_entry_t *tqi_settings_ptr = NULLPTR;
-            ;
             temp = XCVR_MISC->DMA_MASK_CTRL;
             temp &= ~(XCVR_MISC_DMA_MASK_CTRL_DMA_MASK_CENTER_MASK);
             switch (t_capture)
@@ -3047,16 +3032,13 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
                 case XCVR_RSM_T_CAPTURE_652_SEL:
                 case XCVR_RSM_T_CAPTURE_40_SEL:
                     temp |= XCVR_MISC_DMA_MASK_CTRL_DMA_MASK_CENTER(lclDmaMask32usecCenter);
-                    tqi_settings_ptr = &(tqi_tbl_ptr->t_slot_40usec_tqi);
                     break;
                 case XCVR_RSM_T_CAPTURE_20_SEL:
                     temp |= XCVR_MISC_DMA_MASK_CTRL_DMA_MASK_CENTER(lclDmaMask16usecCenter);
-                    tqi_settings_ptr = &(tqi_tbl_ptr->t_slot_20usec_tqi);
                     break;
 #if defined(LCL_SUPPORT_10USEC_T_CAPTURE) && (LCL_SUPPORT_10USEC_T_CAPTURE == 1)
                 case XCVR_RSM_T_CAPTURE_10_SEL:
                     temp |= XCVR_MISC_DMA_MASK_CTRL_DMA_MASK_CENTER(lclDmaMask8usecCenter);
-                    tqi_settings_ptr = &(tqi_tbl_ptr->t_slot_10usec_tqi);
                     break;
 #endif  /* defined(LCL_SUPPORT_10USEC_T_CAPTURE) && (LCL_SUPPORT_10USEC_T_CAPTURE == 1) */
                 default:
@@ -3064,17 +3046,15 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
                     status = gXcvrLclStatusInvalidArgs;
                     break;
             }
+            uint32_t iq_depth_val = (uint32_t)MIN((rsm_settings_ptr->averaging_win - 1U), 4U);
             XCVR_MISC->DMA_MASK_CTRL = temp;
-            if (tqi_settings_ptr != NULLPTR)
-            {
-                /* Apply the TQI settings and enable TQI */
-                XCVR_RX_DIG->TQI_CTRL =
-                    (XCVR_RX_DIG_TQI_CTRL_TQI_EN(1U) | XCVR_RX_DIG_TQI_CTRL_IQ_AVG_DPTH(tqi_settings_ptr->iq_depth) |
-                                                            XCVR_RX_DIG_TQI_CTRL_MAG_AVG_DPTH(tqi_settings_ptr->mag_depth) );
-                XCVR_RX_DIG->TQI_THR =
-                    (XCVR_RX_DIG_TQI_THR_INLINE_THR_TQI(2U) | XCVR_RX_DIG_TQI_THR_T1((tqi_settings_ptr->t1)) |
-                                                            XCVR_RX_DIG_TQI_THR_T2((tqi_settings_ptr->t2)));
-            }
+            /* Apply the TQI settings and enable TQI */
+            XCVR_RX_DIG->TQI_CTRL =
+                (XCVR_RX_DIG_TQI_CTRL_TQI_EN(1U) | XCVR_RX_DIG_TQI_CTRL_IQ_AVG_DPTH(iq_depth_val) |
+                                                        XCVR_RX_DIG_TQI_CTRL_MAG_AVG_DPTH(3U) );
+            XCVR_RX_DIG->TQI_THR =
+                (XCVR_RX_DIG_TQI_THR_INLINE_THR_TQI(2U) | XCVR_RX_DIG_TQI_THR_T1(XCVR_TQI_THRESHOLD_MEDIUM) |
+                                                        XCVR_RX_DIG_TQI_THR_T2(XCVR_TQI_THRESHOLD_BAD));
         }
     }
      
