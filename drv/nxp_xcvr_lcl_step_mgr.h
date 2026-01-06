@@ -625,7 +625,7 @@ while (false)
         rtt_found      = (uint8_t)((rtt_result_packed & COM_MODE_013_RES_BODY_RTT_RESULT_RTT_FOUND_MASK) >>            \
                               COM_MODE_013_RES_BODY_RTT_RESULT_RTT_FOUND_SHIFT);                                  \
         int8_t cfo_div = 4; /* used in integer math to create 15.25 multiplier for raw CFO conversion at 1Mbps */      \
-        if (datarate == XCVR_RSM_RATE_2MBPS)                                                                           \
+        if (datarate != XCVR_RSM_RATE_1MBPS)                                                                           \
         {                                                                                                              \
             cfo_div = 2; /* used in integer math to create 30.5 multiplier for raw CFO conversion at 2Mbps */          \
         }                                                                                                              \

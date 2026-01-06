@@ -9,7 +9,8 @@
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
 #include "nxp_xcvr_lcl_step_mgr.h"  /* Support for PKT RAM based CONFIG and RESULT circular buffers only on KW47 */
 #include "nxp_xcvr_common_config.h" /* Support TSM reset to BLE configuration */
-#endif
+#include "nxp_xcvr_gfsk_bt_0p5_h_0p5_config.h"  /* Used for BT=2 restore to BT=0.5 functionality */
+#endif /* NXP_RADIO_GEN >= 470 */
 #include "nxp_xcvr_common_config.h"
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && \
@@ -159,7 +160,7 @@ typedef struct
 } xcvr_lcl_rsm_tx_snr_t;
 
 /*! @brief TX_SNR LFSR settings values  */
-static xcvr_lcl_rsm_tx_snr_t tx_snr_settings[2][XCVR_RSM_TX_SNR_DISABLED] = {
+static xcvr_lcl_rsm_tx_snr_t tx_snr_settings[XCVR_RSM_RATE_INVALID][XCVR_RSM_TX_SNR_DISABLED] = {
     /* 1Mbps rate */
     {
         {190U, 1U},  /* 18 dB LFSR SCALE and DIV */
@@ -324,13 +325,13 @@ bool XCVR_LCL_RsmCheckDmaDuration(uint16_t dma_duration, XCVR_RSM_SQTE_RATE_T ra
     bool valid_duration                      = false;
     /* Calculate how many IQ samples in the duration, based on the data rate */
     uint16_t num_samples_in_duration;
-    if (rate == XCVR_RSM_RATE_2MBPS)
+    if (rate == XCVR_RSM_RATE_1MBPS)
     {
-        num_samples_in_duration = dma_duration * IQ_SAMPLES_PER_USEC_2MBPS;
+        num_samples_in_duration = dma_duration * IQ_SAMPLES_PER_USEC_1MBPS;
     }
     else
     {
-        num_samples_in_duration = dma_duration * IQ_SAMPLES_PER_USEC_1MBPS;
+        num_samples_in_duration = dma_duration * IQ_SAMPLES_PER_USEC_2MBPS;
     }
 
     /* Check that the calculated number of samples is an integer multiple of the averaging window (if it is in use) */
@@ -1581,7 +1582,7 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 #endif
 
     // Extract common flags
-    bool rate_is_2mbps = (rsm_settings_ptr->rate == XCVR_RSM_RATE_2MBPS);
+    bool rate_is_2mbps = (rsm_settings_ptr->rate != XCVR_RSM_RATE_1MBPS);
     bool is_sqte_mode = ((rsm_settings_ptr->op_mode == XCVR_RSM_SQTE_MODE) ||
                          (rsm_settings_ptr->op_mode == XCVR_RSM_SQTE_STABLE_PHASE_TEST_MODE));
 
@@ -2202,94 +2203,85 @@ const uint32_t ble_phy_bt2_fast_descrip_comp[BT2_DESCRIP_COUNT] = {
 xcvrLclStatus_t XCVR_LCL_BlePhyBT2RegBackUp(bt2_reg_backup_t *bt2_reg)
 {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
-    if( bt2_reg == NULLPTR) {
-        return gXcvrLclStatusInvalidArgs;
+    if( bt2_reg == NULLPTR) 
+    {
+        status = gXcvrLclStatusInvalidArgs;
     }
+    else
+    {
+        /* Acquisition Channel Filter */
+        bt2_reg->XCVR_RX_DIG_ACQ_FILT_0_3_DRS = XCVR_RX_DIG->ACQ_FILT_0_3_DRS;
+        bt2_reg->XCVR_RX_DIG_ACQ_FILT_4_7_DRS = XCVR_RX_DIG->ACQ_FILT_4_7_DRS;
+        bt2_reg->XCVR_RX_DIG_ACQ_FILT_8_9_DRS = XCVR_RX_DIG->ACQ_FILT_8_9_DRS;
+        bt2_reg->XCVR_RX_DIG_ACQ_FILT_10_11_DRS = XCVR_RX_DIG->ACQ_FILT_10_11_DRS;
 
-    for( uint8_t i=0U; i<8U; i++) {
-        bt2_reg->GEN4PHY_DEMOD_WAVE[i*3U]   = GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG0;
-        bt2_reg->GEN4PHY_DEMOD_WAVE[i*3U+1U] = GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG1;
-        bt2_reg->GEN4PHY_DEMOD_WAVE[i*3U+2U] = GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG2;
+        /* Tx Modulation */
+        bt2_reg->XCVR_TX_DIG_GFSK_CTRL = XCVR_TX_DIG->GFSK_CTRL & ~XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* do not store FDEV field */
+
+        /* IPS_FO changing GFSK_CTRL*/
+        bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_1 = XCVR_MISC->IPS_FO_DRS1_DATA[1U] & ~XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* do not store FDEV field */
+        bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_2 = XCVR_MISC->IPS_FO_DRS1_DATA[2U] & ~XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* do not store FDEV field */
     }
-    bt2_reg->GEN4PHY_RTT_REF = GEN4PHY->RTT_REF;
-
-    /* Acquisition Channel Filter */
-    bt2_reg->XCVR_RX_DIG_ACQ_FILT_0_3 = XCVR_RX_DIG->ACQ_FILT_0_3;
-    bt2_reg->XCVR_RX_DIG_ACQ_FILT_4_7 = XCVR_RX_DIG->ACQ_FILT_4_7;
-    bt2_reg->XCVR_RX_DIG_ACQ_FILT_8_9 = XCVR_RX_DIG->ACQ_FILT_8_9;
-    bt2_reg->XCVR_RX_DIG_ACQ_FILT_10_11 = XCVR_RX_DIG->ACQ_FILT_10_11;
-    bt2_reg->XCVR_RX_DIG_ACQ_FILT_0_3_DRS = XCVR_RX_DIG->ACQ_FILT_0_3_DRS;
-    bt2_reg->XCVR_RX_DIG_ACQ_FILT_4_7_DRS = XCVR_RX_DIG->ACQ_FILT_4_7_DRS;
-    bt2_reg->XCVR_RX_DIG_ACQ_FILT_8_9_DRS = XCVR_RX_DIG->ACQ_FILT_8_9_DRS;
-    bt2_reg->XCVR_RX_DIG_ACQ_FILT_10_11_DRS = XCVR_RX_DIG->ACQ_FILT_10_11_DRS;
-
-    /* Demod Channel Filter */
-    bt2_reg->XCVR_RX_DIG_DEMOD_FILT_0_1 = XCVR_RX_DIG->DEMOD_FILT_0_1;
-    bt2_reg->XCVR_RX_DIG_DEMOD_FILT_2_4 = XCVR_RX_DIG->DEMOD_FILT_2_4;
-    bt2_reg->XCVR_RX_DIG_DEMOD_FILT_0_1_DRS = XCVR_RX_DIG->DEMOD_FILT_0_1_DRS;
-    bt2_reg->XCVR_RX_DIG_DEMOD_FILT_2_4_DRS = XCVR_RX_DIG->DEMOD_FILT_2_4_DRS;
-
-    /* Tx Modulation */
-    bt2_reg->XCVR_TX_DIG_FSK_CTRL = XCVR_TX_DIG->FSK_CTRL;
-    bt2_reg->XCVR_TX_DIG_GFSK_COEFF_0_1 = XCVR_TX_DIG->GFSK_COEFF_0_1;
-    bt2_reg->XCVR_TX_DIG_GFSK_COEFF_2_3 = XCVR_TX_DIG->GFSK_COEFF_2_3;
-    bt2_reg->XCVR_TX_DIG_GFSK_COEFF_4_5 = XCVR_TX_DIG->GFSK_COEFF_4_5;
-    bt2_reg->XCVR_TX_DIG_GFSK_COEFF_6_7 = XCVR_TX_DIG->GFSK_COEFF_6_7 ;
-    bt2_reg->XCVR_TX_DIG_GFSK_CTRL = XCVR_TX_DIG->GFSK_CTRL & ~XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* do not store FDEV field */
-
-    /* IPS_FO changing GFSK_CTRL*/
-    bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_1 = XCVR_MISC->IPS_FO_DRS1_DATA[1U] & ~XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* do not store FDEV field */
-    bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_2 = XCVR_MISC->IPS_FO_DRS1_DATA[2U] & ~XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* do not store FDEV field */
-        
+    
     return status;
 }
 
 xcvrLclStatus_t XCVR_LCL_BlePhyBT2RegRestore(bt2_reg_backup_t *bt2_reg)
 {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
-    if( bt2_reg == NULLPTR) {
-        return gXcvrLclStatusInvalidArgs;
+    if( bt2_reg == NULLPTR)
+    {
+        status =  gXcvrLclStatusInvalidArgs;
     }
+    else
+    {
+        /* Copy GEN4PHY demod_wave table */
+        for( uint8_t i=0U; i<8U; i++) {
+            GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG0 = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->demod_wave[i].dmd_wave_reg0;
+            GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG1 = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->demod_wave[i].dmd_wave_reg1;
+            GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG2 = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->demod_wave[i].dmd_wave_reg2;
+        }
 
-    for( uint8_t i=0U; i<8U; i++) {
-        GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG0 = bt2_reg->GEN4PHY_DEMOD_WAVE[i*3U];
-        GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG1 = bt2_reg->GEN4PHY_DEMOD_WAVE[i*3U+1U];
-        GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG2 = bt2_reg->GEN4PHY_DEMOD_WAVE[i*3U+2U];
+        /* Rtt ref */
+        // Note : RTT_REF present in rsm config backup structure, but not used on KW47
+        GEN4PHY->RTT_REF = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->rtt_ref;
+
+        /* Acquisition Channel Filter */
+        XCVR_RX_DIG->ACQ_FILT_0_3 = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->acq_filt_0_3;
+        XCVR_RX_DIG->ACQ_FILT_4_7 = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->acq_filt_4_7;
+        XCVR_RX_DIG->ACQ_FILT_8_9 = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->acq_filt_8_9;
+        XCVR_RX_DIG->ACQ_FILT_10_11 = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->acq_filt_10_11;
+        
+        /* Acquisition Channel Filter */
+        XCVR_RX_DIG->ACQ_FILT_0_3_DRS = bt2_reg->XCVR_RX_DIG_ACQ_FILT_0_3_DRS;
+        XCVR_RX_DIG->ACQ_FILT_4_7_DRS = bt2_reg->XCVR_RX_DIG_ACQ_FILT_4_7_DRS;
+        XCVR_RX_DIG->ACQ_FILT_8_9_DRS = bt2_reg->XCVR_RX_DIG_ACQ_FILT_8_9_DRS;
+        XCVR_RX_DIG->ACQ_FILT_10_11_DRS = bt2_reg->XCVR_RX_DIG_ACQ_FILT_10_11_DRS;
+
+        /* Demod Channel Filter */
+        XCVR_RX_DIG->DEMOD_FILT_0_1 = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->demod_filt_0_1;
+        XCVR_RX_DIG->DEMOD_FILT_2_4 = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->demod_filt_2_4;
+
+        XCVR_RX_DIG->DEMOD_FILT_0_1_DRS = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->demod_filt_0_1_drs;
+        XCVR_RX_DIG->DEMOD_FILT_2_4_DRS = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->demod_filt_2_4_drs;
+        
+        /* Tx Modulation */
+        XCVR_TX_DIG->FSK_CTRL = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->fsk_ctrl;
+        XCVR_TX_DIG->GFSK_COEFF_0_1 = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->gfsk_coeff_0_1;
+        XCVR_TX_DIG->GFSK_COEFF_2_3 = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->gfsk_coeff_2_3;
+        XCVR_TX_DIG->GFSK_COEFF_4_5 = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->gfsk_coeff_4_5;
+        XCVR_TX_DIG->GFSK_COEFF_6_7 = xcvr_gfsk_bt_0p5_h_0p5_1mbps_full_config.mode_data_rate_cfg->gfsk_coeff_6_7;
+
+        /* FDEV field is not backup and restored */
+        uint16_t fdev = (uint16_t)XCVR_TX_DIG->GFSK_CTRL & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;
+        XCVR_TX_DIG->GFSK_CTRL = (bt2_reg->XCVR_TX_DIG_GFSK_CTRL & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)) | (uint32_t)fdev;
+
+        /* IPS_FO changing GFSK_CTRL*/
+        fdev = (uint16_t)XCVR_MISC->IPS_FO_DRS1_DATA[1] & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;  /* reset every other bits except FDEV */
+        XCVR_MISC->IPS_FO_DRS1_DATA[1] = bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_1 | (uint32_t)fdev; /* FDEV field = 0 in bt2_reg*/
+        fdev = (uint16_t)XCVR_MISC->IPS_FO_DRS1_DATA[2] & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;  /* reset every other bits except FDEV */
+        XCVR_MISC->IPS_FO_DRS1_DATA[2] = bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_2 | (uint32_t)fdev; /* FDEV field = 0 in bt2_reg*/
     }
-    GEN4PHY->RTT_REF = bt2_reg->GEN4PHY_RTT_REF;
-
-    /* Acquisition Channel Filter */
-    XCVR_RX_DIG->ACQ_FILT_0_3 = bt2_reg->XCVR_RX_DIG_ACQ_FILT_0_3;
-    XCVR_RX_DIG->ACQ_FILT_4_7 = bt2_reg->XCVR_RX_DIG_ACQ_FILT_4_7;
-    XCVR_RX_DIG->ACQ_FILT_8_9 = bt2_reg->XCVR_RX_DIG_ACQ_FILT_8_9;
-    XCVR_RX_DIG->ACQ_FILT_10_11 = bt2_reg->XCVR_RX_DIG_ACQ_FILT_10_11;
-    XCVR_RX_DIG->ACQ_FILT_0_3_DRS = bt2_reg->XCVR_RX_DIG_ACQ_FILT_0_3_DRS;
-    XCVR_RX_DIG->ACQ_FILT_4_7_DRS = bt2_reg->XCVR_RX_DIG_ACQ_FILT_4_7_DRS;
-    XCVR_RX_DIG->ACQ_FILT_8_9_DRS = bt2_reg->XCVR_RX_DIG_ACQ_FILT_8_9_DRS;
-    XCVR_RX_DIG->ACQ_FILT_10_11_DRS = bt2_reg->XCVR_RX_DIG_ACQ_FILT_10_11_DRS;
-
-    /* Demod Channel Filter */
-    XCVR_RX_DIG->DEMOD_FILT_0_1 = bt2_reg->XCVR_RX_DIG_DEMOD_FILT_0_1;
-    XCVR_RX_DIG->DEMOD_FILT_2_4 = bt2_reg->XCVR_RX_DIG_DEMOD_FILT_2_4;
-    XCVR_RX_DIG->DEMOD_FILT_0_1_DRS = bt2_reg->XCVR_RX_DIG_DEMOD_FILT_0_1_DRS;
-    XCVR_RX_DIG->DEMOD_FILT_2_4_DRS = bt2_reg->XCVR_RX_DIG_DEMOD_FILT_2_4_DRS;
-
-    /* Tx Modulation */
-    XCVR_TX_DIG->FSK_CTRL = bt2_reg->XCVR_TX_DIG_FSK_CTRL;
-    XCVR_TX_DIG->GFSK_COEFF_0_1 = bt2_reg->XCVR_TX_DIG_GFSK_COEFF_0_1;
-    XCVR_TX_DIG->GFSK_COEFF_2_3 = bt2_reg->XCVR_TX_DIG_GFSK_COEFF_2_3;
-    XCVR_TX_DIG->GFSK_COEFF_4_5 = bt2_reg->XCVR_TX_DIG_GFSK_COEFF_4_5;
-    XCVR_TX_DIG->GFSK_COEFF_6_7  = bt2_reg->XCVR_TX_DIG_GFSK_COEFF_6_7;
-    /* FDEV field is not backup and restored */
-    uint32_t fdev = (uint32_t)XCVR_TX_DIG->GFSK_CTRL & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;
-    XCVR_TX_DIG->GFSK_CTRL = (bt2_reg->XCVR_TX_DIG_GFSK_CTRL & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)) | fdev;
-
-    /* IPS_FO changing GFSK_CTRL*/
-    fdev = XCVR_MISC->IPS_FO_DRS1_DATA[1] & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;  /* reset every other bits except FDEV */
-    XCVR_MISC->IPS_FO_DRS1_DATA[1] = bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_1 | fdev; /* FDEV field = 0 in bt2_reg*/
-    fdev = XCVR_MISC->IPS_FO_DRS1_DATA[2] & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;  /* reset every other bits except FDEV */
-    XCVR_MISC->IPS_FO_DRS1_DATA[2] = bt2_reg->XCVR_MISC_IPS_FO_DRS1_DATA_2 | fdev; /* FDEV field = 0 in bt2_reg*/
-
     return status;
 }
 
@@ -2299,57 +2291,58 @@ xcvrLclStatus_t XCVR_LCL_BlePhyBT2Config(const xcvr_config_t *  config)
 
     if (config == NULLPTR)
     {
-        return gXcvrLclStatusInvalidArgs;
+        status = gXcvrLclStatusInvalidArgs;
     }
+    else
+    {
+        /* Copy GEN4PHY demod_wave table */
+        for( uint8_t i=0U; i<8U; i++) {
+            GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG0 = config->mode_data_rate_cfg->demod_wave[i].dmd_wave_reg0;
+            GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG1 = config->mode_data_rate_cfg->demod_wave[i].dmd_wave_reg1;
+            GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG2 = config->mode_data_rate_cfg->demod_wave[i].dmd_wave_reg2;
+        }
 
-    /* Copy GEN4PHY demod_wave table */
-    for( uint8_t i=0U; i<8U; i++) {
-        GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG0 = config->mode_data_rate_cfg->demod_wave[i].dmd_wave_reg0;
-        GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG1 = config->mode_data_rate_cfg->demod_wave[i].dmd_wave_reg1;
-        GEN4PHY->DEMOD_WAVE[i].DMD_WAVE_REG2 = config->mode_data_rate_cfg->demod_wave[i].dmd_wave_reg2;
+        /* Rtt ref */
+        // Note : RTT_REF present in rsm config backup structure, but not used on KW47
+        GEN4PHY->RTT_REF = config->mode_data_rate_cfg->rtt_ref;
+
+        /* Acquisition Channel Filter */
+        XCVR_RX_DIG->ACQ_FILT_0_3 = config->mode_data_rate_cfg->acq_filt_0_3;
+        XCVR_RX_DIG->ACQ_FILT_4_7 = config->mode_data_rate_cfg->acq_filt_4_7;
+        XCVR_RX_DIG->ACQ_FILT_8_9 = config->mode_data_rate_cfg->acq_filt_8_9;
+        XCVR_RX_DIG->ACQ_FILT_10_11 = config->mode_data_rate_cfg->acq_filt_10_11;
+        
+        // Note : Acq filter DRS is overriden for NADM overdroop, not compatible with this API (NADM_WA_OVERDROOP)
+        XCVR_RX_DIG->ACQ_FILT_0_3_DRS = config->mode_data_rate_cfg->acq_filt_0_3_drs;
+        XCVR_RX_DIG->ACQ_FILT_4_7_DRS = config->mode_data_rate_cfg->acq_filt_4_7_drs;
+        XCVR_RX_DIG->ACQ_FILT_8_9_DRS = config->mode_data_rate_cfg->acq_filt_8_9_drs;
+        XCVR_RX_DIG->ACQ_FILT_10_11_DRS = config->mode_data_rate_cfg->acq_filt_10_11_drs;
+
+        /* Demod Channel Filter */
+        XCVR_RX_DIG->DEMOD_FILT_0_1 = config->mode_data_rate_cfg->demod_filt_0_1;
+        XCVR_RX_DIG->DEMOD_FILT_2_4 = config->mode_data_rate_cfg->demod_filt_2_4;
+
+        XCVR_RX_DIG->DEMOD_FILT_0_1_DRS = config->mode_data_rate_cfg->demod_filt_0_1_drs;
+        XCVR_RX_DIG->DEMOD_FILT_2_4_DRS = config->mode_data_rate_cfg->demod_filt_2_4_drs;
+        
+        /* Tx Modulation */
+        XCVR_TX_DIG->FSK_CTRL = config->mode_data_rate_cfg->fsk_ctrl;
+        XCVR_TX_DIG->GFSK_COEFF_0_1 = config->mode_data_rate_cfg->gfsk_coeff_0_1;
+        XCVR_TX_DIG->GFSK_COEFF_2_3 = config->mode_data_rate_cfg->gfsk_coeff_2_3;
+        XCVR_TX_DIG->GFSK_COEFF_4_5 = config->mode_data_rate_cfg->gfsk_coeff_4_5;
+        XCVR_TX_DIG->GFSK_COEFF_6_7 = config->mode_data_rate_cfg->gfsk_coeff_6_7;
+
+        /* Note: GFSK_CTRL and DATARATE_CONFIG_GFSK_CTRL (FDEV) is overriden by rsmInit.
+                 keep GFSK_FDEV from ble rsm setting  */
+        uint16_t fdev = (uint16_t)XCVR_TX_DIG->GFSK_CTRL & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;
+        XCVR_TX_DIG->GFSK_CTRL = (config->mode_data_rate_cfg->gfsk_ctrl & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)) | (uint32_t)fdev;
+
+        /* Disable IPS_FO changing GFSK_CTRL not needed for 2Mbps case (DRS1) */
+        XCVR_MISC->IPS_FO_DRS1_DATA[1U] &= XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* reset every other bits except FDEV */
+        XCVR_MISC->IPS_FO_DRS1_DATA[1U] |= (config->mode_data_rate_cfg->gfsk_ctrl & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)); 
+        XCVR_MISC->IPS_FO_DRS1_DATA[2U] &= XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* reset every other bits except FDEV */
+        XCVR_MISC->IPS_FO_DRS1_DATA[2U] |= (config->mode_data_rate_cfg->gfsk_ctrl & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)); 
     }
-
-    /* Rtt ref */
-    // Note : RTT_REF present in rsm config backup structure, but not used on KW47
-    GEN4PHY->RTT_REF = config->mode_data_rate_cfg->rtt_ref;
-
-    /* Acquisition Channel Filter */
-    XCVR_RX_DIG->ACQ_FILT_0_3 = config->mode_data_rate_cfg->acq_filt_0_3;
-    XCVR_RX_DIG->ACQ_FILT_4_7 = config->mode_data_rate_cfg->acq_filt_4_7;
-    XCVR_RX_DIG->ACQ_FILT_8_9 = config->mode_data_rate_cfg->acq_filt_8_9;
-    XCVR_RX_DIG->ACQ_FILT_10_11 = config->mode_data_rate_cfg->acq_filt_10_11;
-    
-    // Note : Acq filter DRS is overriden for NADM overdroop, not compatible with this API (NADM_WA_OVERDROOP)
-    XCVR_RX_DIG->ACQ_FILT_0_3_DRS = config->mode_data_rate_cfg->acq_filt_0_3_drs;
-    XCVR_RX_DIG->ACQ_FILT_4_7_DRS = config->mode_data_rate_cfg->acq_filt_4_7_drs;
-    XCVR_RX_DIG->ACQ_FILT_8_9_DRS = config->mode_data_rate_cfg->acq_filt_8_9_drs;
-    XCVR_RX_DIG->ACQ_FILT_10_11_DRS = config->mode_data_rate_cfg->acq_filt_10_11_drs;
-
-    /* Demod Channel Filter */
-    XCVR_RX_DIG->DEMOD_FILT_0_1 = config->mode_data_rate_cfg->demod_filt_0_1;
-    XCVR_RX_DIG->DEMOD_FILT_2_4 = config->mode_data_rate_cfg->demod_filt_2_4;
-
-    XCVR_RX_DIG->DEMOD_FILT_0_1_DRS = config->mode_data_rate_cfg->demod_filt_0_1_drs;
-    XCVR_RX_DIG->DEMOD_FILT_2_4_DRS = config->mode_data_rate_cfg->demod_filt_2_4_drs;
-    
-    /* Tx Modulation */
-    XCVR_TX_DIG->FSK_CTRL = config->mode_data_rate_cfg->fsk_ctrl;
-    XCVR_TX_DIG->GFSK_COEFF_0_1 = config->mode_data_rate_cfg->gfsk_coeff_0_1;
-    XCVR_TX_DIG->GFSK_COEFF_2_3 = config->mode_data_rate_cfg->gfsk_coeff_2_3;
-    XCVR_TX_DIG->GFSK_COEFF_4_5 = config->mode_data_rate_cfg->gfsk_coeff_4_5;
-    XCVR_TX_DIG->GFSK_COEFF_6_7 = config->mode_data_rate_cfg->gfsk_coeff_6_7;
-
-    /* Note: GFSK_CTRL and DATARATE_CONFIG_GFSK_CTRL (FDEV) is overriden by rsmInit.
-             keep GFSK_FDEV from ble rsm setting  */
-    uint32_t fdev = (uint32_t)XCVR_TX_DIG->GFSK_CTRL & XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK;
-    XCVR_TX_DIG->GFSK_CTRL = (config->mode_data_rate_cfg->gfsk_ctrl & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)) | (uint32_t)fdev;
-
-    /* Disable IPS_FO changing GFSK_CTRL not needed for 2Mbps case (DRS1) */
-    XCVR_MISC->IPS_FO_DRS1_DATA[1U] &= XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* reset every other bits except FDEV */
-    XCVR_MISC->IPS_FO_DRS1_DATA[1U] |= (config->mode_data_rate_cfg->gfsk_ctrl & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)); 
-    XCVR_MISC->IPS_FO_DRS1_DATA[2U] &= XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK; /* reset every other bits except FDEV */
-    XCVR_MISC->IPS_FO_DRS1_DATA[2U] |= (config->mode_data_rate_cfg->gfsk_ctrl & ~(XCVR_TX_DIG_GFSK_CTRL_GFSK_FDEV_MASK)); 
-    
     return status;
 }
 #endif
@@ -2700,7 +2693,7 @@ xcvrLclStatus_t XCVR_LCL_UnpackRttResult(const xcvr_lcl_rtt_data_raw_t *rtt_resu
         uint32_t temp;
         int32_t temp_cfo;
         int8_t cfo_div = 4; /* used in integer math to create 15.25 multiplier for raw CFO conversion at 1Mbps */
-        if (rate == XCVR_RSM_RATE_2MBPS)
+        if (rate != XCVR_RSM_RATE_1MBPS)
         {
             cfo_div = 2; /* used in integer math to create 30.5 multiplier for raw CFO conversion at 2Mbps */
         }
@@ -3184,7 +3177,7 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
         hop_tbl_cfg_restore = (uint8_t)(((XCVR_PLL_DIG->CHAN_MAP & XCVR_PLL_DIG_CHAN_MAP_HOP_TBL_CFG_OVRD_MASK) >>
                                          XCVR_PLL_DIG_CHAN_MAP_HOP_TBL_CFG_OVRD_SHIFT)); /* used for later restore  */
         XCVR_LCL_RsmPLLInit(rate); /* Apply RSM PLL customizations */
-        if (rate == XCVR_RSM_RATE_2MBPS)
+        if (rate != XCVR_RSM_RATE_1MBPS)
         {
             /* Force alternate data rate selection */
             RADIO_CTRL->RF_CTRL |=
@@ -3386,7 +3379,7 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
         XCVR_TSM->OVRD0 &= ~(XCVR_TSM_OVRD0_TX_DIG_EN_OVRD_EN_MASK);
         XCVR_TSM->TIMING12 = tsm_timing12_restore;
 #endif /* HPM_CAL_IN_RX */
-        if (rate == XCVR_RSM_RATE_2MBPS)
+        if (rate != XCVR_RSM_RATE_1MBPS)
         {
             /* Remove alternate data rate selection */
             RADIO_CTRL->RF_CTRL &=
@@ -3483,13 +3476,13 @@ void XCVR_LCL_CalibrateDcocStart(XCVR_RSM_SQTE_RATE_T rate)
     /* RX WU */
     rf_ctrl_backup = RADIO_CTRL->RF_CTRL;
     uint32_t temp_rf_ctrl = rf_ctrl_backup;
-    if (rate == XCVR_RSM_RATE_2MBPS)
+    if (rate == XCVR_RSM_RATE_1MBPS)
     {
-        temp_rf_ctrl |= RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_MASK | RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_EN_MASK;
+        temp_rf_ctrl &= ~(RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_MASK | RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_EN_MASK);
     }
     else
     {
-        temp_rf_ctrl &= ~(RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_MASK | RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_EN_MASK);
+        temp_rf_ctrl |= RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_MASK | RADIO_CTRL_RF_CTRL_RIF_SEL_2MBPS_OVRD_EN_MASK;
     }
     RADIO_CTRL->RF_CTRL = temp_rf_ctrl;
 
@@ -4014,18 +4007,18 @@ xcvrLclStatus_t XCVR_LCL_GetRsmStateTimings(XCVR_RSM_RXTX_MODE_T role, xcvr_lcl_
 #endif
     uint8_t rate = (uint8_t)((rsm_ctrl0 & XCVR_MISC_RSM_CTRL0_RSM_RATE_MASK) >> XCVR_MISC_RSM_CTRL0_RSM_RATE_SHIFT);
     state_duration->t_dt0_usec = (uint16_t)
-        (((XCVR_RSM_SQTE_RATE_T)rate == XCVR_RSM_RATE_2MBPS) ?
-             ((16U + PN_len + 4U) / 2U) :                   /* 2Mbps: 16bit preamble, 32 bit PN seq, 4 bit trailer  */
-             (8U + PN_len + 4U));                           /* 1Mbps:  8bit preamble, 32 bit PN seq, 4 bit trailer  */
+        (((XCVR_RSM_SQTE_RATE_T)rate == XCVR_RSM_RATE_1MBPS) ?
+             (8U + PN_len + 4U):                           /* 1Mbps:  8bit preamble, 32 bit PN seq, 4 bit trailer  */
+             ((16U + PN_len + 4U) / 2U));                   /* 2Mbps: 16bit preamble, 32 bit PN seq, 4 bit trailer  */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)
     state_duration->t_dt_usec = state_duration->t_dt0_usec; /* mode0 DT = main mode DT */
 #else
     const uint16_t t_dt_adder[8] = {0U, 32U, 96U, 32U, 64U, 96U, 128U,0U}; /* Last value is dummy value to allow indexing the array by RTT_TYPE */
     uint32_t rtt_type = (rsm_ctrl2 & XCVR_MISC_RSM_CTRL2_RSM_RTT_TYPE_MASK) >> XCVR_MISC_RSM_CTRL2_RSM_RTT_TYPE_SHIFT;
     state_duration->t_dt_usec =
-        (((XCVR_RSM_SQTE_RATE_T)rate == XCVR_RSM_RATE_2MBPS) ? /* t_dt = t_dt_mode0 + any payload */
-             (state_duration->t_dt0_usec + (t_dt_adder[rtt_type] / 2U)) :
-             (state_duration->t_dt0_usec + t_dt_adder[rtt_type]));
+        (((XCVR_RSM_SQTE_RATE_T)rate == XCVR_RSM_RATE_1MBPS) ? /* t_dt = t_dt_mode0 + any payload */
+             (state_duration->t_dt0_usec + t_dt_adder[rtt_type]):
+             (state_duration->t_dt0_usec + (t_dt_adder[rtt_type] / 2U)));
 #endif                                                      /*  defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)  */
 
     /* Get T_PM state timings */

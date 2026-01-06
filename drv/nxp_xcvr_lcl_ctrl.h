@@ -836,35 +836,18 @@ typedef struct
 } rttdemod_reg_backup_t;
 #endif /* (defined(RTT_DEMOD_ENABLE) && (RTT_DEMOD_ENABLE)) */
 
-/* BT2-related register backup structure. Stores registers that must be changed in different peripherals for BT2 configuration to
- * work. */
+/* BT2-related register backup structure. Stores registers that must be changed in different peripherals 
+  * for BT2 configuration to work. Storage only for registers that cannot be explicitly back to BT=0.5, h=0.5 
+  * settings directly from the */
 typedef struct
 {
-    uint32_t GEN4PHY_DEMOD_WAVE[3*8];
-    uint32_t GEN4PHY_RTT_REF;
-
     /* Acquisition Channel Filter */
-    uint32_t XCVR_RX_DIG_ACQ_FILT_0_3;
-    uint32_t XCVR_RX_DIG_ACQ_FILT_4_7;
-    uint32_t XCVR_RX_DIG_ACQ_FILT_8_9;
-    uint32_t XCVR_RX_DIG_ACQ_FILT_10_11;
     uint32_t XCVR_RX_DIG_ACQ_FILT_0_3_DRS;
     uint32_t XCVR_RX_DIG_ACQ_FILT_4_7_DRS;
     uint32_t XCVR_RX_DIG_ACQ_FILT_8_9_DRS;
     uint32_t XCVR_RX_DIG_ACQ_FILT_10_11_DRS;
 
-    /* Demod Channel Filter */
-    uint32_t XCVR_RX_DIG_DEMOD_FILT_0_1;
-    uint32_t XCVR_RX_DIG_DEMOD_FILT_2_4;
-    uint32_t XCVR_RX_DIG_DEMOD_FILT_0_1_DRS;
-    uint32_t XCVR_RX_DIG_DEMOD_FILT_2_4_DRS;
-
     /* Tx Modulation */
-    uint32_t XCVR_TX_DIG_FSK_CTRL;
-    uint32_t XCVR_TX_DIG_GFSK_COEFF_0_1;
-    uint32_t XCVR_TX_DIG_GFSK_COEFF_2_3;
-    uint32_t XCVR_TX_DIG_GFSK_COEFF_4_5;
-    uint32_t XCVR_TX_DIG_GFSK_COEFF_6_7;
     uint32_t XCVR_TX_DIG_GFSK_CTRL;
 
     /* IPS_FO changing GFSK_CTRL*/
