@@ -920,6 +920,32 @@ int8_t XCVR_GetInstantRssi(void);
 int16_t XCVR_GetInstantRssi(void);
 #endif /* defined(RADIO_IS_GEN_3P5) */
 
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 400)
+/*!
+ * @brief Enable or restore the RSSI estimate for the current channel (Wideband).
+ *
+ * This function enables or restores the XCVR configuration for RSSI measurement. 
+ * The RSSI estimate is split into different steps so that the caller can:
+ * - do some processing during the RX warmup time
+ * - get several RSSI samples
+ *
+ * The usual API call sequence:
+ *     - XCVR_RssiEstimate(true)
+ *     - processing in the caller's task during the RX warmup
+ *     - i16Rssi1 = XCVR_GetRssiResult()
+ *       i16Rssi2 = XCVR_GetRssiResult()
+ *       ...
+ *     - XCVR_RssiEstimate(false)
+ *     - RSSI samples handling
+ *
+ * @param[in] enable if true, configure the XCVR to enable the RSSI estimate
+ *                   if false, restore the XCVR configuration
+ *
+ * @return The status of the processing. gXcvrSuccess_c in case of success.
+ * @note See XCVR_GetInstantRssi() which can be used directly if the warmup time is not used for other processing and only a single RSSI read is needed.
+ */
+xcvrStatus_t XCVR_RssiEstimate(bool enable);
+
 /*!
  * @brief  Get the current RSSI value
  *
@@ -927,8 +953,10 @@ int16_t XCVR_GetInstantRssi(void);
  * RSSI NB measurement and waits until done, else only returns the value triggered by the last packet received.
  *
  * @return The current RSSI value
+ * @note XCVR_GetRssiResult() must be called after the call to XCVR_RssiEstimate(true).
  */
 int16_t XCVR_GetRssiResult(void);
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 400) */
 
 #if defined(RADIO_IS_GEN_3P5) /* Gen 4 and later radios don't include DAC trims */
 /*!

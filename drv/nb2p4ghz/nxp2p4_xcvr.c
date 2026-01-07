@@ -42,6 +42,12 @@ uint16_t tx_rx_synth_delay = (uint16_t)TX_RX_SYNTH_init;
 #endif /* !defined(RADIO_IS_GEN_4P5) */
 static xcvr_currConfig_t current_xcvr_config;
 static uint8_t default_bb_ldo_fh_tx;
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 400)
+/* variable indicating if RSSI estimate is configured or not */
+static bool rssi_estimate_enabled = false;
+#endif
+
 /*******************************************************************************
  * Code
  *******************************************************************************/
@@ -996,43 +1002,86 @@ int8_t XCVR_GetRssiAdjustment(void)
 }
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 400)
+xcvrStatus_t XCVR_RssiEstimate(bool enable)
+{
+    /* register backup */
+    static uint32_t get_rssi_t1;
+    static uint32_t get_rssi_t2;
+    xcvrStatus_t status = gXcvrSuccess_c;
+    
+    if(enable)
+    {
+        if (((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_TSM_COUNT_MASK) != 0U) || rssi_estimate_enabled != false)
+        {
+            /* XCVR is not in idle or RSSI estimate is already enabled */
+            status = gXcvrConfigurationFailure_c;
+        }
+        else
+        {
+            /* backup modified registers during the RSSI estimate */
+            get_rssi_t1 = XCVR_2P4GHZ_PHY->FSK_CFG0;
+            get_rssi_t2 = XCVR_RX_DIG->RSSI_GLOBAL_CTRL;
+
+            /* Select Narrowband RSSI measurement */
+            XCVR_EnaNBRSSIMeas(true); /* Enable Narrowband RSSI measurement */
+
+            /* Set preamble detect thresholds to max to prevent packet detection */
+            XCVR_2P4GHZ_PHY->FSK_CFG0 =
+                GEN4PHY_FSK_CFG0_AA_ACQ_1_2_3_THRESH_1M_MASK | GEN4PHY_FSK_CFG0_AA_ACQ_1_2_3_THRESH_2M_MASK;
+
+            /* Put RSSI NB into continuous mode */
+            XCVR_RX_DIG->RSSI_GLOBAL_CTRL &= ~(XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_RSSI_AA_MATCH_OVRD_MASK);
+            XCVR_RX_DIG->RSSI_GLOBAL_CTRL |= XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_RSSI_AA_MATCH_OVRD_EN_MASK |
+                                             XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_CONT_MEAS_OVRD_EN_MASK |
+                                             XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_CONT_MEAS_OVRD_MASK;
+
+            /* Start RX */
+            XCVR_ForceRxWu();
+            rssi_estimate_enabled = true;
+        }
+    }
+    else
+    {
+        if (((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_TSM_COUNT_MASK) == 0U) || !rssi_estimate_enabled == false)
+        {
+            /* XCVR is in idle or RSSI estimate is not enabled */
+            status = gXcvrConfigurationFailure_c;
+        }
+        else
+        {
+            XCVR_RX_DIG->RSSI_GLOBAL_CTRL &=
+                ~(XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_RSSI_AA_MATCH_OVRD_MASK |
+                  XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_RSSI_AA_MATCH_OVRD_EN_MASK |
+                  XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_CONT_MEAS_OVRD_EN_MASK | XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_CONT_MEAS_OVRD_MASK);
+            XCVR_ForceRxWd();
+
+            /* Restore corrupted registers */
+            XCVR_2P4GHZ_PHY->FSK_CFG0 = get_rssi_t1;
+            XCVR_RX_DIG->RSSI_GLOBAL_CTRL = get_rssi_t2;
+            rssi_estimate_enabled = false;
+        }
+    }
+    return status;
+}
+
 int16_t XCVR_GetInstantRssi(void)
 {
     int16_t i16Rssi;
-    uint32_t t1, t2, t3;
-    t1 = XCVR_2P4GHZ_PHY->FSK_CFG0;
-    t2 = XCVR_RX_DIG->RSSI_GLOBAL_CTRL;
-    t3 = XCVR_2P4GHZ_PHY->FSK_PD_CFG2;
-    /* Select Narrowband RSSI measurement */
-    XCVR_EnaNBRSSIMeas(true); /* Enable Narrowband RSSI measurement */
 
-    /* Set preamble detect thresholds to max to prevent packet detection */
-    XCVR_2P4GHZ_PHY->FSK_CFG0 =
-        GEN4PHY_FSK_CFG0_AA_ACQ_1_2_3_THRESH_1M_MASK | GEN4PHY_FSK_CFG0_AA_ACQ_1_2_3_THRESH_2M_MASK;
+    /* not used in assert is not enabled */
+    xcvrStatus_t status;
+    (void)status;
 
-    /* Put RSSI NB into continuous mode */
-    XCVR_RX_DIG->RSSI_GLOBAL_CTRL &= ~(XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_RSSI_AA_MATCH_OVRD_MASK);
-    XCVR_RX_DIG->RSSI_GLOBAL_CTRL |= XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_RSSI_AA_MATCH_OVRD_EN_MASK |
-                                     XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_CONT_MEAS_OVRD_EN_MASK |
-                                     XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_CONT_MEAS_OVRD_MASK;
-
-    /* Start RX andWait for end of warmup to get valid RSSI */
-    XCVR_ForceRxWu();
-    XCVR_WaitRxWu();
+    /* Enable RSSI estimate */
+    status = XCVR_RssiEstimate(true);
+    assert(status == gXcvrSuccess_c);
 
     /* Wait for NB RSSI measurement complete assertion and sign extend the result to 16 bits */
     i16Rssi = XCVR_GetRssiResult();
 
-    XCVR_RX_DIG->RSSI_GLOBAL_CTRL &=
-        ~(XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_RSSI_AA_MATCH_OVRD_MASK |
-          XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_RSSI_AA_MATCH_OVRD_EN_MASK |
-          XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_CONT_MEAS_OVRD_EN_MASK | XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_CONT_MEAS_OVRD_MASK);
-    XCVR_ForceRxWd();
-
-    /* Restore corrupted registers */
-    XCVR_2P4GHZ_PHY->FSK_CFG0 = t1;
-    XCVR_RX_DIG->RSSI_GLOBAL_CTRL = t2;
-    XCVR_2P4GHZ_PHY->FSK_PD_CFG2  = t3;
+    /* reset the RSSI config */
+    status = XCVR_RssiEstimate(false);
+    assert(status == gXcvrSuccess_c);
 
     return i16Rssi;
 }
@@ -1040,6 +1089,15 @@ int16_t XCVR_GetInstantRssi(void)
 int16_t XCVR_GetRssiResult(void)
 {
     uint16_t rssi_result = 0U;
+
+    /* RSSI estimate should be enabled */ 
+    assert(rssi_estimate_enabled);
+
+    /* XCVR should not be in idle */
+    assert((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_TSM_COUNT_MASK) != 0U);
+
+    /* Wait for end of warmup to get valid RSSI */
+    XCVR_WaitRxWu();
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450)
     if ((XCVR_RX_DIG->RSSI_GLOBAL_CTRL & XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_RSSI_AA_MATCH_OVRD_EN_MASK) != 0U)
