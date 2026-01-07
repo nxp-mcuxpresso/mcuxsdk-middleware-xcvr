@@ -3046,6 +3046,7 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
                     status = gXcvrLclStatusInvalidArgs;
                     break;
             }
+            /* KW47 HW supports max 16 average window size for TQI (impacted case: 2Mbps & t_pm=40) */
             uint32_t iq_depth_val = (uint32_t)MIN((rsm_settings_ptr->averaging_win - 1U), 4U);
             XCVR_MISC->DMA_MASK_CTRL = temp;
             /* Apply the TQI settings and enable TQI */
