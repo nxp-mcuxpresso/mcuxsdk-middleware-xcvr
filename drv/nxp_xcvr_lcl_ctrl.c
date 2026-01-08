@@ -2840,6 +2840,7 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
         uint32_t sampling_rate_factor;
         uint8_t tx_data_flush_delay;
         uint8_t temp_tx_sw_ena;
+        uint8_t temp_u8;
         uint8_t dma_mask_delay;
         uint8_t add_up;
         /* Configure 2Mbps oversampling if needed */
