@@ -56,6 +56,10 @@ extern "C" {
 #define SUPPORT_RSM_LONG_PN (0)
 #endif /* SUPPORT_RSM_LONG_PN */
 
+#ifndef LCL_SUPPORT_10USEC_T_CAPTURE
+#define LCL_SUPPORT_10USEC_T_CAPTURE (1)
+#endif
+
 #define NUM_TSM_U32_REGISTERS (sizeof(XCVR_TSM_Type) / 4U)
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
