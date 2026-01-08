@@ -2834,10 +2834,12 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
         uint16_t t_pm                = (rsm_settings_ptr->t_pm0);
         uint16_t t_sw                = (uint16_t)(rsm_settings_ptr->t_sw);
         XCVR_RSM_SQTE_RATE_T rttPhy = (rsm_settings_ptr->rate);
-        uint32_t spint_us, temp, offset, sampling_rate_factor;
-        uint32_t tx_data_flush_delay;
+        uint32_t temp;
+        uint32_t offset;
+        uint32_t spint_us;
+        uint32_t sampling_rate_factor;
+        uint8_t tx_data_flush_delay;
         uint8_t temp_tx_sw_ena;
-        uint8_t temp_u8;
         uint8_t dma_mask_delay;
         uint8_t add_up;
         /* Configure 2Mbps oversampling if needed */
@@ -2884,8 +2886,7 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
             /* Note: PA ramping occurs at the end of T_PM + TX_FLUSH_DELAY.
                So it's not possible to active PA ramping with T_SW less than TX_DATA_FLUSH_DELAY + 2*pa_ramp_duration.
              */
-            temp_u8 = ((tx_data_flush_delay + t_ramp_usec) * (TX_SAMPLING_RATE*sampling_rate_factor));
-            offset = (uint32_t)temp_u8;
+            offset = ((tx_data_flush_delay + t_ramp_usec) * (TX_SAMPLING_RATE*sampling_rate_factor));
 
             if ((2U * t_ramp_usec) > (uint8_t)t_sw)
             {
@@ -2944,9 +2945,9 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
             /* TX and RX configs have same register mapping for HI/LOW period. SPINT is different due to sampling rate
              */
             XCVR_MISC->LCL_RX_CFG1 =
-                temp | XCVR_MISC_LCL_RX_CFG1_RX_SPINT(RX_SAMPLING_RATE * sampling_rate_factor * spint_us - 1U);
+                temp | XCVR_MISC_LCL_RX_CFG1_RX_SPINT((uint32_t)(RX_SAMPLING_RATE * sampling_rate_factor * spint_us - 1U));
             XCVR_MISC->LCL_TX_CFG1 =
-                temp | XCVR_MISC_LCL_TX_CFG1_TX_SPINT(TX_SAMPLING_RATE * sampling_rate_factor * spint_us - 1U) |
+                temp | XCVR_MISC_LCL_TX_CFG1_TX_SPINT((uint32_t)(TX_SAMPLING_RATE * sampling_rate_factor * spint_us - 1U)) |
                                                         XCVR_MISC_LCL_TX_CFG1_TX_SW_ACTIVE(temp_tx_sw_ena) | /* Enable power ramping in T_SW */
                 XCVR_MISC_LCL_TX_CFG1_TX_SW_OFFSET(0x0U) | XCVR_MISC_LCL_TX_CFG1_TX_SW_ADD_OFFSET_UP(add_up);
 
@@ -3047,7 +3048,7 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
                     break;
             }
             /* KW47 HW supports max 16 average window size for TQI (impacted case: 2Mbps & t_pm=40) */
-            uint32_t iq_depth_val = (uint32_t)MIN((rsm_settings_ptr->averaging_win - 1U), 4U);
+            uint32_t iq_depth_val = (uint32_t)MIN(((uint32_t)(rsm_settings_ptr->averaging_win) - 1U), 4U);
             XCVR_MISC->DMA_MASK_CTRL = temp;
             /* Apply the TQI settings and enable TQI */
             XCVR_RX_DIG->TQI_CTRL =
