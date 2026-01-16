@@ -1042,7 +1042,7 @@ xcvrStatus_t XCVR_RssiEstimate(bool enable)
     }
     else
     {
-        if (((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_TSM_COUNT_MASK) == 0U) || !rssi_estimate_enabled == false)
+        if (rssi_estimate_enabled == false)
         {
             /* XCVR is in idle or RSSI estimate is not enabled */
             status = gXcvrConfigurationFailure_c;
@@ -1092,9 +1092,6 @@ int16_t XCVR_GetRssiResult(void)
 
     /* RSSI estimate should be enabled */ 
     assert(rssi_estimate_enabled);
-
-    /* XCVR should not be in idle */
-    assert((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_TSM_COUNT_MASK) != 0U);
 
     /* Wait for end of warmup to get valid RSSI */
     XCVR_WaitRxWu();
