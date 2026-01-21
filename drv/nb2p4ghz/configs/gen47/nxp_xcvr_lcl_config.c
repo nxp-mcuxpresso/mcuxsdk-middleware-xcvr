@@ -46,8 +46,8 @@ const xcvr_lcl_tsm_config_t xcvr_lcl_tsm_generic_config = {
     /* TIMING04 register value is not modified for RSM operation. */
     /* TIMING05 register value is not modified for RSM operation. */
     /* TIMING06 register value is not modified for RSM operation. */
-    /* TIMING07 register value is not modified for RSM operation. */
-    /* TIMING08 register value is not modified for RSM operation. */
+    .TIMING07 = 0xFFFFFFFFU,
+    .TIMING08 = 0xFFFFFFFFU,
     .TIMING09 = 0xFFFFFFFFU,
     .TIMING10 = 0x11081108U,
     .TIMING11 = 0xCC1ABE1AU,

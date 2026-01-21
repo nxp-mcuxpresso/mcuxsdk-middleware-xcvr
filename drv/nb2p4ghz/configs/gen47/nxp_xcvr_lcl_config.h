@@ -43,8 +43,8 @@ typedef struct tag_xcvr_lcl_tsm_config_t
     /* TIMING04 register value is not modified for RSM operation. */
     /* TIMING05 register value is not modified for RSM operation. */
     /* TIMING06 register value is not modified for RSM operation. */
-    /* TIMING07 register value is not modified for RSM operation. */
-    /* TIMING08 register value is not modified for RSM operation. */
+    uint32_t TIMING07;
+    uint32_t TIMING08;
     uint32_t TIMING09;
     uint32_t TIMING10;
     uint32_t TIMING11;

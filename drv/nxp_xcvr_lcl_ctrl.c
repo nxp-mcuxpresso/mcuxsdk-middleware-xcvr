@@ -1836,7 +1836,7 @@ void XCVR_LCL_RsmStopAbort(bool abort_rsm)
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
 const uint32_t tsm_fast_descrip_comp[TSM_DESCRIP_COUNT] = {
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 6U, &(XCVR_TSM->END_OF_SEQ)),
-    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 53U, &(XCVR_TSM->TIMING09))};
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 55U, &(XCVR_TSM->TIMING07))};
 
 #if (1)
 const uint32_t pll_rsm_fast_descrip_comp[PLL_DESCRIP_COUNT] = {
@@ -1932,8 +1932,13 @@ xcvrLclStatus_t XCVR_LCL_GetTsmTimings(xcvr_lcl_tsm_config_t *backup_tsm_timings
         /* TIMING04 register value is not modified for RSM operation. */
         /* TIMING05 register value is not modified for RSM operation. */
         /* TIMING06 register value is not modified for RSM operation. */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+        backup_tsm_timings->TIMING07 = XCVR_TSM->TIMING07;
+        backup_tsm_timings->TIMING08 = XCVR_TSM->TIMING08;
+#else
         /* TIMING07 register value is not modified for RSM operation. */
         /* TIMING08 register value is not modified for RSM operation. */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
         backup_tsm_timings->TIMING09 = XCVR_TSM->TIMING09;
         backup_tsm_timings->TIMING10 = XCVR_TSM->TIMING10; 
         backup_tsm_timings->TIMING11 = XCVR_TSM->TIMING11; 
@@ -2032,8 +2037,13 @@ xcvrLclStatus_t XCVR_LCL_ReprogramTsmTimings(const xcvr_lcl_tsm_config_t *new_ts
         /* TIMING04 register value is not modified for RSM operation. */
         /* TIMING05 register value is not modified for RSM operation. */
         /* TIMING06 register value is not modified for RSM operation. */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+        XCVR_TSM->TIMING07 = new_tsm_timings->TIMING07;
+        XCVR_TSM->TIMING08 = new_tsm_timings->TIMING08;
+#else
         /* TIMING07 register value is not modified for RSM operation. */
         /* TIMING08 register value is not modified for RSM operation. */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
         XCVR_TSM->TIMING09 = new_tsm_timings->TIMING09;
         XCVR_TSM->TIMING10 = new_tsm_timings->TIMING10;
         XCVR_TSM->TIMING11 = new_tsm_timings->TIMING11;
