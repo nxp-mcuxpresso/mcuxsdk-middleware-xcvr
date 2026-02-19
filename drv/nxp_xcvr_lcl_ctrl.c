@@ -2897,7 +2897,7 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
             /* Note: PA ramping occurs at the end of T_PM + TX_FLUSH_DELAY.
                So it's not possible to active PA ramping with T_SW less than TX_DATA_FLUSH_DELAY + 2*pa_ramp_duration.
              */
-            offset = ((tx_data_flush_delay + t_ramp_usec) * (TX_SAMPLING_RATE*sampling_rate_factor));
+            offset = (((uint32_t)tx_data_flush_delay + (uint32_t)t_ramp_usec) * (TX_SAMPLING_RATE*sampling_rate_factor));
 
             if ((2U * t_ramp_usec) > (uint8_t)t_sw)
             {
