@@ -1303,7 +1303,9 @@ void XCVR_ClearManAgc(void);
  *
  * @return The status of the manual RCCAL enable.
  */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN > 350)
 xcvrStatus_t XCVR_SetManRCcal(uint8_t man_rccal_val);
+
 
 /*!
  * @brief Function to release RCCAL manual setting.
@@ -1312,7 +1314,7 @@ xcvrStatus_t XCVR_SetManRCcal(uint8_t man_rccal_val);
  *
  */
  void XCVR_ReleaseManRCcal(void);
-
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN > 350) */
 
 /*!
  * @brief Function to set PA power bump to higher power level.
