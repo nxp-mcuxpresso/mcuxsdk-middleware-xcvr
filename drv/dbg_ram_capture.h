@@ -38,19 +38,30 @@ typedef enum
 {
     DBG_RAM_PAGE_IDLE = 0, /*!< IDLE page, used to stop DMA capture. */
     DBG_RAM_PAGE_RXDIGIQ, /*!< RXDIG I and Q sample capture. Data is MSB aligned in 16bit portions of the 32bit word. */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+    DBG_RAM_PAGE_MAGFM_DIFF, /*!< Pseudo magnitude value and nadm_fm_diff values for Channel Sounding */
+#else    
     DBG_RAM_PAGE_RXDIGIQ_ALT, /*!< RXDIG I and Q sample capture plus additional signals in unused bits. Data is MSB
                                  aligned in 16bit portions of the 32bit word. */
+#endif
     DBG_RAM_PAGE_ADCIQ, /*!< RXDIG I and Q sample capture plus additional signals in unused bits. Data is MSB aligned in
                            16bit portions of the 32bit word. */
-#if defined(RADIO_IS_GEN_3P5)
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN==350)
     DBG_RAM_PAGE_DCEST_IQ, /*!<DC_EST I and Q sample capture. */
 #endif
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+    DBG_RAM_PAGE_MIXER,  /*!< RXDIG I and Q sample capture plus if_mixer and cfo_mixer index */
+#else    
     DBG_RAM_PAGE_PHASE, /*!< Wide-band phase, narrowband phase, or high-precision phase (as selected in RXDIG). Newest
                            sample in most significant byte. Each byte contains a MSB-aligned phase sample.*/
+#endif
     DBG_RAM_PAGE_RSSI_PHASE, /*!< 8bit RSSI with 8bit high-resolution phase. Newest sample in most significant
                                 half-word.*/
     DBG_RAM_PAGE_MAG_PHASE,  /*!< RSSI magnitude with 8bit high-resolution phase.*/
     DBG_RAM_PAGE_PHY,        /*!< PHY  DMA Mux output */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=350)    
+    DETERMINISTIC,  /*!< Selftest: mimic RXDIGIQ page using deterministric data for SW debug */
+#endif    
     DBG_RAM_PAGE_MAX,        /*!< Upper limit of DMA page setting, used for error checking. */
 } dbgRamPageType_t;
 

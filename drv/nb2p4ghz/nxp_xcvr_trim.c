@@ -467,7 +467,11 @@ void dbg_ram_dc_capture(int16_t *buffer_ptr, uint16_t sz_bytes)
     status = dbg_ram_init(&dc_capture_config);
     (void)status;
     /* Argument below is # of bytes, so *2 (I+Q) and *2 (2bytes/sample) */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=475)
+    status = dbg_ram_start_capture(DBG_RAM_PAGE_RXDIGIQ, &dc_trigger_config);
+#else
     status = dbg_ram_start_capture(DBG_RAM_PAGE_RXDIGIQ_ALT, &dc_trigger_config);
+#endif
     (void)status;
     dbg_ram_wait_for_complete();
     status = dbg_ram_postproc_capture(&dc_capture_config);
