@@ -3008,28 +3008,28 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
                 0U); /* Don't' want a reference period, only the regular centered windows */
             if (rttPhy == XCVR_RSM_RATE_1MBPS)
             {
-                offset = 3U;
+                offset = 1U;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=475)
                 /* CONNRF-1504 Optimize LCL_DMA_MASK_DELAY*/
                 XCVR_LCL_DMA_MASK_DELAY_CALC(RX_SETTLING_LATENCY_1MBPS, 
                                        TX_DATA_FLUSH_DLY_1MBPS, 
-                                       rttPhy, 
+                                       XCVR_RSM_RATE_1MBPS,
                                        dma_mask_delay);
 #else
-                dma_mask_delay = 5U;
+                dma_mask_delay = 7U;
 #endif
             }
             else
             {
-                offset = 5U;
+                offset = 0U;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=475)
                 /* CONNRF-1504 Optimize LCL_DMA_MASK_DELAY*/
                 XCVR_LCL_DMA_MASK_DELAY_CALC(RX_SETTLING_LATENCY_2MBPS, 
                        TX_DATA_FLUSH_DLY_2MBPS, 
-                       rttPhy, 
+                       XCVR_RSM_RATE_2MBPS,
                        dma_mask_delay);
 #else
-                dma_mask_delay = 5U;
+                dma_mask_delay = 4U;
 #endif
             }
 
