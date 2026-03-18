@@ -10,6 +10,7 @@ mcux_set_list(KW45_FAMILY_WITHOUT_K32W1 "KW45B41Z52xxxA KW45B41Z53xxxA  KW45B41Z
 mcux_set_list(KW47_FAMILY "KW47B42Z83xxxA KW47B42Z96xxxA KW47B42Z97xxxA KW47B42ZB2xxxA KW47B42ZB3xxxA KW47B42ZB6xxxA KW47B42ZB7xxxA KW47Z42082xxxA KW47Z42092xxxA KW47Z420B2xxxA KW47Z420B3xxxA")
 mcux_set_list(MCXW72_FAMILY "MCXW727CxxxA")
 mcux_set_list(KW43_FAMILY "KW43B43ZC7xxxA")
+mcux_set_list(MCXW70_FAMILY "MCXW70ACxxxA")
 mcux_set_list(KW43_NBU_FAMILY "KW43B43ZC7xxxA_NBU")
 mcux_set_list(MCXW23_FAMILY "MCXW236 MCXW235")
 
@@ -34,7 +35,7 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.xcvr)
             drv/dma_capture.h
             drv/mathfp.c
             drv/mathfp.h
-		DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY} ${KW43_FAMILY}
+		DEVICE_IDS ${KW47_FAMILY} ${MCXW72_FAMILY} ${KW43_FAMILY} ${MCXW70_FAMILY}
 		CORE_IDS "cm33_core0" "cm33"
     )
 
@@ -144,13 +145,13 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.xcvr)
 			drv/nxp_xcvr_lcl_step_mgr.c
 			drv/nxp_xcvr_lcl_step_mgr.h
 			drv/nxp_xcvr_lcl_step_structs.h
-		DEVICE_IDS ${KW43_FAMILY}
+		DEVICE_IDS ${KW43_FAMILY} ${MCXW70_FAMILY}
 		CORE_IDS "cm33" "cm33_core0"
 	)
 	mcux_add_include(
 		INCLUDES
 			drv/nb2p4ghz/configs/gen47_5/.
-		DEVICE_IDS ${KW43_FAMILY} ${KW43_NBU_FAMILY}
+		DEVICE_IDS ${KW43_FAMILY} ${MCXW70_FAMILY} ${KW43_NBU_FAMILY}
 	)
 	
 	# Add headers for library used on core 1
