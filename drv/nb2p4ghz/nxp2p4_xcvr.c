@@ -1080,9 +1080,6 @@ int16_t XCVR_GetInstantRssi(void)
     status = XCVR_RssiEstimate(true);
     assert(status == gXcvrSuccess_c);
 
-    /* Wait for end of warmup to get valid RSSI */
-    XCVR_WaitRxWu();
-    
     /* Wait for NB RSSI measurement complete assertion and sign extend the result to 16 bits */
     i16Rssi = XCVR_GetRssiResult();
 
@@ -1100,6 +1097,12 @@ int16_t XCVR_GetRssiResult(void)
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450)
     if ((XCVR_RX_DIG->RSSI_GLOBAL_CTRL & XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_RSSI_AA_MATCH_OVRD_EN_MASK) != 0U)
     {
+        /* RSSI estimate should be enabled */ 
+        assert(rssi_estimate_enabled);
+
+        /* Wait for end of warmup to get valid RSSI */
+        XCVR_WaitRxWu();
+        
         /* Trigger the start of a narrowband measurement */
         XCVR_RX_DIG->RSSI_GLOBAL_CTRL |= (XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_CONT_MEAS_OVRD_EN_MASK |
                                           XCVR_RX_DIG_RSSI_GLOBAL_CTRL_NB_CONT_MEAS_OVRD_MASK);
