@@ -181,3 +181,20 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.xcvr)
 
 endif()
 
+if(CONFIG_MCUX_COMPONENT_middleware.wireless.xcvr_loc)
+    mcux_add_source(
+        SOURCES
+            drv/rfmc_ctrl.c
+            drv/rfmc_ctrl.h
+            drv/mathfp.c
+            drv/mathfp.h
+            drv/nb2p4ghz/configs/gen47_5/nxp_xcvr_mode_config.h
+            CORE_IDS "cm33_core0" "cm33"
+    )
+
+    mcux_add_include(
+        INCLUDES
+            drv/.
+            drv/nb2p4ghz/configs/gen47_5/.
+    )
+endif()

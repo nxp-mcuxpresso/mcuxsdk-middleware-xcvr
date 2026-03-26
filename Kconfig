@@ -33,3 +33,6 @@ if MCUX_COMPONENT_middleware.wireless.xcvr
   endchoice
 
 endif
+
+config MCUX_COMPONENT_middleware.wireless.xcvr_loc
+    bool "Localization-only support"
