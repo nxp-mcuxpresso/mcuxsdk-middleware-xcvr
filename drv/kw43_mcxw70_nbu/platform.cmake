@@ -6,7 +6,7 @@ set(CONFIG_MCUX_COMPONENT_middleware.wireless.xcvr.gen475 ON)
 
 # Platform-specific configuration for kw47_mcxw72x_nbu
 set(PLATFORM_DEFINES
-	CPU_KW43B43ZC7MFPA_NBU
+	CPU_KW43B43ZC7MFP_NBU
 	FPGA_TARGET=0
 	HDI_BUS=0
 	RF_OSC_26MHZ=0
