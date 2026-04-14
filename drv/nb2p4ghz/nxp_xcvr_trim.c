@@ -1558,8 +1558,11 @@ uint64_t XCVR_TRIM_ReadIFRHalfPhrase(uint32_t ifr_phrase_offset, bool upper_64_b
     ifr_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_NBU + (ifr_phrase_offset*16U) + upper_half_offset);
     packed_trim_value = *ifr_trim_ptr; /* Read the contents of the IFR memory */
 #else
+    // TODO: Verify that KW43 does not have the same restriction on IFR access as KW47
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN < 475)
     /* If NBU is started already then IFR won't be available -  only read IFR is NBU is still in reset */
     if ((RFMC->RF2P4GHZ_CTRL & RFMC_RF2P4GHZ_CTRL_CPU_RST_MASK) == RFMC_RF2P4GHZ_CTRL_CPU_RST_MASK)
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN < 475) */
     {
         ifr_trim_ptr     = (uint64_t *)(RADIO_IFR_BASE_ADDR_HOST + (ifr_phrase_offset*16U) + upper_half_offset);
         packed_trim_value = *ifr_trim_ptr; /* Read the contents of the IFR memory */

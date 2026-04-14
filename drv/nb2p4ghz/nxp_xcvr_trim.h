@@ -118,13 +118,21 @@ typedef uint8_t DAC_SWEEP_STEP2_t;
 
 
 /* Address constants for IQMC & RTT trim download from IFR */
-#define IQMC_IFR_PHRASE_OFFSET (0x182U) /* Base for 16 octet phrase is 0x182 (msf_soctrim2 field) */
-#define RTT_IFR_PHRASE_OFFSET (0x182U) /* Base for 16 octet phrase is 0x182 (msf_soctrim2 field) */
+
 #define IQMC_IFR_UPPER (false) /* Select lower half of the phrase for IQMC */
 #define RTT_IFR_LOWER (false)    /* Select lower half of the phrase for part of RTT */
 #define RTT_IFR_UPPER (true)    /* Select upper half of the phrase for part of RTT */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >=475)
+#define IQMC_IFR_PHRASE_OFFSET (0x021U) /* Base for 16 octet phrase is 0x021 (msf_soctrim2 field) */
+#define RTT_IFR_PHRASE_OFFSET (0x021U) /* Base for 16 octet phrase is 0x021 (msf_soctrim2 field) */
+#define RADIO_IFR_BASE_ADDR_NBU 0x01100000U
+#define RADIO_IFR_BASE_ADDR_HOST 0x01100000U
+#else
+#define IQMC_IFR_PHRASE_OFFSET (0x182U) /* Base for 16 octet phrase is 0x182 (msf_soctrim2 field) */
+#define RTT_IFR_PHRASE_OFFSET (0x182U) /* Base for 16 octet phrase is 0x182 (msf_soctrim2 field) */
 #define RADIO_IFR_BASE_ADDR_NBU 0x00088000U  
-#define RADIO_IFR_BASE_ADDR_HOST 0x48888000U  
+#define RADIO_IFR_BASE_ADDR_HOST 0x48888000U
+#endif
 
 #define DC_FINE_MEASUREMENTS (1)  /* default the feature setting to off. Set this to true in the project defines to get measurement reports without threshold applied.  */
 
