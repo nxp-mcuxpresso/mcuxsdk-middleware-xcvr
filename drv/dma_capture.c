@@ -333,7 +333,8 @@ void dma_release(void)
 dmaStatus_t dma_start_capture(const dma_capture_config_t *dma_configuration)
 {
     dmaStatus_t status = DMA_SUCCESS;
-
+    uint32_t temp;
+    
     /* Verify input parameters in configuration structure and static storage */
     if ((dma_configuration == NULLPTR) || (destination_address == NULLPTR))
     {
@@ -433,7 +434,14 @@ dmaStatus_t dma_start_capture(const dma_capture_config_t *dma_configuration)
             dsb_handler.g_Transfer_Done = false;
             DSB->XCR                    = DSB_XCR_TCNT(buffer_size);
             DSB->DADDR                  = DSB_DADDR_DADDR((uint32_t)destination_address);
+#if (1)
+            temp = DSB->CSR;
+            temp |= DSB_CSR_DSB_EN_MASK;
+            DSB->CSR = temp;
+#else
             DSB->CSR |= DSB_CSR_DSB_EN_MASK;
+#endif
+            temp = DSB->INT;
         }
     }
 
