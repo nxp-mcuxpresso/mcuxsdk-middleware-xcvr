@@ -212,6 +212,7 @@ xcvrStatus_t XCVR_RadioGenRegSetup(const xcvr_config_t *xcvr_config)
         XCVR_RX_DIG->DEMOD_FILT_2_4     = mode_datarate_cfg->demod_filt_2_4;
         XCVR_RX_DIG->DEMOD_FILT_2_4_DRS = mode_datarate_cfg->demod_filt_2_4_drs;
         XCVR_RX_DIG->IQMC_CTRL1_DRS     = common_cfg->iqmc_ctrl1_drs;
+        XCVR_RX_DIG->NADM_CTRL          = common_cfg->nadm_ctrl;
         XCVR_RX_DIG->NB_RSSI_CTRL0      = common_cfg->nb_rssi_ctrl0;
         XCVR_RX_DIG->NB_RSSI_CTRL1      = common_cfg->nb_rssi_ctrl1;
         XCVR_RX_DIG->RCCAL_CTRL0        = mode_datarate_cfg->rccal_ctrl0;
