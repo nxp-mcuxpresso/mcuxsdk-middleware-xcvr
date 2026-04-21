@@ -2159,7 +2159,6 @@ void XCVR_LCL_ResetTsmTimingsCs(void)
     (void)temp; /* read of CTRL2 register is required to clear the reset signal */
 
     /* Update any register that needs special values different from the reset values */
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
     XCVR_TSM->CTRL = 0xFF000000U; /* BKPT disabled */
     XCVR_TSM->END_OF_SEQ = xcvr_lcl_tsm_generic_config.END_OF_SEQ;
     XCVR_TSM->WU_LATENCY = xcvr_lcl_tsm_generic_config.WU_LATENCY;
@@ -2167,6 +2166,13 @@ void XCVR_LCL_ResetTsmTimingsCs(void)
     XCVR_TSM->FAST_CTRL1 = xcvr_lcl_tsm_generic_config.FAST_CTRL1;
     /* FAST_CTRL2 completely written by XCVR_LCL_Set_TSM_FastStart */
     XCVR_TSM->FAST_CTRL3 = xcvr_lcl_tsm_generic_config.FAST_CTRL3;
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 475)
+    /* TIMING59 */
+    XCVR_TSM->TIMING59 = xcvr_lcl_tsm_generic_config.TIMING59;
+    /* TIMING60 */
+    XCVR_TSM->TIMING60 = xcvr_lcl_tsm_generic_config.TIMING60;
+#endif /* NXP_RADIO_GEN == 475 */    
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 470)
     temp = 0xFFFFFFFFU;
     /* Clears TIMING53..61 to disabled values */
     XCVR_TSM->TIMING53 = temp; 
@@ -2178,7 +2184,6 @@ void XCVR_LCL_ResetTsmTimingsCs(void)
     XCVR_TSM->TIMING59 = temp;
     XCVR_TSM->TIMING60 = temp;
     XCVR_TSM->TIMING61 = temp;
-#endif /* NXP_RADIO_GEN == 470 */    
     /* TIMING16 */
     XCVR_TSM->TIMING16 = xcvr_lcl_tsm_generic_config.TIMING16;
     /* TIMING17 */
@@ -2189,6 +2194,7 @@ void XCVR_LCL_ResetTsmTimingsCs(void)
     XCVR_TSM->TIMING30 = xcvr_lcl_tsm_generic_config.TIMING30;
    /*  TIMING44 */
     XCVR_TSM->TIMING44 = xcvr_lcl_tsm_generic_config.TIMING44;
+#endif /* NXP_RADIO_GEN == 470 */    
 
 }
 
