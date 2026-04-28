@@ -1670,6 +1670,8 @@ xcvrStatus_t XCVR_DftTxCW(uint32_t rf_freq)
             XCVR_TX_DIG->TXDIG_CTRL = XCVR_TX_DIG_TXDIG_CTRL_MODULATOR_SEL(0U) | XCVR_TX_DIG_TXDIG_CTRL_PFC_EN(0U) |
                                       XCVR_TX_DIG_TXDIG_CTRL_DATA_STREAM_SEL(0U);
 
+            XCVR_TX_DIG->DATA_PADDING_CTRL =
+            XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN(0); /* PAD_DLY_EN=0 is required for TX DFT to be operational */
             /* First shut everything off */
             XCVR_setDftMode(0U);
             /* Clear DFT features */
@@ -1679,6 +1681,7 @@ xcvrStatus_t XCVR_DftTxCW(uint32_t rf_freq)
 
             /* Warm-up the Radio */
             XCVR_ForceTxWu();
+            XCVR_WaitTxWu();
         }
     }
     return status; /* Success */
@@ -1773,6 +1776,7 @@ xcvrStatus_t XCVR_DftTxPatternReg(uint8_t channel_num,
             {
                 /* Warm-up the Radio */
                 XCVR_ForceTxWu();
+                XCVR_WaitTxWu();
                 XCVR_TX_DIG->RF_DFT_TX_CTRL2 =
                     XCVR_TX_DIG_RF_DFT_TX_CTRL2_DFT_PATTERN_EN(1); /* now enable the PATTERN mode */
             }
@@ -1919,6 +1923,7 @@ xcvrStatus_t XCVR_DftTxLfsrReg(uint8_t channel_num,
         {
             /* Warm-up the Radio */
             XCVR_ForceTxWu();
+            XCVR_WaitTxWu();
             XCVR_TX_DIG->RF_DFT_TX_CTRL1 |= XCVR_TX_DIG_RF_DFT_TX_CTRL1_LFSR_EN(1); /* now enable the LFSR */
         }
     }
@@ -1930,6 +1935,7 @@ void XCVR_DftTxOff(void)
     xcvrStatus_t status;
     /* Release DFT TX that is in progress */
     XCVR_ForceTxWd();
+    XCVR_WaitRxTxWd();
     /* Clear the RF Channel over-ride */
     XCVR_ReleasePLLOverride();           /* releases manual PLL programming */
     status = XCVR_OverrideChannel(0xFF); /* 0xFF is the release override code */
