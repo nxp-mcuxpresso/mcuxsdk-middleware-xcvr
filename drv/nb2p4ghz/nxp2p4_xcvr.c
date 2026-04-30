@@ -1603,10 +1603,12 @@ void XCVR_WaitTxWu(void)
 void XCVR_WaitRxTxWd(void)
 {
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 400)
+    //coverity[misra_c_2012_rule_2_2_violation : FALSE]
     while ((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_TSM_BUSY_MASK) != 0U)
     {
     }; /* Wait for TSM to be idle */
 #else
+    //coverity[misra_c_2012_rule_2_2_violation : FALSE]
     while ((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_XCVR_BUSY_MASK) != 0U)
     {
     }; /* Wait for TSM to be idle */
@@ -1935,6 +1937,7 @@ void XCVR_DftTxOff(void)
     xcvrStatus_t status;
     /* Release DFT TX that is in progress */
     XCVR_ForceTxWd();
+    //coverity[misra_c_2012_rule_2_2_violation : FALSE]
     XCVR_WaitRxTxWd();
     /* Clear the RF Channel over-ride */
     XCVR_ReleasePLLOverride();           /* releases manual PLL programming */
