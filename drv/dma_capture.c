@@ -40,6 +40,7 @@ void DSB_IRQHandler(void)
     /* Read and clear status flags to get all irq */
     uint32_t int_flags = DSB->INT;
     DSB->INT |= DSB_INT_DONE_MASK | DSB_INT_DBE_MASK | DSB_INT_UNDR_MASK | DSB_INT_OVRF_MASK;
+    __NVIC_ClearPendingIRQ(DMA_IRQ);
 
     /* Only call routine if transfer is complete */
     if ( (int_flags&DSB_INT_DONE_MASK) ==  DSB_INT_DONE_MASK) 
