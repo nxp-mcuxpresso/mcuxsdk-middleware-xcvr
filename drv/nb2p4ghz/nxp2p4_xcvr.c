@@ -2346,7 +2346,12 @@ void XCVR_FastPeriphReg_UpDownload_Go(PKT_RAM_BANK_SEL_T pkt_ram_sel, uint32_t o
     uint8_t up_or_down_load;
     uint32_t temp;
     up_or_down_load = (upload ? 0U : 1U);
-    temp = RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_RAM_SEL((uint32_t)pkt_ram_sel) |
+    temp = RADIO_CTRL->PACKET_RAM_TO_IPS_CTRL;
+    temp &= ~(RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_RAM_SEL_MASK |
+              RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_ADDR_SRC_MASK |
+              RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_REGS2PKT_MASK |
+              RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_ENA_MASK);
+    temp |= RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_RAM_SEL((uint32_t)pkt_ram_sel) |
             RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_ADDR_SRC(offset_in_pkt_ram) |
             RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_REGS2PKT(up_or_down_load);
     RADIO_CTRL->PACKET_RAM_TO_IPS_CTRL = temp; /* Write everything else but clear ENA */
@@ -2532,7 +2537,7 @@ bool XCVR_FastPeriph_WaitComplete(void)
     {
         temp = RADIO_CTRL->PACKET_RAM_TO_IPS_CTRL;
     }
-    status_ok = ((temp&RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_STATUS_ERROR_MASK) == 0U);
+    status_ok = XCVR_FastPeriph_CheckErrorComplete();
     RADIO_CTRL->PACKET_RAM_TO_IPS_CTRL =
         temp & ~(RADIO_CTRL_PACKET_RAM_TO_IPS_CTRL_PR2IPS_ENA_MASK); /* Clear the enable bit before returning */
 

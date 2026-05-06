@@ -478,7 +478,7 @@ typedef struct
         role; /*!< Role to be used for RSM operation. Interacts with the trig_sel field because the role cannot be
                  applied in XCVR_LCL_RsmInit() if the trig_sel is set to software triggered. */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* Only applies to KW47 */
-    uint16_t mode0_timeout_usec; /*!< Timeout (in usec) for RSM in reflector role to wait for a Mode 0 step transmission
+    uint32_t mode0_timeout_usec; /*!< Timeout (in usec) for RSM in reflector role to wait for a Mode 0 step transmission
                                     from initiator. */
     XCVR_RSM_PCT_AVG_WIN_LEN_T
         pct_averaging_win; /*!< The second stage of averaging to produce one output sample. First stage of averaging is
