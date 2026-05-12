@@ -313,7 +313,7 @@ void dma_release(void)
     {
         /* SW Workaround to get remaining sample in dsb FIFO */
         uint32_t wmc = DSB0->WMC & ~(DSB_WMC_WMRK_MASK);
-        DSB0->WMC = wmc | DSB_WMC_WMRK(1); // set 1 to get missing samples
+        DSB0->WMC = wmc | DSB_WMC_WMRK(1U); // set 1 to get missing samples
         while(DSB0->WMC & DSB_WMC_CNT_MASK){
             __asm("nop");
         }
