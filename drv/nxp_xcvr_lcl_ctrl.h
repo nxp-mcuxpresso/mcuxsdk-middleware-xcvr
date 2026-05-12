@@ -227,6 +227,8 @@ extern "C" {
 
 #define HPM_CAL_REPETITIONS  (16U)   /* Repetition count for HPM CAL averaging CONNRF-1460 */
 
+#define XCVR_RSM_PHY_TO_RATE(PHY) (((PHY) == XCVR_RSM_PHY_1MBPS_BT05) ? XCVR_RSM_RATE_1MBPS:XCVR_RSM_RATE_2MBPS)
+
 /*! @brief  RSM control mode settings. */
 typedef enum
 {
@@ -292,6 +294,15 @@ typedef enum
     XCVR_RSM_RATE_2MBPS = 1U, /*!<  RSM rate of 2Mbps. Must match how XCVR is configured! */
     XCVR_RSM_RATE_INVALID     /* Must always be last! */
 } XCVR_RSM_SQTE_RATE_T;
+
+/*! @brief  RSM SQTE RATE settings. */
+typedef enum
+{
+    XCVR_RSM_PHY_1MBPS_BT05 = 0U, /*!< 1Mbps BT=0.5 */
+    XCVR_RSM_PHY_2MBPS_BT05 = 1U, /*!< 2Mbps BT=0.5 */
+    XCVR_RSM_PHY_2MBPS_BT20 = 2U, /*!< 2Mbps BT=2.0 */
+    XCVR_RSM_PHY_INVALID          /* Must always be last! */
+} XCVR_RSM_PHY_T;
 
 #if defined(SUPPORT_RSM_LONG_PN) && (SUPPORT_RSM_LONG_PN == 1)
 /*! @brief  RSM SQTE PN length. */
@@ -457,8 +468,7 @@ typedef struct
 #if defined(SUPPORT_RSM_LONG_PN) && (SUPPORT_RSM_LONG_PN == 1)
     XCVR_RSM_SQTE_RTT_LEN_T rtt_len; /*!< SQTE ONLY: Choose the length of PN packets used in SQTE packet exchanges.  */
 #endif                               /* defined(SUPPORT_RSM_LONG_PN) && (SUPPORT_RSM_LONG_PN == 1) */
-    XCVR_RSM_SQTE_RATE_T rate; /*!< SQTE ONLY: Indicates to the RSM the data rate being used by the XCVR. Must match the
-                                  XCVR configuration.  */
+    XCVR_RSM_PHY_T phy;        /*!< Indicates to the driver which CS SYNC PHY should be used. */
     XCVR_RSM_AVG_WIN_LEN_T
         averaging_win;      /*!< The number of IQ or phase samples to average in RXDIG to produce one output sample. */
     bool use_rsm_dma_mask;  /*!< Selects to use the RSM DMA mask signal rather than the LCL DMA mask. Only valid when 1

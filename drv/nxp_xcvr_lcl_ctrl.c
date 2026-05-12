@@ -150,7 +150,7 @@ typedef struct
 } xcvr_lcl_rsm_tx_snr_t;
 
 /*! @brief TX_SNR LFSR settings values  */
-static xcvr_lcl_rsm_tx_snr_t tx_snr_settings[XCVR_RSM_RATE_INVALID][XCVR_RSM_TX_SNR_DISABLED] = {
+static xcvr_lcl_rsm_tx_snr_t tx_snr_settings[XCVR_RSM_PHY_INVALID][XCVR_RSM_TX_SNR_DISABLED] = {
     /* 1Mbps rate */
     {
         {190U, 1U},  /* 18 dB LFSR SCALE and DIV */
@@ -158,14 +158,20 @@ static xcvr_lcl_rsm_tx_snr_t tx_snr_settings[XCVR_RSM_RATE_INVALID][XCVR_RSM_TX_
         {90U, 1U},  /* 24 dB LFSR SCALE and DIV */
         {50U, 1U},  /* 27 dB LFSR SCALE and DIV */
     }, 
-    /* 2Mbps rate */
+    /* 2Mbps rate, BT=0.5 */
     {
-        // TODO: get correct 18dB number for 2Mbps
         {203U, 1U},  /* 18 dB LFSR SCALE and DIV */
         {140U, 1U},  /* 21 dB LFSR SCALE and DIV */
         {70U, 1U},  /* 24 dB LFSR SCALE and DIV */
         {5U, 1U},  /* 27 dB LFSR SCALE and DIV */
-     } 
+    },
+    /* 2Mbps rate, BT=2.0 */
+    {
+        {203U, 1U},  /* 18 dB LFSR SCALE and DIV */
+        {140U, 1U},  /* 21 dB LFSR SCALE and DIV */
+        {70U, 1U},  /* 24 dB LFSR SCALE and DIV */
+        {5U, 1U},  /* 27 dB LFSR SCALE and DIV */
+     }
 };
 #endif /* defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)  */
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
@@ -362,7 +368,8 @@ xcvrLclStatus_t XCVR_LCL_RsmCheckDmaMask(const xcvr_lcl_rsm_config_t *rsm_settin
     /* If RSM dma mask is used, check validity of RSM_DMA_DUR (only used for SQTE) and other aspects */
     if (rsm_settings_ptr->use_rsm_dma_mask)
     {
-        if (!XCVR_LCL_RsmCheckDmaDuration(rsm_settings_ptr->rsm_dma_dur_pm, rsm_settings_ptr->rate,
+        if (!XCVR_LCL_RsmCheckDmaDuration(rsm_settings_ptr->rsm_dma_dur_pm,
+                                          XCVR_RSM_PHY_TO_RATE(rsm_settings_ptr->phy),
                                           rsm_settings_ptr->averaging_win))
         {
             status = gXcvrLclStatusInvalidArgs;
@@ -413,7 +420,7 @@ xcvrLclStatus_t XCVR_LCL_RsmCheckDmaMask(const xcvr_lcl_rsm_config_t *rsm_settin
 // TODO: add DMA duration check for KW47 
 #else
     /* Independent of whether RSM dma mask is used, check validity of RSM_DMA_DUR0 (only used for both SQTE and PDE) */
-    if (!XCVR_LCL_RsmCheckDmaDuration(rsm_settings_ptr->rsm_dma_dur_fm_ext, rsm_settings_ptr->rate,
+    if (!XCVR_LCL_RsmCheckDmaDuration(rsm_settings_ptr->rsm_dma_dur_fm_ext, XCVR_RSM_PHY_TO_RATE(rsm_settings_ptr->phy),
                                       rsm_settings_ptr->averaging_win))
     {
         status = gXcvrLclStatusInvalidArgs;
@@ -446,7 +453,7 @@ xcvrLclStatus_t XCVR_LCL_ValidateRsmSettings(const xcvr_lcl_rsm_config_t *rsm_se
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)   */
 
         /* Verify the rate is valid */
-        tmp_logic_sum += (uint32_t)(rsm_settings_ptr->rate >= XCVR_RSM_RATE_INVALID);
+        tmp_logic_sum += (uint32_t)(rsm_settings_ptr->phy >= XCVR_RSM_PHY_INVALID);
 
 #if defined(SUPPORT_RSM_LONG_PN) && (SUPPORT_RSM_LONG_PN == 1)
         tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->rtt_len >= XCVR_RSM_RTT_LEN_INVALID);
@@ -897,7 +904,7 @@ static void XCVR_LCL_SetupDemodControl(const xcvr_lcl_rsm_config_t *rsm_settings
 static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 {
 
-        XCVR_LCL_RsmPLLInit(rsm_settings_ptr->rate);
+        XCVR_LCL_RsmPLLInit(XCVR_RSM_PHY_TO_RATE(rsm_settings_ptr->phy));
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
     uint32_t temp;
@@ -1021,8 +1028,8 @@ static xcvrLclStatus_t XCVR_LCL_SetupTXDIGForRanging(const xcvr_lcl_rsm_config_t
             temp &= ~(XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV_MASK |
                         XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE_MASK);
             temp |= (XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN_MASK |
-                XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV(tx_snr_settings[rsm_settings_ptr->rate][rsm_settings_ptr->tx_snr_setting].lfsr_div) |
-                XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE(tx_snr_settings[rsm_settings_ptr->rate][rsm_settings_ptr->tx_snr_setting].lfsr_scale));
+                XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV(tx_snr_settings[rsm_settings_ptr->phy][rsm_settings_ptr->tx_snr_setting].lfsr_div) |
+                XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE(tx_snr_settings[rsm_settings_ptr->phy][rsm_settings_ptr->tx_snr_setting].lfsr_scale));
         }
         XCVR_TX_DIG->TXDIG_CTRL = temp;
 #endif /* defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)  */
@@ -1572,7 +1579,7 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 #endif
 
     // Extract common flags
-    bool rate_is_2mbps = (rsm_settings_ptr->rate != XCVR_RSM_RATE_1MBPS);
+    bool rate_is_2mbps = (rsm_settings_ptr->phy != XCVR_RSM_PHY_1MBPS_BT05);
     bool is_sqte_mode = ((rsm_settings_ptr->op_mode == XCVR_RSM_SQTE_MODE) ||
                          (rsm_settings_ptr->op_mode == XCVR_RSM_SQTE_STABLE_PHASE_TEST_MODE));
 
@@ -2849,7 +2856,7 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
         /* Setup LCL block for normal operations with 1 antenna */
         uint16_t t_pm                = (rsm_settings_ptr->t_pm0);
         uint16_t t_sw                = (uint16_t)(rsm_settings_ptr->t_sw);
-        XCVR_RSM_SQTE_RATE_T rttPhy = (rsm_settings_ptr->rate);
+        XCVR_RSM_SQTE_RATE_T rate = XCVR_RSM_PHY_TO_RATE(rsm_settings_ptr->phy);
         uint32_t temp;
         uint32_t offset;
         uint32_t spint_us;
@@ -2860,7 +2867,7 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
         uint8_t dma_mask_delay;
         uint8_t add_up;
         /* Configure 2Mbps oversampling if needed */
-        if (rttPhy == XCVR_RSM_RATE_1MBPS)
+        if (rate == XCVR_RSM_RATE_1MBPS)
         {
             sampling_rate_factor = 1U;
             tx_data_flush_delay = TX_DATA_FLUSH_DLY_1MBPS;
@@ -3012,7 +3019,7 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
             
             XCVR_MISC->LCL_DMA_MASK_PERIOD = XCVR_MISC_LCL_DMA_MASK_PERIOD_DMA_MASK_REF_PER(
                 0U); /* Don't' want a reference period, only the regular centered windows */
-            if (rttPhy == XCVR_RSM_RATE_1MBPS)
+            if (rate == XCVR_RSM_RATE_1MBPS)
             {
                 offset = 1U;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>=475)
@@ -3092,7 +3099,7 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t * rsm_settings_ptr
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
     
     /* Configure 2Mbps oversampling if needed */
-    sampling_rate_factor = (rsm_settings_ptr->rate == XCVR_RSM_RATE_1MBPS) ? 1U : SAMPLING_RATE_FACTOR_2MBPS;
+    sampling_rate_factor = (rsm_settings_ptr->phy == XCVR_RSM_PHY_1MBPS_BT05) ? 1U : SAMPLING_RATE_FACTOR_2MBPS;
     
     /* Configure SPINT according to T_PM duration in order not to overflow SPINT and HI/LO_PER 5bits values */
     if ((ant_slot_time == XCVR_RSM_T_CAPTURE_20_SEL) || (ant_slot_time == XCVR_RSM_T_CAPTURE_40_SEL))
