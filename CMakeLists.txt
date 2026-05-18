@@ -190,6 +190,8 @@ if(CONFIG_MCUX_COMPONENT_middleware.wireless.xcvr_loc)
             drv/mathfp.h
             drv/nb2p4ghz/configs/gen47_5/nxp_xcvr_mode_config.h
             drv/nb2p4ghz/nxp2p4_xcvr.c
+            drv/nb2p4ghz/nxp2p4_xcvr.h
+            drv/nb2p4ghz/nxp_xcvr_trim.h
             CORE_IDS "cm33_core0" "cm33"
     )
 
