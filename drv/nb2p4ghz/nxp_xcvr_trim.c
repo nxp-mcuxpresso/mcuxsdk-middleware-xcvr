@@ -592,6 +592,7 @@ xcvrTrimStatus_t XCVR_TRIM_MeasDcResid(xcvr_fine_dc_trim_t * fine_offsets)
             for (i= 0U;i<NUM_IQ_SAMPLES;i++)
             {
               /* Lower 4 bits are not part of IQ value. Conversion to int16_t works because IQ is in top 12 bits */
+              #if (0)
               temp_iq = *sample_ptr;  
               temp_iq = temp_iq/IQ_UNPACK_SCALE;  /* This integer division also removes the 5 LSbits that are not part of the IQ value */
               i_sum += (int32_t)(temp_iq);
@@ -600,6 +601,14 @@ xcvrTrimStatus_t XCVR_TRIM_MeasDcResid(xcvr_fine_dc_trim_t * fine_offsets)
               temp_iq = temp_iq/IQ_UNPACK_SCALE;  /* This integer division also removes the 5  LSbits that are not part of the IQ value */
               q_sum += (int32_t)(temp_iq);
               sample_ptr++;          
+              #else
+                temp_iq = (int16_t)(*sample_ptr / IQ_UNPACK_SCALE);  /* This integer division also removes the 5 LSbits that are not part of the IQ value */
+                i_sum += (int32_t)(temp_iq);
+                sample_ptr++;
+                temp_iq = (int16_t)(*sample_ptr / IQ_UNPACK_SCALE);  /* This integer division also removes the 5 LSbits that are not part of the IQ value */
+                q_sum += (int32_t)(temp_iq);
+                sample_ptr++;
+              #endif
             }
             /* Calculate residual values from the averages unsigned 7 bits stored in uint8_t */       
             i_sum = i_sum / (int32_t)NUM_IQ_SAMPLES; /* Average is performed  */

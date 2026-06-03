@@ -719,6 +719,7 @@ XCVR_BAND_SEL_T XCVR_GetPLLBand(void)
             temp_band_e = XCVR_BAND_SEL_GENERIC;
             break;
         /* coco begin validated: This default can never be encountered due to all possible variants covered above (hardware register contents) */
+        // coverity[misra_c_2012_rule_2_1_violation:SUPPRESS]
         default:
             temp_band_e = XCVR_BAND_SEL_MAX; /* Error! */
             break;
@@ -1603,12 +1604,12 @@ void XCVR_WaitTxWu(void)
 void XCVR_WaitRxTxWd(void)
 {
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 400)
-    //coverity[misra_c_2012_rule_2_2_violation : FALSE]
+    //coverity[misra_c_2012_rule_2_2_violation:SUPPRESS]
     while ((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_TSM_BUSY_MASK) != 0U)
     {
     }; /* Wait for TSM to be idle */
 #else
-    //coverity[misra_c_2012_rule_2_2_violation : FALSE]
+    //coverity[misra_c_2012_rule_2_2_violation : SUPPRESS]
     while ((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_XCVR_BUSY_MASK) != 0U)
     {
     }; /* Wait for TSM to be idle */
@@ -1937,7 +1938,7 @@ void XCVR_DftTxOff(void)
     xcvrStatus_t status;
     /* Release DFT TX that is in progress */
     XCVR_ForceTxWd();
-    //coverity[misra_c_2012_rule_2_2_violation : FALSE]
+    //coverity[misra_c_2012_rule_2_2_violation : SUPPRESS]
     XCVR_WaitRxTxWd();
     /* Clear the RF Channel over-ride */
     XCVR_ReleasePLLOverride();           /* releases manual PLL programming */

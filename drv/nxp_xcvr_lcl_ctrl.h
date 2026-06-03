@@ -201,8 +201,14 @@ extern "C" {
       /* CONNRF-1504 Optimize LCL_DMA_MASK_DELAY*/
 #define XCVR_LCL_DMA_MASK_DELAY_CALC(rx_settling_latency, tx_data_flush, rate, dma_mask_delay)        \
     do {                                    \
-        (dma_mask_delay) = ((tx_data_flush+rate)>(rx_settling_latency+1) ? 0U : \
-          (rx_settling_latency+1U-tx_data_flush-rate)); \
+        if ( ((tx_data_flush)+(uint8_t)(rate)) > ((rx_settling_latency)+1U) ) \
+        { \
+           (dma_mask_delay) = 0U;\
+        }\
+        else \
+        { \
+            (dma_mask_delay) = ( (rx_settling_latency) + 1U -(tx_data_flush) -(uint8_t)(rate) );   \
+        }\
     } while (false)
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)   */
 

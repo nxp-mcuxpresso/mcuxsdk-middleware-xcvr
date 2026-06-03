@@ -338,22 +338,22 @@ while (false)
         uint8_t words=0U;                                                                                                \
         uint8_t incr=0U;                                                                                                 \
         uint32_t * ant_table = (ant_permut_ptr);                                                                         \
-        volatile uint32_t *cfg_body_ptr = (volatile uint32_t *) cfg_entry ;                                              \
-        if(ant_permut_mode) {                                                                                            \
+        volatile uint32_t *cfg_body_ptr = (volatile uint32_t *)( cfg_entry) ;                                              \
+        if((ant_permut_mode)) {                                                                                            \
               *cfg_body_ptr++ = (ant_table!=NULLPTR)? *(ant_table)++ : 0U;                                     \
-                if(num_ant > 8) {                                                                                        \
+                if((num_ant) > 8U) {                                                                                        \
                   *cfg_body_ptr++ = (ant_table!=NULLPTR)? *(ant_table)++ : 0U;                                 \
                 }                                                                                                        \
         }                                                                                                                \
         do {                                                                                                             \
-            uint32_t temp_phase_add = (*(phase_add_ptr)++) & 0x0000FFFF; /* increments the pointer that is passed in */  \
+            uint32_t temp_phase_add = (uint32_t)((*((phase_add_ptr))++) & 0x0000FFFFU); /* increments the pointer that is passed in */  \
             incr++;                                                                                                      \
-            if(incr <= ((num_ant-1)>>1)) {                                                                               \
-                temp_phase_add |= (*(phase_add_ptr)++)<<16;                                                              \
+            if(incr <= (((num_ant)-1U)>>1)) {                                                                               \
+                temp_phase_add |= (*((phase_add_ptr))++)<<16;                                                              \
                 incr++;                                                                                                  \
             }                                                                                                            \
             *cfg_body_ptr++ = temp_phase_add;                                                                            \
-        } while (words++ < ((num_ant-1)>>2));                                                                            \
+        } while (words++ < (((num_ant)-1U)>>2));                                                                            \
     } while (false)
     
 /*!

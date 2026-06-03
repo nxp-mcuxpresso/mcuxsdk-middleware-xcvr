@@ -16,7 +16,7 @@
  ******************************************************************************/
 const uint8_t rtt_payload_sizes[8] = {0U,2U,6U,2U,4U,6U,8U,0U};  /* Last value is dummy value to allow indexing the array by RTT_TYPE */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-const uint8_t permut_step_size_words_offset[] = {1U,2U,4U,5U};       /* For radio gen >= 475: step word size offset when including T_PM. index is (num_ap-1)/4 */
+static const uint8_t permut_step_size_words_offset[4] = {1U,2U,4U,5U};       /* For radio gen >= 475: step word size offset when including T_PM. index is (num_ap-1)/4 */
 #endif /* NXP_RADIO_GEN >= 475 */
 
 /* Circular buffer related static data - supports setup of buffer state and IRQ operation */
@@ -319,7 +319,7 @@ xcvrLclStatus_t XCVR_LCL_CalcConfig_Size(XCVR_RSM_FSTEP_TYPE_T step_format, XCVR
                 header_size_words = (uint8_t)3U;
                 *phase_size_words = (uint8_t)(0U
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-                                    + 1U + ((ant_permut_mode)? permut_step_size_words_offset[(num_ap-1)>>2] : 0U)
+                                    + 1U + ((ant_permut_mode)? permut_step_size_words_offset[(num_ap-1U)>>2] : 0U)
 #endif
                 );
                 *payload_size_words = 0;
@@ -329,7 +329,7 @@ xcvrLclStatus_t XCVR_LCL_CalcConfig_Size(XCVR_RSM_FSTEP_TYPE_T step_format, XCVR
                 *payload_size_words = rtt_payload_sizes[rtt_type];
                 *phase_size_words = (uint8_t)(0U
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-                                    + 1U + ((ant_permut_mode)? permut_step_size_words_offset[(num_ap-1)>>2] : 0U)
+                                    + 1U + ((ant_permut_mode)? permut_step_size_words_offset[(num_ap-1U)>>2] : 0U)
 #endif
                 );
                 break;

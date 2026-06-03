@@ -897,6 +897,7 @@ static void XCVR_LCL_SetupDemodControl(const xcvr_lcl_rsm_config_t *rsm_settings
         /* Setup PLL for ranging */
 static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 {
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
 
         XCVR_LCL_RsmPLLInit(XCVR_RSM_PHY_TO_RATE(rsm_settings_ptr->phy));
 
@@ -929,8 +930,8 @@ static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)*/
 
         /* Phase continuity defaults to ON */
-        XCVR_LCL_EnaLpmClkSwitch(1);
-        
+        status = XCVR_LCL_EnaLpmClkSwitch(1);
+        assert(status == gXcvrLclStatusSuccess);
 #else
         /* NOTE: This code assumes t_ip1 and t_ip2 config structures both use identical HPM CAL enable bit settings
          * (which is the case in the initial coding */
@@ -3001,13 +3002,16 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
               uint64_t lut_temp = 0L; /* Working memory to build the 2x 32 bit words for the LUT */
               uint64_t temp_entry; /* holds the entry temporarily for shifting */
               uint8_t i;
+              uint8_t temp_ant_id;
               for (i=0U;i<8U;i++)
               {
-                  temp_entry = toneAntennaIDs_p[i] & 0xF; /* entries only occupy 4 bits */
+                  temp_ant_id = (toneAntennaIDs_p[i] & 0xFU);   /* entries only occupy 4 bits */
+                  temp_entry = (uint64_t)(temp_ant_id);
                   lut_temp |= temp_entry<<(i*4U);
               }
-              XCVR_MISC->LCL_GPIO_CTRL0 = lut_temp & 0xFFFFFFFFL;
-              XCVR_MISC->LCL_GPIO_CTRL1 = lut_temp>>32U;               
+              XCVR_MISC->LCL_GPIO_CTRL0 = (uint32_t)(lut_temp & 0xFFFFFFFFUL);
+              lut_temp = lut_temp>>32U;
+              XCVR_MISC->LCL_GPIO_CTRL1 = (uint32_t)(lut_temp);               
             }
             else
  #endif                       
