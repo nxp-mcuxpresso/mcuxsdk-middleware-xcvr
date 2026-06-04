@@ -763,15 +763,19 @@ typedef struct
     uint32_t XCVR_2P4GHZ_PHY_FSK_CFG0;
 #endif
     /* XCVR_TXDIG */
+    uint32_t XCVR_TX_DIG_TXDIG_CTRL;
     uint32_t XCVR_TX_DIG_DATA_PADDING_CTRL;
     uint32_t XCVR_TX_DIG_DATA_PADDING_CTRL1;
+    uint32_t XCVR_TX_DIG_DATA_PADDING_CTRL_2;
 
     uint32_t XCVR_TX_DIG_GFSK_CTRL;
+    uint32_t XCVR_TX_DIG_DATARATE_CONFIG_GFSK_CTRL;
 
     uint32_t XCVR_TX_DIG_PA_CTRL;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
     uint32_t ANALOG_TX_DAC_PA;
 #endif    
+    uint32_t XCVR_ANALOG_PLL;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
     uint32_t PA_RAMP_TBL0;
     uint32_t PA_RAMP_TBL1;
@@ -782,16 +786,20 @@ typedef struct
     uint32_t XCVR_PLL_DIG_HPM_BUMP;
     uint32_t XCVR_PLL_DIG_MOD_CTRL;
     uint32_t XCVR_PLL_DIG_CHAN_MAP;
-
+    uint32_t XCVR_PLL_DIG_CHAN_MAP_EXT;
     uint32_t XCVR_PLL_DIG_HPM_CTRL;
     uint32_t XCVR_PLL_DIG_HPMCAL_CTRL;
 
     uint32_t XCVR_PLL_DIG_HPM_SDM_RES;
     uint32_t XCVR_PLL_DIG_LPM_CTRL;
     uint32_t XCVR_PLL_DIG_LPM_SDM_CTRL1;
+    uint32_t XCVR_PLL_DIG_LPM_SDM_CTRL2;
+    uint32_t XCVR_PLL_DIG_LPM_SDM_CTRL3;
     uint32_t XCVR_PLL_DIG_DELAY_MATCH;
     uint32_t XCVR_PLL_DIG_TUNING_CAP_TX_CTRL;
     uint32_t XCVR_PLL_DIG_TUNING_CAP_RX_CTRL;
+    uint32_t XCVR_PLL_DIG_PLL_DATARATE_CTRL;
+    uint32_t XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL1;
     uint32_t XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL2;
     uint32_t XCVR_PLL_OFFSET_CTRL;
 
@@ -1123,7 +1131,7 @@ extern const uint32_t tsm_fast_descrip_comp[TSM_DESCRIP_COUNT]; /* Make descript
 #else
 #define RSM_LCL_ADD_DESCRIP_COUNT (0)
 #endif /* (defined(BACKUP_RSM_LCL) && (BACKUP_RSM_LCL==1))         */
-#define PLL_DESCRIP_COUNT (16+RSM_LCL_ADD_DESCRIP_COUNT)
+#define PLL_DESCRIP_COUNT (19+RSM_LCL_ADD_DESCRIP_COUNT)
 extern const uint32_t
     pll_rsm_fast_descrip_comp[PLL_DESCRIP_COUNT]; /* Make descriptor visible extenally for validation */
 #define BT2_DESCRIP_COUNT (5U)

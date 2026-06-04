@@ -696,17 +696,22 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLBackup(rsm_reg_backup_t *reg_backup_ptr)
         
         /* PLL registers backup only - these registers need backup if corrupting PLL registers */
         reg_backup_ptr->XCVR_PLL_DIG_CHAN_MAP    = XCVR_PLL_DIG->CHAN_MAP;
+        reg_backup_ptr->XCVR_PLL_DIG_CHAN_MAP_EXT = XCVR_PLL_DIG->CHAN_MAP_EXT;
         reg_backup_ptr->XCVR_PLL_DIG_HPM_CTRL    = XCVR_PLL_DIG->HPM_CTRL;
         reg_backup_ptr->XCVR_PLL_DIG_HPMCAL_CTRL    = XCVR_PLL_DIG->HPMCAL_CTRL;
         reg_backup_ptr->XCVR_TX_DIG_GFSK_CTRL    = XCVR_TX_DIG->GFSK_CTRL;
         reg_backup_ptr->XCVR_PLL_DIG_LPM_CTRL    = XCVR_PLL_DIG->LPM_CTRL;
         reg_backup_ptr->XCVR_PLL_DIG_LPM_SDM_CTRL1 = XCVR_PLL_DIG->LPM_SDM_CTRL1;
+        reg_backup_ptr->XCVR_PLL_DIG_LPM_SDM_CTRL2 = XCVR_PLL_DIG->LPM_SDM_CTRL2;
+        reg_backup_ptr->XCVR_PLL_DIG_LPM_SDM_CTRL3 = XCVR_PLL_DIG->LPM_SDM_CTRL3;
         reg_backup_ptr->XCVR_PLL_DIG_DELAY_MATCH = XCVR_PLL_DIG->DELAY_MATCH;
         reg_backup_ptr->XCVR_PLL_DIG_HPM_SDM_RES = XCVR_PLL_DIG->HPM_SDM_RES;
         reg_backup_ptr->XCVR_PLL_DIG_HPM_BUMP    = XCVR_PLL_DIG->HPM_BUMP;
         reg_backup_ptr->XCVR_PLL_DIG_MOD_CTRL    = XCVR_PLL_DIG->MOD_CTRL;
         reg_backup_ptr->XCVR_PLL_OFFSET_CTRL =
             XCVR_PLL_DIG->PLL_OFFSET_CTRL; /* this register is backed up because CFO compensation can corrupt it */
+        reg_backup_ptr->XCVR_PLL_DIG_PLL_DATARATE_CTRL = XCVR_PLL_DIG->PLL_DATARATE_CTRL;
+        reg_backup_ptr->XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL1 = XCVR_PLL_DIG->DATA_RATE_OVRD_CTRL1;
         reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_TX_CTRL = XCVR_PLL_DIG->TUNING_CAP_TX_CTRL;
         reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_RX_CTRL = XCVR_PLL_DIG->TUNING_CAP_RX_CTRL;
         reg_backup_ptr->XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL2 = XCVR_PLL_DIG->DATA_RATE_OVRD_CTRL2;
@@ -782,11 +787,14 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLRestore(const rsm_reg_backup_t *reg_backup_ptr)
         
         /* restore all changed registers from backup */
         XCVR_PLL_DIG->CHAN_MAP    = reg_backup_ptr->XCVR_PLL_DIG_CHAN_MAP;
+        XCVR_PLL_DIG->CHAN_MAP_EXT = reg_backup_ptr->XCVR_PLL_DIG_CHAN_MAP_EXT;
         XCVR_PLL_DIG->HPM_CTRL    = reg_backup_ptr->XCVR_PLL_DIG_HPM_CTRL;
         XCVR_PLL_DIG->HPMCAL_CTRL    = reg_backup_ptr->XCVR_PLL_DIG_HPMCAL_CTRL;
         XCVR_TX_DIG->GFSK_CTRL    = reg_backup_ptr->XCVR_TX_DIG_GFSK_CTRL;
         XCVR_PLL_DIG->LPM_CTRL    = reg_backup_ptr->XCVR_PLL_DIG_LPM_CTRL;
         XCVR_PLL_DIG->LPM_SDM_CTRL1 = reg_backup_ptr->XCVR_PLL_DIG_LPM_SDM_CTRL1;
+        XCVR_PLL_DIG->LPM_SDM_CTRL2 = reg_backup_ptr->XCVR_PLL_DIG_LPM_SDM_CTRL2;
+        XCVR_PLL_DIG->LPM_SDM_CTRL3 = reg_backup_ptr->XCVR_PLL_DIG_LPM_SDM_CTRL3;
         XCVR_PLL_DIG->DELAY_MATCH = reg_backup_ptr->XCVR_PLL_DIG_DELAY_MATCH;
         XCVR_PLL_DIG->HPM_SDM_RES = reg_backup_ptr->XCVR_PLL_DIG_HPM_SDM_RES;
         XCVR_PLL_DIG->HPM_BUMP    = reg_backup_ptr->XCVR_PLL_DIG_HPM_BUMP;
@@ -796,6 +804,8 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLRestore(const rsm_reg_backup_t *reg_backup_ptr)
                 ->XCVR_PLL_OFFSET_CTRL; /* this register is restored because CFO compensation can corrupt it */
         XCVR_PLL_DIG->TUNING_CAP_TX_CTRL = reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_TX_CTRL;
         XCVR_PLL_DIG->TUNING_CAP_RX_CTRL = reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_RX_CTRL;
+        XCVR_PLL_DIG->PLL_DATARATE_CTRL = reg_backup_ptr->XCVR_PLL_DIG_PLL_DATARATE_CTRL;
+        XCVR_PLL_DIG->DATA_RATE_OVRD_CTRL1 = reg_backup_ptr->XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL1;
         XCVR_PLL_DIG->DATA_RATE_OVRD_CTRL2 = reg_backup_ptr->XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL2;
 
         XCVR_MISC->IPS_FO_DRS0_DATA[0U] = reg_backup_ptr->XCVR_MISC_IPS_FO_DRS0_DATA_0; /* Restore the HPM_COUNT_ADJUST to the default value for non_localization context. */
@@ -1812,15 +1822,18 @@ const uint32_t pll_rsm_fast_descrip_comp[PLL_DESCRIP_COUNT] = {
 #endif /* (defined(BACKUP_RSM_LCL) && (BACKUP_RSM_LCL==1))         */
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 2U, &(XCVR_2P4GHZ_PHY->RTT_CTRL)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 2U, &(XCVR_2P4GHZ_PHY->DMD_CTRL1)),
-    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 2U, &(XCVR_TX_DIG->DATA_PADDING_CTRL)),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 4U, &(XCVR_TX_DIG->TXDIG_CTRL)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_TX_DIG->GFSK_CTRL)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 5U, &(XCVR_TX_DIG->PA_CTRL)),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_TX_DIG->DATARATE_CONFIG_GFSK_CTRL)),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_ANALOG->PLL)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_ANALOG->TX_DAC_PA)),
-    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 3U, &(XCVR_PLL_DIG->HPM_BUMP)),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 4U, &(XCVR_PLL_DIG->HPM_BUMP)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_PLL_DIG->HPM_CTRL)),
-    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 3U, &(XCVR_PLL_DIG->HPM_SDM_RES)),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 5U, &(XCVR_PLL_DIG->HPM_SDM_RES)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 3U, &(XCVR_PLL_DIG->DELAY_MATCH)),
-    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_PLL_DIG->PLL_OFFSET_CTRL)),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_PLL_DIG->DATA_RATE_OVRD_CTRL1)),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 2U, &(XCVR_PLL_DIG->PLL_OFFSET_CTRL)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 2U, &(XCVR_RX_DIG->CTRL1)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 5U, &(XCVR_TSM->OVRD0)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_RX_DIG->AGC_CTRL)),
@@ -2375,8 +2388,11 @@ xcvrLclStatus_t XCVR_LCL_RsmRegBackup(rsm_reg_backup_t *reg_backup_ptr)
         /* XCVR_TXDIG */
         reg_backup_ptr->XCVR_TX_DIG_DATA_PADDING_CTRL  = XCVR_TX_DIG->DATA_PADDING_CTRL;
         reg_backup_ptr->XCVR_TX_DIG_DATA_PADDING_CTRL1 = XCVR_TX_DIG->DATA_PADDING_CTRL_1;
+        reg_backup_ptr->XCVR_TX_DIG_DATA_PADDING_CTRL_2 = XCVR_TX_DIG->DATA_PADDING_CTRL_2;
         reg_backup_ptr->XCVR_TX_DIG_GFSK_CTRL = XCVR_TX_DIG->GFSK_CTRL;
+        reg_backup_ptr->XCVR_TX_DIG_DATARATE_CONFIG_GFSK_CTRL = XCVR_TX_DIG->DATARATE_CONFIG_GFSK_CTRL;
         reg_backup_ptr->XCVR_TX_DIG_PA_CTRL            = XCVR_TX_DIG->PA_CTRL;
+        reg_backup_ptr->XCVR_TX_DIG_TXDIG_CTRL = XCVR_TX_DIG->TXDIG_CTRL;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
         reg_backup_ptr->PA_RAMP_TBL0            = XCVR_TX_DIG->PA_RAMP_TBL0;
         reg_backup_ptr->PA_RAMP_TBL1            = XCVR_TX_DIG->PA_RAMP_TBL1;
@@ -2387,6 +2403,7 @@ xcvrLclStatus_t XCVR_LCL_RsmRegBackup(rsm_reg_backup_t *reg_backup_ptr)
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
         reg_backup_ptr->ANALOG_TX_DAC_PA = XCVR_ANALOG->TX_DAC_PA;
 #endif
+        reg_backup_ptr->XCVR_ANALOG_PLL = XCVR_ANALOG->PLL;
         /* XCVR_PLL */
         status = XCVR_LCL_RsmPLLBackup(
             reg_backup_ptr); /* NULLPTR check in this routine should never fail since checked above */
@@ -2473,8 +2490,11 @@ xcvrLclStatus_t XCVR_LCL_RsmRegRestore(const rsm_reg_backup_t *reg_backup_ptr)
         /* XCVR_TXDIG */
         XCVR_TX_DIG->DATA_PADDING_CTRL   = reg_backup_ptr->XCVR_TX_DIG_DATA_PADDING_CTRL;
         XCVR_TX_DIG->DATA_PADDING_CTRL_1 = reg_backup_ptr->XCVR_TX_DIG_DATA_PADDING_CTRL1;
+        XCVR_TX_DIG->DATA_PADDING_CTRL_2 = reg_backup_ptr->XCVR_TX_DIG_DATA_PADDING_CTRL_2;
         XCVR_TX_DIG->GFSK_CTRL = reg_backup_ptr->XCVR_TX_DIG_GFSK_CTRL;
+        XCVR_TX_DIG->DATARATE_CONFIG_GFSK_CTRL = reg_backup_ptr->XCVR_TX_DIG_DATARATE_CONFIG_GFSK_CTRL;
         XCVR_TX_DIG->PA_CTRL             = reg_backup_ptr->XCVR_TX_DIG_PA_CTRL;
+        XCVR_TX_DIG->TXDIG_CTRL = reg_backup_ptr->XCVR_TX_DIG_TXDIG_CTRL;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
         XCVR_TX_DIG->PA_RAMP_TBL0 = reg_backup_ptr->PA_RAMP_TBL0;
         XCVR_TX_DIG->PA_RAMP_TBL1 = reg_backup_ptr->PA_RAMP_TBL1;
@@ -2485,6 +2505,7 @@ xcvrLclStatus_t XCVR_LCL_RsmRegRestore(const rsm_reg_backup_t *reg_backup_ptr)
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
         XCVR_ANALOG->TX_DAC_PA = reg_backup_ptr->ANALOG_TX_DAC_PA;
 #endif
+        XCVR_ANALOG->PLL = reg_backup_ptr->XCVR_ANALOG_PLL;
         /* XCVR_PLL */
         status = XCVR_LCL_RsmPLLRestore(
             reg_backup_ptr); /* NULLPTR check in this routine should never fail since checked above */
