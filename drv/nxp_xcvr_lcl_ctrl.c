@@ -118,21 +118,6 @@
 /*******************************************************************************
  * Variables
  ******************************************************************************/
-static struct
-{
-    uint32_t tsm_ovrd0;
-    uint32_t tsm_ovrd1;
-    uint32_t tsm_ovrd2;
-    uint32_t tsm_ovrd3;
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
-    uint32_t tsm_ovrd4;
-    uint32_t analog_tx_dac_pa;
-#endif
-    uint32_t tx_dig_data_padding_ctrl;
-    uint32_t tx_dig_data_padding_ctrl_1;
-    uint32_t tx_dig_pa_ctrl;
-} xcvr_settings;
-
 xcvr_lcl_hpm_cal_interp_t hpm_cal_2442_data;
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
@@ -956,18 +941,10 @@ static xcvrLclStatus_t XCVR_LCL_SetupTXDIGForRanging(const xcvr_lcl_rsm_config_t
         {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
     uint32_t temp;
-        
-        /* ************** */
-        /* Setup TXDIG for ranging */
-        /* ************** */
-        /* save for later restore */
-        xcvr_settings.tx_dig_data_padding_ctrl   = XCVR_TX_DIG->DATA_PADDING_CTRL;
-        xcvr_settings.tx_dig_data_padding_ctrl_1 = XCVR_TX_DIG->DATA_PADDING_CTRL_1;
-        xcvr_settings.tx_dig_pa_ctrl             = XCVR_TX_DIG->PA_CTRL;
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-        xcvr_settings.analog_tx_dac_pa = XCVR_ANALOG->TX_DAC_PA;
-#endif
-        
+    
+    /* ************** */
+    /* Setup TXDIG for ranging */
+    /* ************** */
     /* Setup PA ramping */
     status = XCVR_LCL_SetupPARamping(rsm_settings_ptr);
     if (status != gXcvrLclStatusSuccess)
@@ -977,12 +954,12 @@ static xcvrLclStatus_t XCVR_LCL_SetupTXDIGForRanging(const xcvr_lcl_rsm_config_t
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
         /* Ensure PA ramp analog is disabled since enabled by default (CONNRF-1412) */
-        temp = xcvr_settings.analog_tx_dac_pa;
+        temp = XCVR_ANALOG->TX_DAC_PA;
         temp &= ~(XCVR_ANALOG_TX_DAC_PA_PA_SMOOTHER_EN_MASK | XCVR_ANALOG_TX_DAC_PA_DAC_TRIM_CFBK_MASK); /* CONNRF-1474 zero out DAC_TRIM_CFBK */
         XCVR_ANALOG->TX_DAC_PA = temp;
 
         /* KW47 specific padding settings for modulation bandwidth testing */
-        temp = xcvr_settings.tx_dig_data_padding_ctrl;
+        temp = XCVR_TX_DIG->DATA_PADDING_CTRL;
         temp &= ~(XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_MASK | XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN_MASK |
                   XCVR_TX_DIG_DATA_PADDING_CTRL_DATA_PADDING_SEL_MASK);
         temp |=
@@ -991,7 +968,7 @@ static xcvrLclStatus_t XCVR_LCL_SetupTXDIGForRanging(const xcvr_lcl_rsm_config_t
                  XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN_MASK); /* Adjust PA RAMP timing using PAD_DLY */
         XCVR_TX_DIG->DATA_PADDING_CTRL = temp;
 
-        temp = xcvr_settings.tx_dig_data_padding_ctrl_1;
+        temp = XCVR_TX_DIG->DATA_PADDING_CTRL_1;
         temp &= ~(XCVR_TX_DIG_DATA_PADDING_CTRL_1_RAMP_UP_DLY_MASK |
                   XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY_MASK);
         temp |= XCVR_TX_DIG_DATA_PADDING_CTRL_1_RAMP_UP_DLY(TX_DIG_RAMP_UP_DLY);
@@ -1010,14 +987,14 @@ static xcvrLclStatus_t XCVR_LCL_SetupTXDIGForRanging(const xcvr_lcl_rsm_config_t
                                           XCVR_TX_DIG_DATA_PADDING_CTRL_2_DATA_PAD_PFDEV(0x233U);
 
 #else
-        temp = xcvr_settings.tx_dig_data_padding_ctrl;
+        temp = XCVR_TX_DIG->DATA_PADDING_CTRL;
         temp &= ~(XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_MASK | XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN_MASK |
                   XCVR_TX_DIG_DATA_PADDING_CTRL_DATA_PADDING_SEL_MASK);
         temp |= (XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY(RSM_PA_PAD_DLY_VAL) |
                  XCVR_TX_DIG_DATA_PADDING_CTRL_PAD_DLY_EN_MASK); /* Adjust PA RAMP timing using PAD_DLY */
         XCVR_TX_DIG->DATA_PADDING_CTRL = temp;
 
-        temp = xcvr_settings.tx_dig_data_padding_ctrl_1;
+        temp = XCVR_TX_DIG->DATA_PADDING_CTRL_1;
         temp &= ~(XCVR_TX_DIG_DATA_PADDING_CTRL_1_RAMP_UP_DLY_MASK |
                   XCVR_TX_DIG_DATA_PADDING_CTRL_1_TX_DATA_FLUSH_DLY_MASK);
         temp |= XCVR_TX_DIG_DATA_PADDING_CTRL_1_RAMP_UP_DLY(TX_DIG_RAMP_UP_DLY);
@@ -1108,14 +1085,6 @@ static xcvrLclStatus_t XCVR_LCL_SetupTSMForRanging(bool rate_is_2mbps)
 
         temp = XCVR_RX_DIG->DFT_CTRL;
 #if (1) /* TSM OVERRIDES for preserving PLL constant phase */
-        xcvr_settings.tsm_ovrd0 = XCVR_TSM->OVRD0;
-        xcvr_settings.tsm_ovrd1 = XCVR_TSM->OVRD1;
-        xcvr_settings.tsm_ovrd2 = XCVR_TSM->OVRD2;
-        xcvr_settings.tsm_ovrd3 = XCVR_TSM->OVRD3;
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
-        xcvr_settings.tsm_ovrd4 = XCVR_TSM->OVRD4;
-#endif
-
         temp |= XCVR_RX_DIG_DFT_CTRL_CGM_OVRD(4); // to maintain rx_dig_mixer_clk
 #endif
         XCVR_RX_DIG->DFT_CTRL = temp;
@@ -1332,7 +1301,7 @@ static void XCVR_LCL_SetupRSMForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
 
 static xcvrLclStatus_t XCVR_LCL_SetupPARamping(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 {
-    uint32_t temp = xcvr_settings.tx_dig_pa_ctrl;
+    uint32_t temp = XCVR_TX_DIG->PA_CTRL;
     temp &= ~(XCVR_TX_DIG_PA_CTRL_PA_RAMP_SEL_MASK);
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* KW47 supports improved PA ramping */
@@ -1632,25 +1601,7 @@ xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 
 void XCVR_LCL_RsmDeInit(void)
 {
-    /* Disable mask capability from RX DIG to allow independent IQ capture  */
-    XCVR_RX_DIG->CTRL1 &= ~(XCVR_RX_DIG_CTRL1_RX_IQ_PH_OUTPUT_COND_MASK);
-
-    /* Restore Tx_dig */
-    XCVR_TX_DIG->DATA_PADDING_CTRL   = xcvr_settings.tx_dig_data_padding_ctrl;
-    XCVR_TX_DIG->DATA_PADDING_CTRL_1 = xcvr_settings.tx_dig_data_padding_ctrl_1;
-    XCVR_TX_DIG->PA_CTRL             = xcvr_settings.tx_dig_pa_ctrl;
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-    XCVR_ANALOG->TX_DAC_PA = xcvr_settings.analog_tx_dac_pa;
-#endif
-
-    /* Restore TSM Overrides */
-    XCVR_TSM->OVRD0 = xcvr_settings.tsm_ovrd0;
-    XCVR_TSM->OVRD1 = xcvr_settings.tsm_ovrd1;
-    XCVR_TSM->OVRD2 = xcvr_settings.tsm_ovrd2;
-    XCVR_TSM->OVRD3 = xcvr_settings.tsm_ovrd3;
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN > 450)  
-    XCVR_TSM->OVRD4= xcvr_settings.tsm_ovrd4;
-#endif
+    /* All register backup and restores are handled in XCVR_LCL_RsmRegBackup() and XCVR_LCL_RsmRegRestore() */
 }
 
 xcvrLclStatus_t XCVR_LCL_Set_TSM_FastStart(XCVR_RSM_RXTX_MODE_T role, const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
@@ -1852,7 +1803,6 @@ const uint32_t tsm_fast_descrip_comp[TSM_DESCRIP_COUNT] = {
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 6U, &(XCVR_TSM->END_OF_SEQ)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 55U, &(XCVR_TSM->TIMING07))};
 
-#if (1)
 const uint32_t pll_rsm_fast_descrip_comp[PLL_DESCRIP_COUNT] = {
 #if (defined(BACKUP_RSM_LCL) && (BACKUP_RSM_LCL==1))    
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_MISC->DMA_CTRL)),
@@ -1865,26 +1815,17 @@ const uint32_t pll_rsm_fast_descrip_comp[PLL_DESCRIP_COUNT] = {
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 2U, &(XCVR_TX_DIG->DATA_PADDING_CTRL)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_TX_DIG->GFSK_CTRL)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 5U, &(XCVR_TX_DIG->PA_CTRL)),
+    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_ANALOG->TX_DAC_PA)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 3U, &(XCVR_PLL_DIG->HPM_BUMP)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_PLL_DIG->HPM_CTRL)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 3U, &(XCVR_PLL_DIG->HPM_SDM_RES)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 3U, &(XCVR_PLL_DIG->DELAY_MATCH)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_PLL_DIG->PLL_OFFSET_CTRL)),
-#if (0) /* This ordering of the descriptor causes a failure in the FPGA testing when polling for completion of the DMA \
-           transfer */
-    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 5U, &(XCVR_TSM->OVRD0)),
-    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 2U, &(XCVR_RX_DIG->CTRL1)),
-#else
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 2U, &(XCVR_RX_DIG->CTRL1)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 5U, &(XCVR_TSM->OVRD0)),
-#endif
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_RX_DIG->AGC_CTRL)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(XCVR_RX_DIG->RCCAL_CTRL1)),
     PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 1U, &(RADIO_CTRL->RF_CTRL))
-#else
-extern const uint32_t pll_rsm_fast_descrip_comp[1] = {
-    PR2IPS_DESCRIPTOR(PR2IPS_BURST_XFER, 5U, &(XCVR_TSM->OVRD0)),
-#endif
 };
 
 xcvrLclStatus_t XCVR_LCL_FastBackupRestore(uint32_t *desc_ptr,
@@ -2442,6 +2383,10 @@ xcvrLclStatus_t XCVR_LCL_RsmRegBackup(rsm_reg_backup_t *reg_backup_ptr)
         reg_backup_ptr->PA_RAMP_TBL2            = XCVR_TX_DIG->PA_RAMP_TBL2;
         reg_backup_ptr->PA_RAMP_TBL3            = XCVR_TX_DIG->PA_RAMP_TBL3;
 #endif
+        /* XCVR_ANALOG */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+        reg_backup_ptr->ANALOG_TX_DAC_PA = XCVR_ANALOG->TX_DAC_PA;
+#endif
         /* XCVR_PLL */
         status = XCVR_LCL_RsmPLLBackup(
             reg_backup_ptr); /* NULLPTR check in this routine should never fail since checked above */
@@ -2535,6 +2480,10 @@ xcvrLclStatus_t XCVR_LCL_RsmRegRestore(const rsm_reg_backup_t *reg_backup_ptr)
         XCVR_TX_DIG->PA_RAMP_TBL1 = reg_backup_ptr->PA_RAMP_TBL1;
         XCVR_TX_DIG->PA_RAMP_TBL2 = reg_backup_ptr->PA_RAMP_TBL2;
         XCVR_TX_DIG->PA_RAMP_TBL3 = reg_backup_ptr->PA_RAMP_TBL3;
+#endif
+        /* XCVR_ANALOG */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+        XCVR_ANALOG->TX_DAC_PA = reg_backup_ptr->ANALOG_TX_DAC_PA;
 #endif
         /* XCVR_PLL */
         status = XCVR_LCL_RsmPLLRestore(

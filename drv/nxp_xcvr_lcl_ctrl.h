@@ -770,6 +770,9 @@ typedef struct
 
     uint32_t XCVR_TX_DIG_PA_CTRL;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+    uint32_t ANALOG_TX_DAC_PA;
+#endif    
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
     uint32_t PA_RAMP_TBL0;
     uint32_t PA_RAMP_TBL1;
     uint32_t PA_RAMP_TBL2;
@@ -1116,10 +1119,11 @@ xcvrLclStatus_t XCVR_LCL_FastBackupRestore(uint32_t *desc_ptr,
 #define TSM_DESCRIP_COUNT (2)
 extern const uint32_t tsm_fast_descrip_comp[TSM_DESCRIP_COUNT]; /* Make descriptor visible extenally for validation */
 #if (defined(BACKUP_RSM_LCL) && (BACKUP_RSM_LCL == 1))
-#define PLL_DESCRIP_COUNT (18)
+#define RSM_LCL_ADD_DESCRIP_COUNT (4)
 #else
-#define PLL_DESCRIP_COUNT (15)
+#define RSM_LCL_ADD_DESCRIP_COUNT (0)
 #endif /* (defined(BACKUP_RSM_LCL) && (BACKUP_RSM_LCL==1))         */
+#define PLL_DESCRIP_COUNT (16+RSM_LCL_ADD_DESCRIP_COUNT)
 extern const uint32_t
     pll_rsm_fast_descrip_comp[PLL_DESCRIP_COUNT]; /* Make descriptor visible extenally for validation */
 #define BT2_DESCRIP_COUNT (5U)
