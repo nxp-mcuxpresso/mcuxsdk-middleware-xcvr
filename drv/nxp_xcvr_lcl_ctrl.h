@@ -1131,7 +1131,7 @@ extern const uint32_t tsm_fast_descrip_comp[TSM_DESCRIP_COUNT]; /* Make descript
 #else
 #define RSM_LCL_ADD_DESCRIP_COUNT (0)
 #endif /* (defined(BACKUP_RSM_LCL) && (BACKUP_RSM_LCL==1))         */
-#define PLL_DESCRIP_COUNT (19+RSM_LCL_ADD_DESCRIP_COUNT)
+#define PLL_DESCRIP_COUNT (21+RSM_LCL_ADD_DESCRIP_COUNT)
 extern const uint32_t
     pll_rsm_fast_descrip_comp[PLL_DESCRIP_COUNT]; /* Make descriptor visible extenally for validation */
 #define BT2_DESCRIP_COUNT (5U)
