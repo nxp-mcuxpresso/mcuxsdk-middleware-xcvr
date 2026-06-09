@@ -141,7 +141,6 @@ xcvr_lcl_hpm_cal_interp_t hpm_cal_2442_data;
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* Only applies to KW47 */
-#if defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1) 
 /*! @brief TX_SNR settings structure */
 typedef struct
 {
@@ -173,7 +172,6 @@ static xcvr_lcl_rsm_tx_snr_t tx_snr_settings[XCVR_RSM_PHY_INVALID][XCVR_RSM_TX_S
         {5U, 1U},   /* 27 dB LFSR SCALE and DIV */
     }
 };
-#endif /* defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)  */
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
 /*******************************************************************************
  * Prototypes
@@ -520,10 +518,6 @@ xcvrLclStatus_t XCVR_LCL_ValidateRsmSettings(const xcvr_lcl_rsm_config_t *rsm_se
         /* Phase compensation setting limit */
         tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->phase_comp_sel >= XCVR_RSM_PHASE_COMP_ERROR);
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */       
-#if defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)        
-        /* TX_SNR feature */
-        tmp_logic_sum +=  (uint32_t)(rsm_settings_ptr->tx_snr_setting >=  XCVR_RSM_TX_SNR_ERROR);
-#endif /* defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)  */
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
 
         if (tmp_logic_sum != 0U)  /* If any of the above logic statements is true then the argument is invalid */
@@ -1014,26 +1008,6 @@ static xcvrLclStatus_t XCVR_LCL_SetupTXDIGForRanging(const xcvr_lcl_rsm_config_t
         XCVR_TX_DIG->DATA_PADDING_CTRL_1 = temp;
         XCVR_TX_DIG->DATA_PADDING_CTRL_2 =XCVR_TX_DIG_DATA_PADDING_CTRL_2_DATA_PAD_MFDEV(0x1DCDU) |
                                           XCVR_TX_DIG_DATA_PADDING_CTRL_2_DATA_PAD_PFDEV(0x233U);
-
-        /* TX_SNR feature support */        
-#if defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1) 
-        temp = XCVR_TX_DIG->TXDIG_CTRL;
-        if (rsm_settings_ptr->tx_snr_setting == XCVR_RSM_TX_SNR_DISABLED)
-        {
-            temp &= ~(XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN_MASK); /* Disable the LFSR */
-        }
-        else
-        {
-            /* Update TXDIG_CTRL */
-            temp &= ~(XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV_MASK |
-                        XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE_MASK);
-            temp |= (XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN_MASK |
-                XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV(tx_snr_settings[rsm_settings_ptr->phy][rsm_settings_ptr->tx_snr_setting].lfsr_div) |
-                XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE(tx_snr_settings[rsm_settings_ptr->phy][rsm_settings_ptr->tx_snr_setting].lfsr_scale));
-        }
-        XCVR_TX_DIG->TXDIG_CTRL = temp;
-#endif /* defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)  */
-
 
 #else
         temp = xcvr_settings.tx_dig_data_padding_ctrl;
@@ -1561,6 +1535,39 @@ static void XCVR_LCL_ConfigureRxTxPhaseCompensation(const xcvr_lcl_rsm_config_t 
       }
 }
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) */
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) 
+xcvrLclStatus_t XCVR_LCL_ConfigureTxSnr(XCVR_RSM_TX_SNR_T tx_snr_setting, XCVR_RSM_PHY_T phy)
+{
+    uint32_t temp;
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+
+    if (tx_snr_setting < XCVR_RSM_TX_SNR_ERROR) /*  error check inputs */
+    {
+        /* TX_SNR feature support */        
+        temp = XCVR_TX_DIG->TXDIG_CTRL;
+        /* Clear all TX_SNR settings from temp register copy, implements the disable case */
+        temp &= ~(XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV_MASK |
+                    XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE_MASK |
+                    XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN_MASK);
+        /* If not disabled, make the new settings */
+        if (tx_snr_setting != XCVR_RSM_TX_SNR_DISABLED)
+        {
+            /* Update TXDIG_CTRL */
+            temp |= (XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_EN_MASK |
+                XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_DIV(tx_snr_settings[phy][tx_snr_setting].lfsr_div) |
+                XCVR_TX_DIG_TXDIG_CTRL_TX_MODULATOR_LFSR_SCALE(tx_snr_settings[phy][tx_snr_setting].lfsr_scale));
+        }
+        XCVR_TX_DIG->TXDIG_CTRL = temp;
+    }
+    else
+    {
+        status = gXcvrLclStatusInvalidArgs;
+    }
+
+    return status; 
+}
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
 
 xcvrLclStatus_t XCVR_LCL_RsmInit(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 {

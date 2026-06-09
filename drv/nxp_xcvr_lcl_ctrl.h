@@ -35,10 +35,6 @@ extern "C" {
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450) && \
     (RF_OSC_26MHZ == 0) /* RSM only supported on Gen 4.5 or higher radios & with RF_OSC = 32MHz */
 
-#ifndef SUPPORT_TX_SNR
-#define SUPPORT_TX_SNR      (1)
-#endif /* SUPPORT_TX_SNR */
-
 #ifndef XCVR_SKIP_RSM_SETTINGS_CHECK
 #define XCVR_SKIP_RSM_SETTINGS_CHECK (1)
 #endif /* XCVR_SKIP_RSM_SETTINGS_CHECK */
@@ -408,7 +404,6 @@ typedef enum
 } XCVR_RSM_PHASE_COMP_SEL_T;
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)  */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* Only applies to KW47 */
-#if defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)        
 /*! @brief TX_SNR levels supported */
 typedef enum
 {
@@ -419,7 +414,6 @@ typedef enum
     XCVR_RSM_TX_SNR_DISABLED = 4U, /*!< No SNR impairment */
     XCVR_RSM_TX_SNR_ERROR    = 5U, /*!< Error limit. */
 } XCVR_RSM_TX_SNR_T;
-#endif /* defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)  */
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
 /* Define callback function for RSM interrupt. */
 /*! *********************************************************************************
@@ -498,9 +492,6 @@ typedef struct
     bool enable_inpr;                     /*!< Choose whether Inline Phase Return feature should be enabled. */
     uint16_t hpm_cal_manual_val;  /*!< The value for HPM_CAL_FACTOR_MANUAL to be used when ::hpm_cal_mode uses the manual value (alone or in combination with PKT RAM values. */
     bool ant_permut_mode;  /* when set, antenna permutation is provided by RSM config in packet RAM and allow support up to 16 paths. Use False for radio_gen 4.70 */
-#if defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1) 
-    XCVR_RSM_TX_SNR_T tx_snr_setting;  /*!< Choose whether TX_SNR feature should be enabled (and the desired SNR value). */
-#endif /* defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)  */
 #endif                                    /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
     bool use_rccal_manual_override; /* when set, RCCAL from TSM seq. is ignored and manual value is used; when cleared, TSM RCCAL is active */
     uint8_t manual_rccal_value; /* unsigned 5 bit value used to override the RCCAL CODE when use_rccal_manual_override is true */
@@ -1263,6 +1254,22 @@ xcvrLclStatus_t XCVR_LCL_RsmRegBackup(rsm_reg_backup_t *reg_backup_ptr);
  *
  */
 xcvrLclStatus_t XCVR_LCL_RsmRegRestore(const rsm_reg_backup_t *reg_backup_ptr);
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
+/*!
+ * @brief Function to configure the TX SNR feature (including enable/disable).
+ *
+ * This function programs the TX SNR settings when one of the valid TX SNR levels is chosen. If
+ * DISABLED is chosen then the feature settings are cleared and the feature is disabled.
+ *
+ * @param tx_snr_setting the setting for the TX SNR feature (including DISABLED).
+ * @param phy the PHY in use.
+ *
+ * @return The status of the configuration process.
+ *
+ */
+xcvrLclStatus_t XCVR_LCL_ConfigureTxSnr(XCVR_RSM_TX_SNR_T tx_snr_setting, XCVR_RSM_PHY_T phy);
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)
 /*!
