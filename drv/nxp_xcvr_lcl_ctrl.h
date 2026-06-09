@@ -1127,7 +1127,7 @@ xcvrLclStatus_t XCVR_LCL_FastBackupRestore(uint32_t *desc_ptr,
 #define TSM_DESCRIP_COUNT (2)
 extern const uint32_t tsm_fast_descrip_comp[TSM_DESCRIP_COUNT]; /* Make descriptor visible extenally for validation */
 #if (defined(BACKUP_RSM_LCL) && (BACKUP_RSM_LCL == 1))
-#define RSM_LCL_ADD_DESCRIP_COUNT (4)
+#define RSM_LCL_ADD_DESCRIP_COUNT (5)
 #else
 #define RSM_LCL_ADD_DESCRIP_COUNT (0)
 #endif /* (defined(BACKUP_RSM_LCL) && (BACKUP_RSM_LCL==1))         */
