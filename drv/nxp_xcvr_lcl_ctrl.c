@@ -167,11 +167,11 @@ static xcvr_lcl_rsm_tx_snr_t tx_snr_settings[XCVR_RSM_PHY_INVALID][XCVR_RSM_TX_S
     },
     /* 2Mbps rate, BT=2.0 */
     {
-        {203U, 1U},  /* 18 dB LFSR SCALE and DIV */
-        {140U, 1U},  /* 21 dB LFSR SCALE and DIV */
-        {70U, 1U},  /* 24 dB LFSR SCALE and DIV */
-        {5U, 1U},  /* 27 dB LFSR SCALE and DIV */
-     }
+        {185U, 1U},  /* 18 dB LFSR SCALE and DIV */
+        {110U, 1U},  /* 21 dB LFSR SCALE and DIV */
+        {46U, 1U},  /* 24 dB LFSR SCALE and DIV */
+        {5U, 1U},   /* 27 dB LFSR SCALE and DIV */
+    }
 };
 #endif /* defined(SUPPORT_TX_SNR) && (SUPPORT_TX_SNR == 1)  */
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
@@ -3183,6 +3183,24 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
         hop_tbl_cfg_restore = (uint8_t)(((XCVR_PLL_DIG->CHAN_MAP & XCVR_PLL_DIG_CHAN_MAP_HOP_TBL_CFG_OVRD_MASK) >>
                                          XCVR_PLL_DIG_CHAN_MAP_HOP_TBL_CFG_OVRD_SHIFT)); /* used for later restore  */
         XCVR_LCL_RsmPLLInit(rate); /* Apply RSM PLL customizations */
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* KW47 Phase continuity configuration */
+        /* Backup registers changed by XCVR_LCL_EnaDividerSync() & XCVR_LCL_EnaPic() */
+        uint32_t tsm_timing54_restore = XCVR_TSM->TIMING54;
+        uint32_t tsm_timing55_restore = XCVR_TSM->TIMING55;
+        uint32_t tsm_timing56_restore = XCVR_TSM->TIMING56;
+        uint32_t tsm_timing57_restore = XCVR_TSM->TIMING57;
+        uint32_t tsm_timing58_restore = XCVR_TSM->TIMING58;
+        uint32_t tsm_timing59_restore = XCVR_TSM->TIMING59;
+        uint32_t tsm_timing60_restore = XCVR_TSM->TIMING60;
+        uint32_t tsm_timing61_restore = XCVR_TSM->TIMING61;
+
+        uint32_t analog_pll_restore = XCVR_ANALOG->PLL;
+
+        XCVR_LCL_EnaDividerSync(true); /* Enable dividers synchronization */
+        status = XCVR_LCL_EnaPic(XCVR_RSM_PIC_FAST_ONLY ,false); /* Enable PIC feature by default */
+
+        /* Restore at the end */
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
         if (rate != XCVR_RSM_RATE_1MBPS)
         {
             /* Force alternate data rate selection */
@@ -3395,6 +3413,20 @@ xcvrLclStatus_t XCVR_LCL_CalibratePll(const channel_num_t *hadm_chan_idx_list,
         /* Restore the setting for whether HPM_CAL happens in PLL or not */
         XCVR_PLL_DIG->HPM_CTRL    = temp_hpm_ctrl;
         XCVR_PLL_DIG->HPMCAL_CTRL = temp_hpmcal_ctrl;
+
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) /* KW47 Phase continuity configuration */
+        /* Restore */
+        XCVR_TSM->TIMING54 = tsm_timing54_restore;
+        XCVR_TSM->TIMING55 = tsm_timing55_restore;
+        XCVR_TSM->TIMING56 = tsm_timing56_restore;
+        XCVR_TSM->TIMING57 = tsm_timing57_restore;
+        XCVR_TSM->TIMING58 = tsm_timing58_restore;
+        XCVR_TSM->TIMING59 = tsm_timing59_restore;
+        XCVR_TSM->TIMING60 = tsm_timing60_restore;
+        XCVR_TSM->TIMING61 = tsm_timing61_restore;
+
+        XCVR_ANALOG->PLL = analog_pll_restore;
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  */
     }
 
     return status;
