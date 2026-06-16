@@ -654,46 +654,6 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLBackup(rsm_reg_backup_t *reg_backup_ptr)
     }
     else
     {
-#if (0)        /* This code belongs in XCVR_LCL_RsmRegBackup */
-        /* RSM and LCL registers backup - these registers only apply to RSM & LCL, they may be able to be retained
-         * during other radio modes */
-        reg_backup_ptr->XCVR_MISC_DMA_CTRL = XCVR_MISC->DMA_CTRL;
-        
-        reg_backup_ptr->XCVR_MISC_LCL_CFG0 = XCVR_MISC->LCL_CFG0;
-        reg_backup_ptr->XCVR_MISC_LCL_CFG1 = XCVR_MISC->LCL_CFG1;
-        reg_backup_ptr->XCVR_MISC_LCL_TX_CFG0 = XCVR_MISC->LCL_TX_CFG0;
-        reg_backup_ptr->XCVR_MISC_LCL_TX_CFG1 = XCVR_MISC->LCL_TX_CFG1;
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-        reg_backup_ptr->XCVR_MISC_RSM_CTRL6 = XCVR_MISC->RSM_CTRL6;
-#else
-        reg_backup_ptr->XCVR_MISC_LCL_TX_CFG2 = XCVR_MISC->LCL_TX_CFG2;
-#endif
-        reg_backup_ptr->XCVR_MISC_LCL_RX_CFG0 = XCVR_MISC->LCL_RX_CFG0;
-        reg_backup_ptr->XCVR_MISC_LCL_RX_CFG1 = XCVR_MISC->LCL_RX_CFG1;
-        reg_backup_ptr->XCVR_MISC_LCL_RX_CFG2 = XCVR_MISC->LCL_RX_CFG2;
-        reg_backup_ptr->XCVR_MISC_LCL_PM_MSB = XCVR_MISC->LCL_PM_MSB;
-        reg_backup_ptr->XCVR_MISC_LCL_PM_LSB = XCVR_MISC->LCL_PM_LSB;
-        reg_backup_ptr->XCVR_MISC_LCL_GPIO_CTRL0 = XCVR_MISC->LCL_GPIO_CTRL0;
-        reg_backup_ptr->XCVR_MISC_LCL_GPIO_CTRL1 = XCVR_MISC->LCL_GPIO_CTRL1;
-        reg_backup_ptr->XCVR_MISC_LCL_GPIO_CTRL2 = XCVR_MISC->LCL_GPIO_CTRL2;
-        reg_backup_ptr->XCVR_MISC_LCL_GPIO_CTRL3 = XCVR_MISC->LCL_GPIO_CTRL3;
-        reg_backup_ptr->XCVR_MISC_LCL_GPIO_CTRL4 = XCVR_MISC->LCL_GPIO_CTRL4;
-        reg_backup_ptr->XCVR_MISC_LCL_DMA_MASK_DELAY = XCVR_MISC->DMA_MASK_DELAY;
-        reg_backup_ptr->XCVR_MISC_LCL_DMA_MASK_PERIOD = XCVR_MISC->DMA_MASK_PERIOD;
-        
-        reg_backup_ptr->XCVR_MISC_RSM_CTRL0 = XCVR_MISC->RSM_CTRL0;
-        reg_backup_ptr->XCVR_MISC_RSM_CTRL1 = XCVR_MISC->RSM_CTRL1;
-        reg_backup_ptr->XCVR_MISC_RSM_CTRL2 = XCVR_MISC->RSM_CTRL2;
-        reg_backup_ptr->XCVR_MISC_RSM_CTRL3 = XCVR_MISC->RSM_CTRL3;
-        reg_backup_ptr->XCVR_MISC_RSM_CTRL4 = XCVR_MISC->RSM_CTRL4;
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-        reg_backup_ptr->XCVR_MISC_RSM_CTRL5 = XCVR_MISC->RSM_CTRL5;
-        reg_backup_ptr->XCVR_MISC_RSM_CTRL7 = XCVR_MISC->RSM_CTRL7;
-        
-        reg_backup_ptr->XCVR_MISC_RSM_INT_ENABLE = XCVR_MISC->RSM_INT_ENABLE;
-#endif
-#endif /* (defined(BACKUP_RSM_LCL) && (BACKUP_RSM_LCL==1))         */
-        
         /* PLL registers backup only - these registers need backup if corrupting PLL registers */
         reg_backup_ptr->XCVR_PLL_DIG_CHAN_MAP    = XCVR_PLL_DIG->CHAN_MAP;
         reg_backup_ptr->XCVR_PLL_DIG_CHAN_MAP_EXT = XCVR_PLL_DIG->CHAN_MAP_EXT;
@@ -711,7 +671,9 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLBackup(rsm_reg_backup_t *reg_backup_ptr)
         reg_backup_ptr->XCVR_PLL_OFFSET_CTRL =
             XCVR_PLL_DIG->PLL_OFFSET_CTRL; /* this register is backed up because CFO compensation can corrupt it */
         reg_backup_ptr->XCVR_PLL_DIG_PLL_DATARATE_CTRL = XCVR_PLL_DIG->PLL_DATARATE_CTRL;
+#if defined(BACKUP_DATARATE_OVRD1) &&  (BACKUP_DATARATE_OVRD1 == 1)
         reg_backup_ptr->XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL1 = XCVR_PLL_DIG->DATA_RATE_OVRD_CTRL1;
+#endif /* defined(BACKUP_DATARATE_OVRD1) &&  (BACKUP_DATARATE_OVRD1 == 1) */
         reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_TX_CTRL = XCVR_PLL_DIG->TUNING_CAP_TX_CTRL;
         reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_RX_CTRL = XCVR_PLL_DIG->TUNING_CAP_RX_CTRL;
         reg_backup_ptr->XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL2 = XCVR_PLL_DIG->DATA_RATE_OVRD_CTRL2;
@@ -742,47 +704,6 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLRestore(const rsm_reg_backup_t *reg_backup_ptr)
     }
     else
     {
-#if (0)        /* This code belongs in XCVR_LCL_RsmRegBackup */
-        /* RSM and LCL registers restore - these registers only apply to RSM & LCL, they may be able to be retained
-         * during other radio modes */
-        XCVR_MISC->DMA_CTRL = reg_backup_ptr->XCVR_MISC_DMA_CTRL; 
-        
-        XCVR_MISC->LCL_CFG0 = reg_backup_ptr->XCVR_MISC_LCL_CFG0;
-        XCVR_MISC->LCL_CFG1 = reg_backup_ptr->XCVR_MISC_LCL_CFG1;
-        XCVR_MISC->LCL_TX_CFG0 = reg_backup_ptr->XCVR_MISC_LCL_TX_CFG0;
-        XCVR_MISC->LCL_TX_CFG1 = reg_backup_ptr->XCVR_MISC_LCL_TX_CFG1;
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-        XCVR_MISC->RSM_CTRL6 = reg_backup_ptr->XCVR_MISC_RSM_CTRL6;
-#else
-        XCVR_MISC->LCL_TX_CFG2 = reg_backup_ptr->XCVR_MISC_LCL_TX_CFG2;
-#endif
-        XCVR_MISC->LCL_RX_CFG0 = reg_backup_ptr->XCVR_MISC_LCL_RX_CFG0;
-        XCVR_MISC->LCL_RX_CFG1 = reg_backup_ptr->XCVR_MISC_LCL_RX_CFG1;
-        XCVR_MISC->LCL_RX_CFG2 = reg_backup_ptr->XCVR_MISC_LCL_RX_CFG2;
-        XCVR_MISC->LCL_PM_MSB = reg_backup_ptr->XCVR_MISC_LCL_PM_MSB;
-        XCVR_MISC->LCL_PM_LSB = reg_backup_ptr->XCVR_MISC_LCL_PM_LSB;
-        XCVR_MISC->LCL_GPIO_CTRL0 = reg_backup_ptr->XCVR_MISC_LCL_GPIO_CTRL0;
-        XCVR_MISC->LCL_GPIO_CTRL1 = reg_backup_ptr->XCVR_MISC_LCL_GPIO_CTRL1;
-        XCVR_MISC->LCL_GPIO_CTRL2 = reg_backup_ptr->XCVR_MISC_LCL_GPIO_CTRL2;
-        XCVR_MISC->LCL_GPIO_CTRL3 = reg_backup_ptr->XCVR_MISC_LCL_GPIO_CTRL3;
-        XCVR_MISC->LCL_GPIO_CTRL4 = reg_backup_ptr->XCVR_MISC_LCL_GPIO_CTRL4;
-        XCVR_MISC->DMA_MASK_DELAY = reg_backup_ptr->XCVR_MISC_LCL_DMA_MASK_DELAY;
-        XCVR_MISC->DMA_MASK_PERIOD = reg_backup_ptr->XCVR_MISC_LCL_DMA_MASK_PERIOD;
-        
-        XCVR_MISC->RSM_CTRL0 = reg_backup_ptr->XCVR_MISC_RSM_CTRL0;
-        XCVR_MISC->RSM_CTRL1 = reg_backup_ptr->XCVR_MISC_RSM_CTRL1;
-        XCVR_MISC->RSM_CTRL2 = reg_backup_ptr->XCVR_MISC_RSM_CTRL2;
-        XCVR_MISC->RSM_CTRL3 = reg_backup_ptr->XCVR_MISC_RSM_CTRL3;
-        XCVR_MISC->RSM_CTRL4 = reg_backup_ptr->XCVR_MISC_RSM_CTRL4;
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-        XCVR_MISC->RSM_CTRL5 = reg_backup_ptr->XCVR_MISC_RSM_CTRL5;
-        XCVR_MISC->RSM_CTRL7 = reg_backup_ptr->XCVR_MISC_RSM_CTRL7;
-        
-        XCVR_MISC->RSM_INT_ENABLE = reg_backup_ptr->XCVR_MISC_RSM_INT_ENABLE;
-#endif
-#endif /* (defined(BACKUP_RSM_LCL) && (BACKUP_RSM_LCL==1))         */
-
-        
         /* PLL registers restore - these registers need restore if corrupting PLL registers */
         
         /* restore all changed registers from backup */
@@ -805,7 +726,9 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLRestore(const rsm_reg_backup_t *reg_backup_ptr)
         XCVR_PLL_DIG->TUNING_CAP_TX_CTRL = reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_TX_CTRL;
         XCVR_PLL_DIG->TUNING_CAP_RX_CTRL = reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_RX_CTRL;
         XCVR_PLL_DIG->PLL_DATARATE_CTRL = reg_backup_ptr->XCVR_PLL_DIG_PLL_DATARATE_CTRL;
+#if defined(BACKUP_DATARATE_OVRD1) &&  (BACKUP_DATARATE_OVRD1 == 1)
         XCVR_PLL_DIG->DATA_RATE_OVRD_CTRL1 = reg_backup_ptr->XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL1;
+#endif /* defined(BACKUP_DATARATE_OVRD1) &&  (BACKUP_DATARATE_OVRD1 == 1) */
         XCVR_PLL_DIG->DATA_RATE_OVRD_CTRL2 = reg_backup_ptr->XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL2;
 
         XCVR_MISC->IPS_FO_DRS0_DATA[0U] = reg_backup_ptr->XCVR_MISC_IPS_FO_DRS0_DATA_0; /* Restore the HPM_COUNT_ADJUST to the default value for non_localization context. */
@@ -2365,7 +2288,7 @@ xcvrLclStatus_t XCVR_LCL_RsmRegBackup(rsm_reg_backup_t *reg_backup_ptr)
         reg_backup_ptr->XCVR_MISC_RSM_CTRL4           = XCVR_MISC->RSM_CTRL4;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
         reg_backup_ptr->XCVR_MISC_RSM_CTRL5           = XCVR_MISC->RSM_CTRL5;
-        reg_backup_ptr->XCVR_MISC_RSM_CTRL6           = XCVR_MISC->RSM_CTRL6;
+        /* See backup above for RSM_CTRL6 */
         reg_backup_ptr->XCVR_MISC_RSM_CTRL7           = XCVR_MISC->RSM_CTRL7;
         reg_backup_ptr->XCVR_MISC_RSM_INT_ENABLE   = XCVR_MISC->RSM_INT_ENABLE;
 #endif
@@ -2467,7 +2390,7 @@ xcvrLclStatus_t XCVR_LCL_RsmRegRestore(const rsm_reg_backup_t *reg_backup_ptr)
         XCVR_MISC->RSM_CTRL4           = reg_backup_ptr->XCVR_MISC_RSM_CTRL4;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
         XCVR_MISC->RSM_CTRL5 = reg_backup_ptr->XCVR_MISC_RSM_CTRL5;
-        XCVR_MISC->RSM_CTRL6 = reg_backup_ptr->XCVR_MISC_RSM_CTRL6;
+        /* See restore above for RSM_CTRL6 */
         XCVR_MISC->RSM_CTRL7 = reg_backup_ptr->XCVR_MISC_RSM_CTRL7;
         XCVR_MISC->RSM_INT_ENABLE = reg_backup_ptr->XCVR_MISC_RSM_INT_ENABLE;
 #endif
@@ -2516,7 +2439,7 @@ xcvrLclStatus_t XCVR_LCL_RsmRegRestore(const rsm_reg_backup_t *reg_backup_ptr)
         XCVR_RX_DIG->RCCAL_CTRL1 = reg_backup_ptr->XCVR_RX_DIG_RCCAL_CTRL1;
         XCVR_RX_DIG->DFT_CTRL    = reg_backup_ptr->XCVR_RX_DIG_DFT_CTRL;
         XCVR_RX_DIG->CTRL1       = reg_backup_ptr->XCVR_RX_DIG_CTRL1;
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN > 450)
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
         XCVR_RX_DIG->AGC_CTRL = reg_backup_ptr->XCVR_RX_DIG_AGC_CTRL;
 #endif
         XCVR_RX_DIG->CTRL0_DRS = reg_backup_ptr->XCVR_RX_DIG_CTRL0_DRS;
