@@ -2740,6 +2740,69 @@ xcvrLclStatus_t XCVR_LCL_ValidateLclSettings(xcvr_lcl_rsm_config_t *rsm_settings
     return status;
 }
 
+/* Calculate TX delay offset and add_up for PA ramping or centered antenna switching.
+ * Returns computed offset (in samples) and add_up adjustment via output pointers. */
+static void XCVR_LCL_CalcPaRampingOffsets(uint8_t  temp_tx_sw_ena,
+                                          uint8_t  t_ramp_usec,
+                                          uint16_t t_sw,
+                                          uint32_t sampling_rate_factor,
+                                          uint8_t  tx_data_flush_delay,
+                                          uint32_t *offset_out,
+                                          uint8_t  *add_up_out)
+{
+    if (temp_tx_sw_ena == 1U)
+    {
+        /* PA ramping occurs at the end of T_PM + TX_FLUSH_DELAY.
+           Not possible to activate PA ramping with T_SW < TX_DATA_FLUSH_DELAY + 2*pa_ramp_duration. */
+        *offset_out = (((uint32_t)tx_data_flush_delay + (uint32_t)t_ramp_usec) * (TX_SAMPLING_RATE * sampling_rate_factor));
+        if ((2U * t_ramp_usec) > (uint8_t)t_sw)
+        {
+            *add_up_out = 0U;
+        }
+        else
+        {
+            /* T_SW is <= 10; t_ramp_usec is <= 4 */
+            uint8_t add_up = ((uint8_t)t_sw - (2U * t_ramp_usec));
+            add_up = (add_up > 7U ? 7U : add_up);           /* saturate to 7 maximum */
+            add_up = (add_up > 2U ? (add_up - 2U) : 0U);   /* saturate to 0 minimum */
+            *add_up_out = add_up;
+        }
+    }
+    else
+    {
+        /* No PA ramping during T_SW. Antenna switching can be adjusted without constraint (centered). */
+        *offset_out  = T_SW_TX_DELAY_OFFSET * TX_SAMPLING_RATE * sampling_rate_factor;
+        *add_up_out  = 0U;
+    }
+}
+
+/* Map t_capture selector to the DMA mask centering value.
+ * Returns gXcvrLclStatusInvalidArgs if t_capture is not a recognised value. */
+static xcvrLclStatus_t XCVR_LCL_GetDmaMaskCenter(XCVR_RSM_T_CAPTURE_SEL_T t_capture, uint32_t *center_val_out)
+{
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    switch (t_capture)
+    {
+        case XCVR_RSM_T_CAPTURE_652_SEL:
+        case XCVR_RSM_T_CAPTURE_40_SEL:
+            *center_val_out = lclDmaMask32usecCenter;
+            break;
+        case XCVR_RSM_T_CAPTURE_20_SEL:
+            *center_val_out = lclDmaMask16usecCenter;
+            break;
+#if defined(LCL_SUPPORT_10USEC_T_CAPTURE) && (LCL_SUPPORT_10USEC_T_CAPTURE == 1)
+        case XCVR_RSM_T_CAPTURE_10_SEL:
+            *center_val_out = lclDmaMask8usecCenter;
+            break;
+#endif  /* defined(LCL_SUPPORT_10USEC_T_CAPTURE) && (LCL_SUPPORT_10USEC_T_CAPTURE == 1) */
+        default:
+            *center_val_out = lclDmaMaskNoCenter;
+            status = gXcvrLclStatusInvalidArgs;
+            break;
+    }
+    return status;
+}
+
 xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
                                         XCVR_RSM_T_CAPTURE_SEL_T t_capture,
                                         uint8_t *toneAntennaIDs_p,
@@ -2802,32 +2865,8 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
         uint8_t t_ramp_usec =
             (uint8_t)(rsm_settings_ptr->pa_ramp_time); /* Actual PA ramping time in usec; Valid values are 1, 2, 3, 4
                                                           (note: 3 requires reprogramming PA ramping) */
-        if (temp_tx_sw_ena == 1U)
-        {
-            /* TODO: handle analog PA ramping as the duration is shorter */
-            /* Note: PA ramping occurs at the end of T_PM + TX_FLUSH_DELAY.
-               So it's not possible to active PA ramping with T_SW less than TX_DATA_FLUSH_DELAY + 2*pa_ramp_duration.
-             */
-            offset = (((uint32_t)tx_data_flush_delay + (uint32_t)t_ramp_usec) * (TX_SAMPLING_RATE*sampling_rate_factor));
-
-            if ((2U * t_ramp_usec) > (uint8_t)t_sw)
-            {
-                add_up = 0U;
-            }
-            else
-            {
-            /* T_SW is <= 10; t_ramp_usec is <= 4 */
-                add_up = ((uint8_t)t_sw - (2U * t_ramp_usec));
-                add_up = (add_up > 7U ? 7U : add_up); /* saturate to 7 maximum */
-                add_up = (add_up > 2U ? (add_up - 2U) : 0U); /* saturate to 0 minimum */
-            }
-        }
-        else
-        {
-            /* No PA ramping during T_SW. Antenna switching can be adjusted without constraint (centered) */
-            offset = T_SW_TX_DELAY_OFFSET * TX_SAMPLING_RATE * sampling_rate_factor;
-            add_up = 0U;
-        }
+        XCVR_LCL_CalcPaRampingOffsets(temp_tx_sw_ena, t_ramp_usec, t_sw, sampling_rate_factor,
+                                      tx_data_flush_delay, &offset, &add_up);
 
         /* ensure divisions do not have remainder */
         if ((rsm_settings_ptr->op_mode != XCVR_RSM_SQTE_STABLE_PHASE_TEST_MODE) &&
@@ -2953,25 +2992,9 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
             /* DMA mask centering & TQI setup */
             temp = XCVR_MISC->DMA_MASK_CTRL;
             temp &= ~(XCVR_MISC_DMA_MASK_CTRL_DMA_MASK_CENTER_MASK);
-            switch (t_capture)
-            {
-                case XCVR_RSM_T_CAPTURE_652_SEL:
-                case XCVR_RSM_T_CAPTURE_40_SEL:
-                    temp |= XCVR_MISC_DMA_MASK_CTRL_DMA_MASK_CENTER(lclDmaMask32usecCenter);
-                    break;
-                case XCVR_RSM_T_CAPTURE_20_SEL:
-                    temp |= XCVR_MISC_DMA_MASK_CTRL_DMA_MASK_CENTER(lclDmaMask16usecCenter);
-                    break;
-#if defined(LCL_SUPPORT_10USEC_T_CAPTURE) && (LCL_SUPPORT_10USEC_T_CAPTURE == 1)
-                case XCVR_RSM_T_CAPTURE_10_SEL:
-                    temp |= XCVR_MISC_DMA_MASK_CTRL_DMA_MASK_CENTER(lclDmaMask8usecCenter);
-                    break;
-#endif  /* defined(LCL_SUPPORT_10USEC_T_CAPTURE) && (LCL_SUPPORT_10USEC_T_CAPTURE == 1) */
-                default:
-                    temp |= XCVR_MISC_DMA_MASK_CTRL_DMA_MASK_CENTER(lclDmaMaskNoCenter);
-                    status = gXcvrLclStatusInvalidArgs;
-                    break;
-            }
+            uint32_t dma_center_val;
+            status = XCVR_LCL_GetDmaMaskCenter(t_capture, &dma_center_val);
+            temp |= XCVR_MISC_DMA_MASK_CTRL_DMA_MASK_CENTER(dma_center_val);
             /* KW47 HW supports max 16 average window size for TQI (impacted case: 2Mbps & t_pm=40) */
             uint32_t iq_depth_val = (uint32_t)MIN(((uint32_t)(rsm_settings_ptr->averaging_win) - 1U), 4U);
             XCVR_MISC->DMA_MASK_CTRL = temp;
