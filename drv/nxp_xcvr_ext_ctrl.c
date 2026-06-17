@@ -1532,6 +1532,78 @@ xcvrLclStatus_t XCVR_LCL_AntennaSwitchInit(lclRxTxMode_t mode, const lclAntennaS
     return status;
 }
 
+/* Map a raw RX_ANT_TRIG_SEL register value to the corresponding lclRxTrigger_t enum. */
+static lclRxTrigger_t XCVR_LCL_RawToRxTrigger(uint8_t raw)
+{
+    lclRxTrigger_t trig;
+    switch (raw)
+    {
+        case 0U:
+            trig = lclRxTriggerSoftware;
+            break;
+        case 1U:
+            trig = lclRxTriggerPatternFound;
+            break;
+        case 2U:
+            trig = lclRxTriggerCrcComplete;
+            break;
+        case 3U:
+            trig = lclRxTriggerCrcPass;
+            break;
+        case 4U:
+            trig = lclRxTriggerCtePresent;
+            break;
+        case 5U:
+            trig = lclRxTriggerAccessAddressFound;
+            break;
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450)
+        case 6U:
+            trig = lclTxTriggerRsmLclRxTrig;
+            break;
+#endif /* #if defined(RADIO_IS_GEN_4P5) */
+        default:
+            trig = lclRxTriggerInvalid;
+            break;
+    }
+    return trig;
+}
+
+/* Map a raw TX_ANT_TRIG_SEL register value to the corresponding lclTxTrigger_t enum. */
+static lclTxTrigger_t XCVR_LCL_RawToTxTrigger(uint8_t raw)
+{
+    lclTxTrigger_t trig;
+    switch (raw)
+    {
+        case 0U:
+            trig = lclTxTriggerSoftware;
+            break;
+        case 1U:
+            trig = lclTxTriggerPatternFound;
+            break;
+        case 2U:
+            trig = lclTxTriggerCrcComplete;
+            break;
+        case 3U:
+            trig = lclTxTriggerPaWuComplete;
+            break;
+        case 4U:
+            trig = lclTxTriggerRbmeTxDonePre;
+            break;
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450)
+        case 5U:
+            trig = lclTxTriggerBtleCteEn;
+            break;
+        case 6U:
+            trig = lclTxTriggerRsmLclTxTrig;
+            break;
+#endif /* #if defined(RADIO_IS_GEN_4P5) */
+        default:
+            trig = lclTxTriggerInvalid;
+            break;
+    }
+    return trig;
+}
+
 xcvrLclStatus_t XCVR_LCL_AntennaSwitchRead(lclRxTxMode_t mode, lclAntennaSwitchingPatternConfig_t *pConfig)
 {
     xcvrLclStatus_t status;
@@ -1565,35 +1637,7 @@ xcvrLclStatus_t XCVR_LCL_AntennaSwitchRead(lclRxTxMode_t mode, lclAntennaSwitchi
             /* Read trigger settings */
             temp = (uint8_t)((XCVR_MISC->LCL_RX_CFG1 & XCVR_MISC_LCL_RX_CFG1_RX_ANT_TRIG_SEL_MASK) >>
                              XCVR_MISC_LCL_RX_CFG1_RX_ANT_TRIG_SEL_SHIFT);
-            switch (temp)
-            {
-                case 0U:
-                    pConfig->rxTrig = lclRxTriggerSoftware;
-                    break;
-                case 1U:
-                    pConfig->rxTrig = lclRxTriggerPatternFound;
-                    break;
-                case 2U:
-                    pConfig->rxTrig = lclRxTriggerCrcComplete;
-                    break;
-                case 3U:
-                    pConfig->rxTrig = lclRxTriggerCrcPass;
-                    break;
-                case 4U:
-                    pConfig->rxTrig = lclRxTriggerCtePresent;
-                    break;
-                case 5U:
-                    pConfig->rxTrig = lclRxTriggerAccessAddressFound;
-                    break;
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450)
-                case 6U:
-                    pConfig->rxTrig = lclTxTriggerRsmLclRxTrig;
-                    break;
-#endif /* #if defined(RADIO_IS_GEN_4P5) */
-                default:
-                    pConfig->rxTrig = lclRxTriggerInvalid;
-                    break;
-            }
+            pConfig->rxTrig = XCVR_LCL_RawToRxTrigger(temp);
 
             /* Read number of samples per interval */
             pConfig->samplesPerInterval = (uint8_t)((XCVR_MISC->LCL_RX_CFG1 & XCVR_MISC_LCL_RX_CFG1_RX_SPINT_MASK) >>
@@ -1639,35 +1683,7 @@ xcvrLclStatus_t XCVR_LCL_AntennaSwitchRead(lclRxTxMode_t mode, lclAntennaSwitchi
             /* Read trigger settings */
             temp = (uint8_t)(((uint32_t)XCVR_MISC->LCL_TX_CFG1 & XCVR_MISC_LCL_TX_CFG1_TX_ANT_TRIG_SEL_MASK) >>
                              XCVR_MISC_LCL_TX_CFG1_TX_ANT_TRIG_SEL_SHIFT);
-            switch (temp)
-            {
-                case 0U:
-                    pConfig->txTrig = lclTxTriggerSoftware;
-                    break;
-                case 1U:
-                    pConfig->txTrig = lclTxTriggerPatternFound;
-                    break;
-                case 2U:
-                    pConfig->txTrig = lclTxTriggerCrcComplete;
-                    break;
-                case 3U:
-                    pConfig->txTrig = lclTxTriggerPaWuComplete;
-                    break;
-                case 4U:
-                    pConfig->txTrig = lclTxTriggerRbmeTxDonePre;
-                    break;
-#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 450)
-                case 5U:
-                    pConfig->txTrig = lclTxTriggerBtleCteEn;
-                    break;
-                case 6U:
-                    pConfig->txTrig = lclTxTriggerRsmLclTxTrig;
-                    break;
-#endif /* #if defined(RADIO_IS_GEN_4P5) */
-                default:
-                    pConfig->txTrig = lclTxTriggerInvalid;
-                    break;
-            }
+            pConfig->txTrig = XCVR_LCL_RawToTxTrigger(temp);
 
             /* Read number of samples per interval */
             pConfig->samplesPerInterval = (uint8_t)((XCVR_MISC->LCL_TX_CFG1 & XCVR_MISC_LCL_TX_CFG1_TX_SPINT_MASK) >>
