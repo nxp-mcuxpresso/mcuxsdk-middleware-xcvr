@@ -922,24 +922,36 @@ xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format
                                                 uint8_t *result_size_words);
 
 /*!
- * @brief Function to validate the information defined for a Channel Sounding subevent.
+ * @brief Function to validate the pointer fields and step count defined for a Channel Sounding subevent.
  *
- * This function takes in information about a complete Channel Sounding subevent and validates that various pointers are
- * not NULL and the sequence will fit within the defined buffer size. It does not check this buffer size can fit within
- * a particular area of PKT RAM but just checks the sequence length (in words) is smaller than a defined size.
+ * Checks that subevent_info_ptr is not NULL, that all required list pointers within the structure are
+ * not NULL, and that num_steps is in the valid range (1 to 127).
+ *
+ * @param[in] subevent_info_ptr Pointer to the information describing a subevent (all steps).
+ *
+ * @return The status of the validation check on the subevent info.
+ *
+ */
+xcvrLclStatus_t XCVR_LCL_ValidateSubeventInfo(cs_subevent_info_t *subevent_info_ptr);
+
+/*!
+ * @brief Function to validate the buffer sizes required for a Channel Sounding subevent.
+ *
+ * Sequences through all steps in the subevent, accumulates the total configuration and result
+ * word counts, and verifies that both totals fit within the supplied PKT RAM buffer sizes.
  *
  * @param[in] subevent_info_ptr Pointer to the information describing a subevent (all steps).
  * @param[in] rsm_settings_ptr Pointer to the information describing RSM settings (all steps).
  * @param[in] pkt_ram_cfg_buffer_sz_words The number of words allocated to storage of configuration step data.
  * @param[in] pkt_ram_res_buffer_sz_words The number of words allocated to storage of result step data.
  *
- * @return The status of the validation check on the subevent info.
+ * @return The status of the buffer size validation check on the subevent info.
  *
  */
-xcvrLclStatus_t XCVR_LCL_ValidateSubeventInfo(cs_subevent_info_t *subevent_info_ptr,
-                                              xcvr_lcl_rsm_config_t * rsm_settings_ptr,
-                                              uint16_t pkt_ram_cfg_buffer_sz_words,
-                                              uint16_t pkt_ram_res_buffer_sz_words);
+xcvrLclStatus_t XCVR_LCL_ValidateSubeventBuffSz(cs_subevent_info_t *subevent_info_ptr,
+                                                 xcvr_lcl_rsm_config_t *rsm_settings_ptr,
+                                                 uint16_t pkt_ram_cfg_buffer_sz_words,
+                                                 uint16_t pkt_ram_res_buffer_sz_words);
 
 /*!
  * @brief Function to program configuration steps into PKT RAM buffer for a complete subevent.

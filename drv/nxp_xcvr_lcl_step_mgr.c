@@ -431,11 +431,11 @@ xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format
     return status;
 }
 
-xcvrLclStatus_t XCVR_LCL_ValidateSubeventInfo(cs_subevent_info_t * subevent_info_ptr, xcvr_lcl_rsm_config_t * rsm_settings_ptr, uint16_t pkt_ram_cfg_buffer_sz_words, uint16_t pkt_ram_res_buffer_sz_words)
+xcvrLclStatus_t XCVR_LCL_ValidateSubeventInfo(cs_subevent_info_t * subevent_info_ptr)
 {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
     /* Input pointer is not NULLPTR */
-    if ((subevent_info_ptr == NULLPTR) || (rsm_settings_ptr == NULLPTR))
+    if (subevent_info_ptr == NULLPTR)
     {
         status = gXcvrLclStatusInvalidArgs;
     }
@@ -457,38 +457,49 @@ xcvrLclStatus_t XCVR_LCL_ValidateSubeventInfo(cs_subevent_info_t * subevent_info
         {
             status = gXcvrLclStatusInvalidArgs;
         }
+    }
 
-        /* sequence through steps and count the size of all steps */
+    return status;
+}
+
+xcvrLclStatus_t XCVR_LCL_ValidateSubeventBuffSz(cs_subevent_info_t * subevent_info_ptr, xcvr_lcl_rsm_config_t * rsm_settings_ptr, uint16_t pkt_ram_cfg_buffer_sz_words, uint16_t pkt_ram_res_buffer_sz_words)
+{
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    /* Input pointers are not NULLPTR */
+    if ((subevent_info_ptr == NULLPTR) || (rsm_settings_ptr == NULLPTR))
+    {
+        status = gXcvrLclStatusInvalidArgs;
+    }
+    else
+    {
+        /* Sequence through steps and count the total size of all steps */
+        uint8_t i;
+        XCVR_RSM_FSTEP_TYPE_T * step_type_ptr = subevent_info_ptr->step_type;
+        uint16_t total_cfg_sz = 0U;
+        uint16_t total_res_sz = 0U;
+        uint8_t res_mult_factor = (subevent_info_ptr->is_sniffer_mode ? 2U : 1U); /* Multiplication factor for results size when in sniffer mode */
+        for (i=0U; i<(subevent_info_ptr->num_steps); i++)
+        {
+            uint8_t cfg_sz;
+            uint8_t res_sz;
+            xcvrLclStatus_t temp_status = XCVR_LCL_CalcConfigResult_Size(*step_type_ptr, rsm_settings_ptr, &cfg_sz, &res_sz);
+            if (temp_status == gXcvrLclStatusSuccess)
+            {
+                total_cfg_sz += cfg_sz;
+                total_res_sz += (uint8_t)(res_sz * res_mult_factor);
+            }
+            else
+            {
+                status = gXcvrLclStatusFail;
+                break;
+            }
+            step_type_ptr++;
+        }
         if (status == gXcvrLclStatusSuccess)
         {
-            uint8_t i;
-            XCVR_RSM_FSTEP_TYPE_T * step_type_ptr = subevent_info_ptr->step_type;
-            uint16_t total_cfg_sz = 0U;
-            uint16_t total_res_sz = 0U;
-            uint8_t res_mult_factor = (subevent_info_ptr->is_sniffer_mode ? 2U : 1U); /* Multiplication factor for results size when in sniffer mode */
-            for (i=0;i<(subevent_info_ptr->num_steps);i++)
+            if ((total_cfg_sz > pkt_ram_cfg_buffer_sz_words) || (total_res_sz > pkt_ram_res_buffer_sz_words))
             {
-                uint8_t cfg_sz;
-                uint8_t res_sz;
-                xcvrLclStatus_t temp_status = XCVR_LCL_CalcConfigResult_Size(*step_type_ptr, rsm_settings_ptr, &cfg_sz, &res_sz) ;
-                if (temp_status == gXcvrLclStatusSuccess)
-                {
-                    total_cfg_sz += cfg_sz;
-                    total_res_sz += (uint8_t)(res_sz*res_mult_factor);
-                }
-                else
-                {
-                    status = gXcvrLclStatusFail;
-                    break;
-                }
-                step_type_ptr++;
-            }
-            if (status == gXcvrLclStatusSuccess)
-            {
-                if ((total_cfg_sz  > pkt_ram_cfg_buffer_sz_words) || (total_res_sz  > pkt_ram_res_buffer_sz_words))
-                {
-                    status = gXcvrLclStatusInvalidLength;
-                }
+                status = gXcvrLclStatusInvalidLength;
             }
         }
     }
@@ -510,6 +521,11 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
         /* Check that channel index is valid (each step) */
         /* Check HPM CAL value doesn't exceed the bitfield size  (each step) */
 #endif /* defined(CHECK_FSTEP_ERRORS) */
+        status = XCVR_LCL_ValidateSubeventInfo(subevent_info_ptr);
+        if (status != gXcvrLclStatusSuccess)
+        {
+            return status;
+        }
         /* Program each step into the PKT RAM or system RAM starting at the pkt_ram_buffer_offset_words location */
         /* Must use pointers rather than arrays for the input streams because they won't track exactly with step number */
         bool load_directly_to_pkt_ram = (sys_ram_ptr == NULLPTR); /* If sys_ram_ptr is not NULL then load to system RAM instead of PKT RAM */
