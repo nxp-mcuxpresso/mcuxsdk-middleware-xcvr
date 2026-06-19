@@ -592,23 +592,12 @@ xcvrTrimStatus_t XCVR_TRIM_MeasDcResid(xcvr_fine_dc_trim_t * fine_offsets)
             for (i= 0U;i<NUM_IQ_SAMPLES;i++)
             {
               /* Lower 4 bits are not part of IQ value. Conversion to int16_t works because IQ is in top 12 bits */
-              #if (0)
-              temp_iq = *sample_ptr;  
-              temp_iq = temp_iq/IQ_UNPACK_SCALE;  /* This integer division also removes the 5 LSbits that are not part of the IQ value */
+              temp_iq = (int16_t)(*sample_ptr / IQ_UNPACK_SCALE);  /* This integer division also removes the 5 LSbits that are not part of the IQ value */
               i_sum += (int32_t)(temp_iq);
               sample_ptr++;
-              temp_iq = *sample_ptr;  
-              temp_iq = temp_iq/IQ_UNPACK_SCALE;  /* This integer division also removes the 5  LSbits that are not part of the IQ value */
+              temp_iq = (int16_t)(*sample_ptr / IQ_UNPACK_SCALE);  /* This integer division also removes the 5 LSbits that are not part of the IQ value */
               q_sum += (int32_t)(temp_iq);
-              sample_ptr++;          
-              #else
-                temp_iq = (int16_t)(*sample_ptr / IQ_UNPACK_SCALE);  /* This integer division also removes the 5 LSbits that are not part of the IQ value */
-                i_sum += (int32_t)(temp_iq);
-                sample_ptr++;
-                temp_iq = (int16_t)(*sample_ptr / IQ_UNPACK_SCALE);  /* This integer division also removes the 5 LSbits that are not part of the IQ value */
-                q_sum += (int32_t)(temp_iq);
-                sample_ptr++;
-              #endif
+              sample_ptr++;
             }
             /* Calculate residual values from the averages unsigned 7 bits stored in uint8_t */       
             i_sum = i_sum / (int32_t)NUM_IQ_SAMPLES; /* Average is performed  */
@@ -1332,13 +1321,21 @@ void IQMCRunTrials(xcvr_iqmc_trials_t *trials_data, uint8_t num_trials)
         /* Read Calibration Trial Results and save in Trial Value Buffers */
         temp = XCVR_RX_DIG->IQMC_CAL;
 
+#if defined(XCVR_IQMC_SAVE_TRIALS)
         trials_data->IQMC_gain_cal_trials[cnt] =
             (uint16_t)((temp & XCVR_RX_DIG_IQMC_CAL_IQMC_GAIN_ADJ_MASK) >> XCVR_RX_DIG_IQMC_CAL_IQMC_GAIN_ADJ_SHIFT);
+#endif /* XCVR_IQMC_SAVE_TRIALS */
         temp_phase =
             (uint16_t)((temp & XCVR_RX_DIG_IQMC_CAL_IQMC_PHASE_ADJ_MASK) >> XCVR_RX_DIG_IQMC_CAL_IQMC_PHASE_ADJ_SHIFT);
-        temp_phase |= (((temp_phase & 0x0800U) != 0U) ? 0xF800U : 0x0U); // Sign extend from 12 to 16 bits
+        /* sign extend from 12 bits to 16 bits: set the upper nibble for negative values */
+        if ((temp_phase & 0x0800U) != 0U)
+        {
+            temp_phase |= 0xF800U;
+        }
+#if defined(XCVR_IQMC_SAVE_TRIALS)
         trials_data->IQMC_phase_cal_trials[cnt] =
             ((int16_t)temp_phase); /* Convert to int16 for storage and processing */
+#endif /* XCVR_IQMC_SAVE_TRIALS */
 
         /* Compute a running sum of gain/phase adjustment values */
         trials_data->IQMC_gain_adj_sum =
@@ -1480,11 +1477,16 @@ void IQMCRunTrials(xcvr_iqmc_trials_t *trials_data, uint8_t num_trials)
                                    XCVR_RX_DIG_IQMC_CTRL1_IQMC_GAIN_ADJ_SHIFT);
             temp_phase = (uint16_t)((temp & XCVR_RX_DIG_IQMC_CTRL1_IQMC_PHASE_ADJ_MASK) >>
                                     XCVR_RX_DIG_IQMC_CTRL1_IQMC_PHASE_ADJ_SHIFT);
-
-            temp_phase |= (((temp_phase & 0x0800U) != 0U) ? 0xF800U : 0x0U); // Sign extend from 12 to 16 bits
+            /* sign extend from 12 bits to 16 bits: set the upper nibble for negative values */
+            if ((temp_phase & 0x0800U) != 0U)
+            {
+                temp_phase |= 0xF800U;
+            }
+#if defined(XCVR_IQMC_SAVE_TRIALS)
             trials_data->IQMC_gain_cal_trials[cnt] = (uint16_t)(temp_gain);
             trials_data->IQMC_phase_cal_trials[cnt] =
                 ((int16_t)temp_phase); /* Convert to int16 for storage and processing */
+#endif /* XCVR_IQMC_SAVE_TRIALS */
 
             /* Compute a running sum of gain/phase adjustment values */
             trials_data->IQMC_gain_adj_sum  = trials_data->IQMC_gain_adj_sum + ((uint16_t)temp_gain);

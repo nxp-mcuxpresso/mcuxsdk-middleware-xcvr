@@ -594,9 +594,9 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
 
                         /* Cast Phase Config: for Mode2 and Mode3 */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-                        volatile MODE2_3_CFG_BODY_Type* mode2_3_cfg_body_ptr = (volatile MODE2_3_CFG_BODY_Type *)((uint32_t*)ram_address + cfg_sz - phase_sz);
                         if((*step_type_ptr == XCVR_RSM_STEP_TN_TN) || (*step_type_ptr == XCVR_RSM_STEP_PK_TN_TN_PK ))
                         {
+                            volatile MODE2_3_CFG_BODY_Type* mode2_3_cfg_body_ptr = (volatile MODE2_3_CFG_BODY_Type *)((uint32_t)((uint32_t*)ram_address + cfg_sz - phase_sz)); /* MISRA Rule 11.3 deviation: intentional hardware address cast via uint32_t intermediate */
                             XCVR_LCL_MakeMode23_Phase(mode2_3_cfg_body_ptr, phase_add_ap_ptr, ant_permut_ptr, subevent_info_ptr->num_ap, subevent_info_ptr->multi_ant_permut);
                         }
 #endif
@@ -652,8 +652,8 @@ xcvrLclStatus_t XCVR_LCL_InitCfgResPointers(cs_pkt_ram_config_info_t * pkt_ram_i
                                                                     XCVR_MISC_RSM_RESULT_BUFF_RSM_RESULT_DEPTH(pkt_ram_info_ptr->result_depth_word));
             status = XCVR_LCL_ResetCfgResPointers();
             step_irq_count = pkt_ram_info_ptr->interrupt_step_count;
-            config_rollover_index = pkt_ram_info_ptr->config_base_addr_word+pkt_ram_info_ptr->config_depth_word;
-            result_rollover_index = pkt_ram_info_ptr->result_base_addr_word+pkt_ram_info_ptr->result_depth_word;
+            config_rollover_index = (uint16_t)((uint32_t)pkt_ram_info_ptr->config_base_addr_word + (uint32_t)pkt_ram_info_ptr->config_depth_word);
+            result_rollover_index = (uint16_t)((uint32_t)pkt_ram_info_ptr->result_base_addr_word + (uint32_t)pkt_ram_info_ptr->result_depth_word);
             in_sniffer_mode = pkt_ram_info_ptr->is_sniffer_mode;
 
             /* Setup buffer pointers to support array access to the config and result buffers in PKT RAM */

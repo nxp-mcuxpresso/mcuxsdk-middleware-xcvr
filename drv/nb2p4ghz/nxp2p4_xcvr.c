@@ -633,6 +633,7 @@ XCVR_ACTIVE_LL_SEL_T XCVR_GetActiveLL(void)
             temp_lle = XCVR_ACTIVE_LL_ALL_DISABLED;
             break;
         /* coco begin validated: This default can never be encountered due to all possible variants covered above (hardware register contents) */
+        // coverity[misra_c_2012_rule_2_1_violation:SUPPRESS]
         default:
             temp_lle = XCVR_ACTIVE_LL_MAX; /* This is an error! */
             break;

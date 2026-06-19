@@ -335,25 +335,24 @@ while (false)
 #define XCVR_LCL_MakeMode23_Phase(cfg_entry, phase_add_ptr, ant_permut_ptr, num_ant, ant_permut_mode)                    \
     do                                                                                                                   \
     {                                                                                                                    \
-        uint8_t words=0U;                                                                                                \
-        uint8_t incr=0U;                                                                                                 \
         uint32_t * ant_table = (ant_permut_ptr);                                                                         \
-        volatile uint32_t *cfg_body_ptr = (volatile uint32_t *)( cfg_entry) ;                                              \
+        volatile uint32_t *cfg_body_ptr = (volatile uint32_t *)((uint32_t)(cfg_entry));                                  \
         if((ant_permut_mode)) {                                                                                            \
               *cfg_body_ptr++ = (ant_table!=NULLPTR)? *(ant_table)++ : 0U;                                     \
                 if((num_ant) > 8U) {                                                                                        \
                   *cfg_body_ptr++ = (ant_table!=NULLPTR)? *(ant_table)++ : 0U;                                 \
                 }                                                                                                        \
         }                                                                                                                \
-        do {                                                                                                             \
-            uint32_t temp_phase_add = (uint32_t)((*((phase_add_ptr))++) & 0x0000FFFFU); /* increments the pointer that is passed in */  \
-            incr++;                                                                                                      \
-            if(incr <= (((num_ant)-1U)>>1)) {                                                                               \
-                temp_phase_add |= (*((phase_add_ptr))++)<<16;                                                              \
-                incr++;                                                                                                  \
+        for (uint8_t pack = 0U; pack < (((num_ant) + 3U) >> 2U); pack++)                                                \
+        {                                                                                                                \
+            uint8_t base_idx = pack * 2U;                                                                               \
+            uint32_t temp_phase_add = ((uint32_t)(*((phase_add_ptr)++))) & 0x0000FFFFU; /* pack low 16 bits */           \
+            if ((base_idx + 1U) < (num_ant))                                                                             \
+            {                                                                                                            \
+                temp_phase_add |= ((uint32_t)(*((phase_add_ptr)++))) << 16U; /* pack high 16 bits */                    \
             }                                                                                                            \
             *cfg_body_ptr++ = temp_phase_add;                                                                            \
-        } while (words++ < (((num_ant)-1U)>>2));                                                                            \
+        }                                                                                                                \
     } while (false)
     
 /*!
