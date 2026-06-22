@@ -146,14 +146,14 @@ static xcvr_lcl_rsm_tx_snr_t tx_snr_settings[XCVR_RSM_PHY_INVALID][XCVR_RSM_TX_S
     {
         {203U, 1U},  /* 18 dB LFSR SCALE and DIV */
         {140U, 1U},  /* 21 dB LFSR SCALE and DIV */
-        {70U, 1U},  /* 24 dB LFSR SCALE and DIV */
-        {5U, 1U},  /* 27 dB LFSR SCALE and DIV */
+        {80U, 1U},  /* 24 dB LFSR SCALE and DIV */
+        {40U, 1U},  /* 27 dB LFSR SCALE and DIV */
     },
     /* 2Mbps rate, BT=2.0 */
     {
         {185U, 1U},  /* 18 dB LFSR SCALE and DIV */
         {110U, 1U},  /* 21 dB LFSR SCALE and DIV */
-        {46U, 1U},  /* 24 dB LFSR SCALE and DIV */
+        {60U, 1U},  /* 24 dB LFSR SCALE and DIV */
         {5U, 1U},   /* 27 dB LFSR SCALE and DIV */
     }
 };
@@ -4812,7 +4812,7 @@ xcvrLclStatus_t XCVR_LCL_EnaPic(XCVR_RSM_PIC_MODE_TYPE_T mode, bool slow_bw_redu
                   XCVR_ANALOG_PLL_PLL_VCO_PIC_INPUT_EN_MASK | XCVR_ANALOG_PLL_PIC_RINT1_HVAL_SM_EN_MASK |
                   XCVR_ANALOG_PLL_PIC_RINT2_VAL_SLOW_MODE_MASK | XCVR_ANALOG_PLL_PLL_PD_TRIM_FCAL_BIAS_MASK);
             temp_analog_pll |= (XCVR_ANALOG_PLL_PIC_VREF_CTRL(2U) | XCVR_ANALOG_PLL_PIC_RINT2_VAL_SLOW_MODE(2U) |
-                                XCVR_ANALOG_PLL_PIC_RINT1_HVAL_SM_EN(0U) | XCVR_ANALOG_PLL_PIC_SMOOTH_SWITCH_EN(0U) |
+                                XCVR_ANALOG_PLL_PIC_RINT1_HVAL_SM_EN(1U) | XCVR_ANALOG_PLL_PIC_SMOOTH_SWITCH_EN(0U) |
                                 XCVR_ANALOG_PLL_PLL_VCO_PIC_INPUT_EN_MASK | XCVR_ANALOG_PLL_PLL_PD_TRIM_FCAL_BIAS(2U));
             XCVR_ANALOG->PLL = temp_analog_pll;
             break;
