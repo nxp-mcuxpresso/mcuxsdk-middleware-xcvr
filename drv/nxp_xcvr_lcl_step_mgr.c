@@ -16,7 +16,7 @@
  ******************************************************************************/
 const uint8_t rtt_payload_sizes[8] = {0U,2U,6U,2U,4U,6U,8U,0U};  /* Last value is dummy value to allow indexing the array by RTT_TYPE */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-const uint8_t permut_step_size_words_offset[] = {1U,2U,4U,5U};       /* For radio gen >= 475: step word size offset when including T_PM. index is (num_ap-1)/4 */
+static const uint8_t permut_step_size_words_offset[4] = {1U,2U,4U,5U};       /* For radio gen >= 475: step word size offset when including T_PM. index is (num_ap-1)/4 */
 #endif /* NXP_RADIO_GEN >= 475 */
 
 /* Circular buffer related static data - supports setup of buffer state and IRQ operation */
@@ -319,7 +319,7 @@ xcvrLclStatus_t XCVR_LCL_CalcConfig_Size(XCVR_RSM_FSTEP_TYPE_T step_format, XCVR
                 header_size_words = (uint8_t)3U;
                 *phase_size_words = (uint8_t)(0U
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-                                    + 1U + ((ant_permut_mode)? permut_step_size_words_offset[(num_ap-1)>>2] : 0U)
+                                    + 1U + ((ant_permut_mode)? permut_step_size_words_offset[(num_ap-1U)>>2] : 0U)
 #endif
                 );
                 *payload_size_words = 0;
@@ -329,7 +329,7 @@ xcvrLclStatus_t XCVR_LCL_CalcConfig_Size(XCVR_RSM_FSTEP_TYPE_T step_format, XCVR
                 *payload_size_words = rtt_payload_sizes[rtt_type];
                 *phase_size_words = (uint8_t)(0U
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-                                    + 1U + ((ant_permut_mode)? permut_step_size_words_offset[(num_ap-1)>>2] : 0U)
+                                    + 1U + ((ant_permut_mode)? permut_step_size_words_offset[(num_ap-1U)>>2] : 0U)
 #endif
                 );
                 break;
@@ -431,11 +431,11 @@ xcvrLclStatus_t XCVR_LCL_CalcConfigResult_Size(XCVR_RSM_FSTEP_TYPE_T step_format
     return status;
 }
 
-xcvrLclStatus_t XCVR_LCL_ValidateSubeventInfo(cs_subevent_info_t * subevent_info_ptr, xcvr_lcl_rsm_config_t * rsm_settings_ptr, uint16_t pkt_ram_cfg_buffer_sz_words, uint16_t pkt_ram_res_buffer_sz_words)
+xcvrLclStatus_t XCVR_LCL_ValidateSubeventInfo(cs_subevent_info_t * subevent_info_ptr)
 {
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
     /* Input pointer is not NULLPTR */
-    if ((subevent_info_ptr == NULLPTR) || (rsm_settings_ptr == NULLPTR))
+    if (subevent_info_ptr == NULLPTR)
     {
         status = gXcvrLclStatusInvalidArgs;
     }
@@ -457,38 +457,49 @@ xcvrLclStatus_t XCVR_LCL_ValidateSubeventInfo(cs_subevent_info_t * subevent_info
         {
             status = gXcvrLclStatusInvalidArgs;
         }
+    }
 
-        /* sequence through steps and count the size of all steps */
+    return status;
+}
+
+xcvrLclStatus_t XCVR_LCL_ValidateSubeventBuffSz(cs_subevent_info_t * subevent_info_ptr, xcvr_lcl_rsm_config_t * rsm_settings_ptr, uint16_t pkt_ram_cfg_buffer_sz_words, uint16_t pkt_ram_res_buffer_sz_words)
+{
+    xcvrLclStatus_t status = gXcvrLclStatusSuccess;
+    /* Input pointers are not NULLPTR */
+    if ((subevent_info_ptr == NULLPTR) || (rsm_settings_ptr == NULLPTR))
+    {
+        status = gXcvrLclStatusInvalidArgs;
+    }
+    else
+    {
+        /* Sequence through steps and count the total size of all steps */
+        uint8_t i;
+        XCVR_RSM_FSTEP_TYPE_T * step_type_ptr = subevent_info_ptr->step_type;
+        uint16_t total_cfg_sz = 0U;
+        uint16_t total_res_sz = 0U;
+        uint8_t res_mult_factor = (subevent_info_ptr->is_sniffer_mode ? 2U : 1U); /* Multiplication factor for results size when in sniffer mode */
+        for (i=0U; i<(subevent_info_ptr->num_steps); i++)
+        {
+            uint8_t cfg_sz;
+            uint8_t res_sz;
+            xcvrLclStatus_t temp_status = XCVR_LCL_CalcConfigResult_Size(*step_type_ptr, rsm_settings_ptr, &cfg_sz, &res_sz);
+            if (temp_status == gXcvrLclStatusSuccess)
+            {
+                total_cfg_sz += cfg_sz;
+                total_res_sz += (uint8_t)(res_sz * res_mult_factor);
+            }
+            else
+            {
+                status = gXcvrLclStatusFail;
+                break;
+            }
+            step_type_ptr++;
+        }
         if (status == gXcvrLclStatusSuccess)
         {
-            uint8_t i;
-            XCVR_RSM_FSTEP_TYPE_T * step_type_ptr = subevent_info_ptr->step_type;
-            uint16_t total_cfg_sz = 0U;
-            uint16_t total_res_sz = 0U;
-            uint8_t res_mult_factor = (subevent_info_ptr->is_sniffer_mode ? 2U : 1U); /* Multiplication factor for results size when in sniffer mode */
-            for (i=0;i<(subevent_info_ptr->num_steps);i++)
+            if ((total_cfg_sz > pkt_ram_cfg_buffer_sz_words) || (total_res_sz > pkt_ram_res_buffer_sz_words))
             {
-                uint8_t cfg_sz;
-                uint8_t res_sz;
-                xcvrLclStatus_t temp_status = XCVR_LCL_CalcConfigResult_Size(*step_type_ptr, rsm_settings_ptr, &cfg_sz, &res_sz) ;
-                if (temp_status == gXcvrLclStatusSuccess)
-                {
-                    total_cfg_sz += cfg_sz;
-                    total_res_sz += (uint8_t)(res_sz*res_mult_factor);
-                }
-                else
-                {
-                    status = gXcvrLclStatusFail;
-                    break;
-                }
-                step_type_ptr++;
-            }
-            if (status == gXcvrLclStatusSuccess)
-            {
-                if ((total_cfg_sz  > pkt_ram_cfg_buffer_sz_words) || (total_res_sz  > pkt_ram_res_buffer_sz_words))
-                {
-                    status = gXcvrLclStatusInvalidLength;
-                }
+                status = gXcvrLclStatusInvalidLength;
             }
         }
     }
@@ -510,6 +521,11 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
         /* Check that channel index is valid (each step) */
         /* Check HPM CAL value doesn't exceed the bitfield size  (each step) */
 #endif /* defined(CHECK_FSTEP_ERRORS) */
+        status = XCVR_LCL_ValidateSubeventInfo(subevent_info_ptr);
+        if (status != gXcvrLclStatusSuccess)
+        {
+            return status;
+        }
         /* Program each step into the PKT RAM or system RAM starting at the pkt_ram_buffer_offset_words location */
         /* Must use pointers rather than arrays for the input streams because they won't track exactly with step number */
         bool load_directly_to_pkt_ram = (sys_ram_ptr == NULLPTR); /* If sys_ram_ptr is not NULL then load to system RAM instead of PKT RAM */
@@ -594,9 +610,9 @@ xcvrLclStatus_t XCVR_LCL_ProgramFstepRam(cs_subevent_info_t * subevent_info_ptr,
 
                         /* Cast Phase Config: for Mode2 and Mode3 */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
-                        volatile MODE2_3_CFG_BODY_Type* mode2_3_cfg_body_ptr = (volatile MODE2_3_CFG_BODY_Type *)((uint32_t*)ram_address + cfg_sz - phase_sz);
                         if((*step_type_ptr == XCVR_RSM_STEP_TN_TN) || (*step_type_ptr == XCVR_RSM_STEP_PK_TN_TN_PK ))
                         {
+                            volatile MODE2_3_CFG_BODY_Type* mode2_3_cfg_body_ptr = (volatile MODE2_3_CFG_BODY_Type *)((uint32_t)((uint32_t*)ram_address + cfg_sz - phase_sz)); /* MISRA Rule 11.3 deviation: intentional hardware address cast via uint32_t intermediate */
                             XCVR_LCL_MakeMode23_Phase(mode2_3_cfg_body_ptr, phase_add_ap_ptr, ant_permut_ptr, subevent_info_ptr->num_ap, subevent_info_ptr->multi_ant_permut);
                         }
 #endif
@@ -652,8 +668,8 @@ xcvrLclStatus_t XCVR_LCL_InitCfgResPointers(cs_pkt_ram_config_info_t * pkt_ram_i
                                                                     XCVR_MISC_RSM_RESULT_BUFF_RSM_RESULT_DEPTH(pkt_ram_info_ptr->result_depth_word));
             status = XCVR_LCL_ResetCfgResPointers();
             step_irq_count = pkt_ram_info_ptr->interrupt_step_count;
-            config_rollover_index = pkt_ram_info_ptr->config_base_addr_word+pkt_ram_info_ptr->config_depth_word;
-            result_rollover_index = pkt_ram_info_ptr->result_base_addr_word+pkt_ram_info_ptr->result_depth_word;
+            config_rollover_index = (uint16_t)((uint32_t)pkt_ram_info_ptr->config_base_addr_word + (uint32_t)pkt_ram_info_ptr->config_depth_word);
+            result_rollover_index = (uint16_t)((uint32_t)pkt_ram_info_ptr->result_base_addr_word + (uint32_t)pkt_ram_info_ptr->result_depth_word);
             in_sniffer_mode = pkt_ram_info_ptr->is_sniffer_mode;
 
             /* Setup buffer pointers to support array access to the config and result buffers in PKT RAM */

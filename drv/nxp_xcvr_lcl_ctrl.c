@@ -262,8 +262,7 @@ static inline void WAIT_RSM_IDLE(void)
     /* Wait for RSM to return to IDLE before performing other RSM operations */
     while (((XCVR_MISC->RSM_CSR & XCVR_MISC_RSM_CSR_RSM_STATE_MASK) != RSM_STATE_IDLE))
     {
-        volatile uint32_t temp_csr = XCVR_MISC->RSM_CSR; /* MISRA doesn't like the routine without any side effect */
-        (void)temp_csr;
+        __NOP(); /* Intentional busy-wait on hardware status bit */
     }
 }
 
@@ -815,11 +814,10 @@ static void XCVR_LCL_SetupDemodControl(const xcvr_lcl_rsm_config_t *rsm_settings
         /* Setup PLL for ranging */
 static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_settings_ptr)
 {
-
-        XCVR_LCL_RsmPLLInit(XCVR_RSM_PHY_TO_RATE(rsm_settings_ptr->phy));
+        (void)XCVR_LCL_RsmPLLInit(XCVR_RSM_PHY_TO_RATE(rsm_settings_ptr->phy));
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
-    uint32_t temp;
+        uint32_t temp;
         /* HPM_CTRL */
         temp = XCVR_PLL_DIG->HPM_CTRL;
         temp &= ~(XCVR_PLL_DIG_HPM_CTRL_RX_HPM_CAL_EN_MASK |
@@ -847,8 +845,7 @@ static void XCVR_LCL_SetupPLLForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)*/
 
         /* Phase continuity defaults to ON */
-        XCVR_LCL_EnaLpmClkSwitch(1);
-        
+        (void)XCVR_LCL_EnaLpmClkSwitch(1);
 #else
         /* NOTE: This code assumes t_ip1 and t_ip2 config structures both use identical HPM CAL enable bit settings
          * (which is the case in the initial coding */
@@ -1045,9 +1042,9 @@ static void XCVR_LCL_SetupRSMForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
     uint32_t temp;
         /* ************** */
                 /* Customize RSM and TSM settings for 655usec long tone using 2 step sequence */
-        uint8_t temp_t_fcs_usec; 
-        uint8_t temp_t_fm_reg_setting; 
+        uint8_t temp_t_fcs_usec;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)  /* Stable phase test workaround for KW45 */
+        uint8_t temp_t_fm_reg_setting = 7U; /* default T_FM */
     bool is_sqte_stable_phase_mode = (rsm_settings_ptr->op_mode == XCVR_RSM_SQTE_STABLE_PHASE_TEST_MODE);
         if (is_sqte_stable_phase_mode)
         {
@@ -1070,7 +1067,6 @@ static void XCVR_LCL_SetupRSMForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450) */
         {
                 temp_t_fcs_usec =rsm_settings_ptr->t_fc;  /* T_FCS unchanged */
-                temp_t_fm_reg_setting = 7U; /* Keep default T_FM */
         }
 
         /* RSM_CTRL0 */
@@ -1198,7 +1194,6 @@ static void XCVR_LCL_SetupRSMForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
         /* RSM_CTRL5 */
         XCVR_MISC->RSM_CTRL5 =
             xcvr_lcl_rsm_generic_config.RSM_CTRL5; /* T_FM is the only field in this register and is always 80usec  */
-        (void)temp_t_fm_reg_setting; /* Touch the variable because it isn't being used in this case */
 
         /* RSM_CTRL6 */
         temp = xcvr_lcl_rsm_generic_config.RSM_CTRL6; /* Structure based configuration for the RSM_CTRL0 register;  */
@@ -2897,13 +2892,16 @@ xcvrLclStatus_t XCVR_LCL_ConfigLclBlock(xcvr_lcl_rsm_config_t *rsm_settings_ptr,
               uint64_t lut_temp = 0L; /* Working memory to build the 2x 32 bit words for the LUT */
               uint64_t temp_entry; /* holds the entry temporarily for shifting */
               uint8_t i;
+              uint8_t temp_ant_id;
               for (i=0U;i<8U;i++)
               {
-                  temp_entry = toneAntennaIDs_p[i] & 0xF; /* entries only occupy 4 bits */
+                  temp_ant_id = (toneAntennaIDs_p[i] & 0xFU);   /* entries only occupy 4 bits */
+                  temp_entry = (uint64_t)(temp_ant_id);
                   lut_temp |= temp_entry<<(i*4U);
               }
-              XCVR_MISC->LCL_GPIO_CTRL0 = lut_temp & 0xFFFFFFFFL;
-              XCVR_MISC->LCL_GPIO_CTRL1 = lut_temp>>32U;               
+              XCVR_MISC->LCL_GPIO_CTRL0 = (uint32_t)(lut_temp & 0xFFFFFFFFUL);
+              lut_temp = lut_temp>>32U;
+              XCVR_MISC->LCL_GPIO_CTRL1 = (uint32_t)(lut_temp);               
             }
             else
  #endif                       
@@ -4158,13 +4156,12 @@ xcvrLclStatus_t XCVR_LCL_GetRSMCaptureBufferSize(xcvr_lcl_fstep_t *fstep_setting
 {
 #define TONE_EXT_COUNT (1U) /* Tone extension always present in KW45 */
     xcvrLclStatus_t status = gXcvrLclStatusSuccess;
-    uint32_t address;
 
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
     /* Cast fstep_settings pointer to a uint32_t pointer to emulate the PKT RAM array */
     /* keep track of offset into this array, starting at an assumed zero offset (from the base pointer which may not be
      * the base of PKT RAM space) */
-    address = (uint32_t)fstep_settings;
+    uint32_t address      = (uint32_t)fstep_settings;
     uint32_t * cfg_ram_buffer = (uint32_t *)address;
     uint16_t buffer_offset   = 0U; /* Trackoffset into above buffer */
 #else                              /* KW45 version */
@@ -4208,17 +4205,17 @@ xcvrLclStatus_t XCVR_LCL_GetRSMCaptureBufferSize(xcvr_lcl_fstep_t *fstep_setting
     uint16_t temp_samples;
     uint16_t sequence_length_us    = 0U;
     static uint16_t step_length_us = 0U;
-    uint8_t config_size;
     /* Looping through all steps in RAM */
     for (uint8_t i = 0; i < num_steps; i++)
     {
         XCVR_RSM_T_PM_FM_SEL_T  t_pm_sel;
         XCVR_RSM_FSTEP_TYPE_T step_format;
         uint8_t sample_compensation = 0U;
-#define SAMPLE_COMP_SUBTRACT_VALUE (2U)  /* mangitude of most negative compensation required. Used to support negative compensation with unsigned values */            
+#define SAMPLE_COMP_SUBTRACT_VALUE (2U)  /* mangitude of most negative compensation required. Used to support negative compensation with unsigned values */
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
         uint8_t dummy;
         uint8_t tone_extension;
+        uint8_t config_size;
         address = (uint32_t)&cfg_ram_buffer[buffer_offset];
         config_size = XCVR_LCL_ReadStepCfg((COM_MODE_013_CFG_HDR_Type *)address,
                                            (XCVR_RSM_FSTEP_TYPE_T *)&step_format,
@@ -4231,8 +4228,6 @@ xcvrLclStatus_t XCVR_LCL_GetRSMCaptureBufferSize(xcvr_lcl_fstep_t *fstep_setting
         uint32_t temp = fstep_ptr->tpm_step_format_hmp_cal_factor_msb;
         step_format   = (XCVR_RSM_FSTEP_TYPE_T)((temp & XCVR_RSM_STEP_FORMAT_MASK) >> XCVR_RSM_STEP_FORMAT_SHIFT);
         t_pm_sel      = (XCVR_RSM_T_PM_FM_SEL_T )((temp & XCVR_RSM_T_PM_FM_SEL_MASK) >> XCVR_RSM_T_PM_FM_SEL_SHIFT);
-        (void)config_size; /* Touch unused variable */
-        (void)address; /* Touch unused variable */
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
         assert(t_pm_sel <= XCVR_RSM_T_PM3_SEL);
         step_length_us = 0U;
