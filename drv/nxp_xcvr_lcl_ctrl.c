@@ -277,6 +277,7 @@ static inline void WAIT_RSM_IDLE(void)
     /* Wait for RSM to return to IDLE before performing other RSM operations */
     while (((XCVR_MISC->RSM_CSR & XCVR_MISC_RSM_CSR_RSM_STATE_MASK) != RSM_STATE_IDLE))
     {
+        __NOP(); /* Intentional busy-wait on hardware status bit */
     }
 }
 
@@ -1141,7 +1142,7 @@ static void XCVR_LCL_SetupRSMForRanging(const xcvr_lcl_rsm_config_t *rsm_setting
                 /* Customize RSM and TSM settings for 655usec long tone using 2 step sequence */
         uint8_t temp_t_fcs_usec;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN == 450)  /* Stable phase test workaround for KW45 */
-        uint8_t temp_t_fm_reg_setting;
+        uint8_t temp_t_fm_reg_setting = 7U; /* default T_FM */
     bool is_sqte_stable_phase_mode = (rsm_settings_ptr->op_mode == XCVR_RSM_SQTE_STABLE_PHASE_TEST_MODE);
         if (is_sqte_stable_phase_mode)
         {

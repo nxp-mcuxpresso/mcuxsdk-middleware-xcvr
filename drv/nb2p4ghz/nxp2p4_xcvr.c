@@ -1589,6 +1589,7 @@ void XCVR_WaitRxWu(void)
     while (((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_TSM_COUNT_MASK) >> XCVR_MISC_XCVR_STATUS_TSM_COUNT_SHIFT) <
            end_of_wu)
     {
+        __NOP(); /* Intentional busy-wait on hardware status bit */
     }; /* Wait for TSM RX WU complete */
 }
 
@@ -1599,6 +1600,7 @@ void XCVR_WaitTxWu(void)
     while (((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_TSM_COUNT_MASK) >> XCVR_MISC_XCVR_STATUS_TSM_COUNT_SHIFT) <
            end_of_wu)
     {
+        __NOP(); /* Intentional busy-wait on hardware status bit */
     }; /* Wait for TSM TX WU complete */
 }
 
@@ -1608,11 +1610,13 @@ void XCVR_WaitRxTxWd(void)
     //coverity[misra_c_2012_rule_2_2_violation:SUPPRESS]
     while ((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_TSM_BUSY_MASK) != 0U)
     {
+        __NOP(); /* Intentional busy-wait on hardware status bit */
     }; /* Wait for TSM to be idle */
 #else
     //coverity[misra_c_2012_rule_2_2_violation : SUPPRESS]
     while ((XCVR_MISC->XCVR_STATUS & XCVR_MISC_XCVR_STATUS_XCVR_BUSY_MASK) != 0U)
     {
+        __NOP(); /* Intentional busy-wait on hardware status bit */
     }; /* Wait for TSM to be idle */
 #endif
 }
