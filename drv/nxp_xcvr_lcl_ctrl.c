@@ -670,13 +670,14 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLBackup(rsm_reg_backup_t *reg_backup_ptr)
         reg_backup_ptr->XCVR_PLL_OFFSET_CTRL =
             XCVR_PLL_DIG->PLL_OFFSET_CTRL; /* this register is backed up because CFO compensation can corrupt it */
         reg_backup_ptr->XCVR_PLL_DIG_PLL_DATARATE_CTRL = XCVR_PLL_DIG->PLL_DATARATE_CTRL;
-#if defined(BACKUP_DATARATE_OVRD1) &&  (BACKUP_DATARATE_OVRD1 == 1)
         reg_backup_ptr->XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL1 = XCVR_PLL_DIG->DATA_RATE_OVRD_CTRL1;
-#endif /* defined(BACKUP_DATARATE_OVRD1) &&  (BACKUP_DATARATE_OVRD1 == 1) */
         reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_TX_CTRL = XCVR_PLL_DIG->TUNING_CAP_TX_CTRL;
         reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_RX_CTRL = XCVR_PLL_DIG->TUNING_CAP_RX_CTRL;
         reg_backup_ptr->XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL2 = XCVR_PLL_DIG->DATA_RATE_OVRD_CTRL2;
-        
+
+        /* Must be backed up with PLL registers because it is modified in XCVR_LCL_RsmPLLInit() */
+        reg_backup_ptr->XCVR_TX_DIG_DATARATE_CONFIG_GFSK_CTRL = XCVR_TX_DIG->DATARATE_CONFIG_GFSK_CTRL;
+
         reg_backup_ptr->XCVR_MISC_IPS_FO_DRS0_DATA_0 = XCVR_MISC->IPS_FO_DRS0_DATA[0U]; /* BU this register to restore the HPM_COUNT_ADJUST to the default value for non_localization context. */
         
          /* TSM Overrides controlling the PLL signals, so included in PLL backup/restore */
@@ -725,10 +726,11 @@ xcvrLclStatus_t XCVR_LCL_RsmPLLRestore(const rsm_reg_backup_t *reg_backup_ptr)
         XCVR_PLL_DIG->TUNING_CAP_TX_CTRL = reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_TX_CTRL;
         XCVR_PLL_DIG->TUNING_CAP_RX_CTRL = reg_backup_ptr->XCVR_PLL_DIG_TUNING_CAP_RX_CTRL;
         XCVR_PLL_DIG->PLL_DATARATE_CTRL = reg_backup_ptr->XCVR_PLL_DIG_PLL_DATARATE_CTRL;
-#if defined(BACKUP_DATARATE_OVRD1) &&  (BACKUP_DATARATE_OVRD1 == 1)
         XCVR_PLL_DIG->DATA_RATE_OVRD_CTRL1 = reg_backup_ptr->XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL1;
-#endif /* defined(BACKUP_DATARATE_OVRD1) &&  (BACKUP_DATARATE_OVRD1 == 1) */
         XCVR_PLL_DIG->DATA_RATE_OVRD_CTRL2 = reg_backup_ptr->XCVR_PLL_DIG_DATA_RATE_OVRD_CTRL2;
+
+        /* Must be restored with PLL registers because it is modified in XCVR_LCL_RsmPLLInit() */
+        XCVR_TX_DIG->DATARATE_CONFIG_GFSK_CTRL = reg_backup_ptr->XCVR_TX_DIG_DATARATE_CONFIG_GFSK_CTRL;
 
         XCVR_MISC->IPS_FO_DRS0_DATA[0U] = reg_backup_ptr->XCVR_MISC_IPS_FO_DRS0_DATA_0; /* Restore the HPM_COUNT_ADJUST to the default value for non_localization context. */
         
@@ -2311,7 +2313,7 @@ xcvrLclStatus_t XCVR_LCL_RsmRegBackup(rsm_reg_backup_t *reg_backup_ptr)
         reg_backup_ptr->XCVR_TX_DIG_DATA_PADDING_CTRL1 = XCVR_TX_DIG->DATA_PADDING_CTRL_1;
         reg_backup_ptr->XCVR_TX_DIG_DATA_PADDING_CTRL_2 = XCVR_TX_DIG->DATA_PADDING_CTRL_2;
         reg_backup_ptr->XCVR_TX_DIG_GFSK_CTRL = XCVR_TX_DIG->GFSK_CTRL;
-        reg_backup_ptr->XCVR_TX_DIG_DATARATE_CONFIG_GFSK_CTRL = XCVR_TX_DIG->DATARATE_CONFIG_GFSK_CTRL;
+        /* XCVR_TX_DIG->DATARATE_CONFIG_GFSK_CTRL is handled with PLL registers */
         reg_backup_ptr->XCVR_TX_DIG_PA_CTRL            = XCVR_TX_DIG->PA_CTRL;
         reg_backup_ptr->XCVR_TX_DIG_TXDIG_CTRL = XCVR_TX_DIG->TXDIG_CTRL;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
@@ -2413,7 +2415,7 @@ xcvrLclStatus_t XCVR_LCL_RsmRegRestore(const rsm_reg_backup_t *reg_backup_ptr)
         XCVR_TX_DIG->DATA_PADDING_CTRL_1 = reg_backup_ptr->XCVR_TX_DIG_DATA_PADDING_CTRL1;
         XCVR_TX_DIG->DATA_PADDING_CTRL_2 = reg_backup_ptr->XCVR_TX_DIG_DATA_PADDING_CTRL_2;
         XCVR_TX_DIG->GFSK_CTRL = reg_backup_ptr->XCVR_TX_DIG_GFSK_CTRL;
-        XCVR_TX_DIG->DATARATE_CONFIG_GFSK_CTRL = reg_backup_ptr->XCVR_TX_DIG_DATARATE_CONFIG_GFSK_CTRL;
+        /* XCVR_TX_DIG->DATARATE_CONFIG_GFSK_CTRL is handled with PLL registers */
         XCVR_TX_DIG->PA_CTRL             = reg_backup_ptr->XCVR_TX_DIG_PA_CTRL;
         XCVR_TX_DIG->TXDIG_CTRL = reg_backup_ptr->XCVR_TX_DIG_TXDIG_CTRL;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
