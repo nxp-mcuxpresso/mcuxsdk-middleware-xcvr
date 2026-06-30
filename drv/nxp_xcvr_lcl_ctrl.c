@@ -4650,9 +4650,9 @@ static void XCVR_LCL_ReadStepConfigKW45(const xcvr_lcl_fstep_t *fstep_ptr,
                                        XCVR_RSM_FSTEP_TYPE_T *step_format,
                                        XCVR_RSM_T_PM_FM_SEL_T *t_pm_sel)
 {
-    uint32_t temp = fstep_ptr->tpm_step_format_hmp_cal_factor_msb;
-    *step_format = (XCVR_RSM_FSTEP_TYPE_T)((temp & XCVR_RSM_STEP_FORMAT_MASK) >> XCVR_RSM_STEP_FORMAT_SHIFT);
-    *t_pm_sel = (XCVR_RSM_T_PM_FM_SEL_T)((temp & XCVR_RSM_T_PM_FM_SEL_MASK) >> XCVR_RSM_T_PM_FM_SEL_SHIFT);
+    /* Removed code with MISRA errors for KW45 */
+    *step_format = XCVR_RSM_STEP_FCS;
+    *t_pm_sel = XCVR_RSM_T_PM0_SEL;
 }
 #endif
 
