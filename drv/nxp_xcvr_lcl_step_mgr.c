@@ -123,7 +123,7 @@ uint8_t XCVR_LCL_ReadStepCfg(COM_MODE_013_CFG_HDR_Type * header_ptr,
     /* Return the length of the header as the function return value */
     t2 = (uint16_t)((XCVR_MISC->RSM_CTRL2&XCVR_MISC_RSM_CTRL2_RSM_RTT_TYPE_MASK)>>XCVR_MISC_RSM_CTRL2_RSM_RTT_TYPE_SHIFT);
     XCVR_RSM_RTT_TYPE_T rtt_type = (XCVR_RSM_RTT_TYPE_T)(t2);
-    uint8_t num_ap = (uint8_t)((XCVR_MISC->LCL_CFG0& XCVR_MISC_LCL_CFG0_AP_MAX_MASK)>>XCVR_MISC_LCL_CFG0_AP_MAX_SHIFT) + 1;
+    uint8_t num_ap = (uint8_t)((XCVR_MISC->LCL_CFG0& XCVR_MISC_LCL_CFG0_AP_MAX_MASK)>>XCVR_MISC_LCL_CFG0_AP_MAX_SHIFT) + 1U;
     bool multi_ant_permut = false;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
     /* Read multi-ant-permut setting */
