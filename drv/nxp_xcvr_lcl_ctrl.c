@@ -2787,18 +2787,18 @@ static xcvrLclStatus_t XCVR_LCL_GetDmaMaskCenter(XCVR_RSM_T_CAPTURE_SEL_T t_capt
     {
         case XCVR_RSM_T_CAPTURE_652_SEL:
         case XCVR_RSM_T_CAPTURE_40_SEL:
-            *center_val_out = lclDmaMask32usecCenter;
+            *center_val_out = (uint32_t)lclDmaMask32usecCenter;
             break;
         case XCVR_RSM_T_CAPTURE_20_SEL:
-            *center_val_out = lclDmaMask16usecCenter;
+            *center_val_out = (uint32_t)lclDmaMask16usecCenter;
             break;
 #if defined(LCL_SUPPORT_10USEC_T_CAPTURE) && (LCL_SUPPORT_10USEC_T_CAPTURE == 1)
         case XCVR_RSM_T_CAPTURE_10_SEL:
-            *center_val_out = lclDmaMask8usecCenter;
+            *center_val_out = (uint32_t)lclDmaMask8usecCenter;
             break;
 #endif  /* defined(LCL_SUPPORT_10USEC_T_CAPTURE) && (LCL_SUPPORT_10USEC_T_CAPTURE == 1) */
         default:
-            *center_val_out = lclDmaMaskNoCenter;
+            *center_val_out = (uint32_t)lclDmaMaskNoCenter;
             status = gXcvrLclStatusInvalidArgs;
             break;
     }
