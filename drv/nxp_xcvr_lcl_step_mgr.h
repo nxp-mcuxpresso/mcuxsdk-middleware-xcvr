@@ -484,6 +484,30 @@ while (false)
 #endif                                                                                                                                                                                                               \
 
 /*!
+ * @brief Macro to normalize the raw NADM metric from the FM_CORR value reported in COM_MODE_013_RES_BODY.
+ *
+ * This macro fixes 0 values that shoudl be 255 and scale values if payload size is 96 bits.
+ *
+ * @param[in] uint8_t rtt_type To determine payload size
+ * @param[in, out] uint32_t fm_corr_value FM_CORR provided by HW
+ * @param[in] uint8_t tgt_fm_corr peak target value for FM_CORR value.
+ *
+ */
+#define XCVR_LCL_NormalizeNadmRawMetric(rtt_type, fm_corr_value, tgt_fm_corr)                                     \
+    do                                                                                                            \
+    {                                                                                                             \
+        if ((fm_corr_value) == 0U) /* Saturation in hardware causes 255 to be reported as zero, remap to 255 */   \
+        {                                                                                                         \
+            (fm_corr_value) = 255U;                                                                               \
+        }                                                                                                         \
+        else if ((rtt_type) == XCVR_RSM_RTT_96BIT_RANDOM) /* Scaling HW value as 96 bits is not power of 2 */     \
+        {                                                                                                         \
+            (fm_corr_value) = (fm_corr_value * 171) >> 7U; /* 128/96 fixed point ratio (4/3) */                   \
+            (fm_corr_value) = (fm_corr_value > tgt_fm_corr) ? tgt_fm_corr:fm_corr_value;                          \
+        }                                                                                                         \
+    } while (false)
+
+/*!
  * @brief Macro to calculate the NADM metric from the FM_CORR value reported in COM_MODE_013_RES_BODY.
  *
  * This macro calculates the NADM metric for a COM_MODE_013_RES_BODY structure NADM_ERROR_RSSI field.
@@ -495,72 +519,24 @@ while (false)
  * FM_CORR input.
  *
  */
-#if (0)
-#define TGT_FM_CORR_1MBPS (255)
-#define NADM_METRIC_DIV_1MBPS (5)
-#define TGT_FM_CORR_2MBPS (255)
-#define NADM_METRIC_DIV_2MBPS (8)
-#define XCVR_LCL_CalcNadmMetric(fm_corr_value, datarate, nadm_metric)                                             \
-    do                                                                                                            \
-    {                                                                                                             \
-        nadm_metric       = 0xFFU;                                                                                \
-        int16_t temp_calc = (int16_t)fm_corr_value; /* Working in signed values to handle subtract below zero. */ \
-        if (temp_calc == 0U) /* Saturation in hardware causes 255 to be reported as zero, remap to 255 */         \
-        {                                                                                                         \
-            temp_calc = 255U;                                                                                     \
-        }                                                                                                         \
-        if (datarate == XCVR_RSM_RATE_1MBPS)                                                                      \
-        {                                                                                                         \
-            temp_calc = (TGT_FM_CORR_1MBPS - temp_calc) / NADM_METRIC_DIV_1MBPS; /* Caculate metric result */     \
-        }                                                                                                         \
-        else                                                                                                      \
-        {                                                                                                         \
-            temp_calc = (TGT_FM_CORR_2MBPS - temp_calc) / NADM_METRIC_DIV_2MBPS; /* Caculate metric result */     \
-        }                                                                                                         \
-        if (temp_calc < 0) /* Saturate anything below zero to zero */                                             \
-        {                                                                                                         \
-            nadm_metric = 0U;                                                                                     \
-        }                                                                                                         \
-        else                                                                                                      \
-        {                                                                                                         \
-            if (temp_calc > 6) /* Saturate anything above 6 to 6 */                                               \
-            {                                                                                                     \
-                nadm_metric = 6;                                                                                  \
-            }                                                                                                     \
-            else                                                                                                  \
-            {                                                                                                     \
-                nadm_metric = (uint8_t)temp_calc;                                                                 \
-            }                                                                                                     \
-        }                                                                                                         \
-    } while (false)
-#else
 #define XCVR_LCL_CalcNadmMetric(fm_corr_value, tgt_fm_corr, div_fm_corr, nadm_metric)                             \
     do                                                                                                            \
     {                                                                                                             \
-        (nadm_metric)       = 0xFFU;                                                                                \
         int16_t temp_calc = (int16_t)(fm_corr_value); /* Working in signed values to handle subtract below zero. */ \
-        if (temp_calc == 0U) /* Saturation in hardware causes 255 to be reported as zero, remap to 255 */         \
+        temp_calc = (int16_t)(((int16_t)(tgt_fm_corr) - temp_calc) / (int16_t)(div_fm_corr)); /* Caculate metric result */ \
+        if (temp_calc < 0)     /* Saturate anything below zero to zero */                                         \
         {                                                                                                         \
-            temp_calc = 255;                                                                                     \
+            (nadm_metric) = 0U;                                                                                   \
         }                                                                                                         \
-        temp_calc = (int16_t)(((int16_t)(tgt_fm_corr) - temp_calc) / (int16_t)(div_fm_corr)); /* Caculate metric result */                         \
-        if (temp_calc < 0)                                   /* Saturate anything below zero to zero */           \
+        else if (temp_calc > 6) /* Saturate anything above 6 to 6 */                                              \
         {                                                                                                         \
-            (nadm_metric) = 0U;                                                                                     \
+            (nadm_metric) = 6U;                                                                                   \
         }                                                                                                         \
         else                                                                                                      \
         {                                                                                                         \
-            if (temp_calc > 6) /* Saturate anything above 6 to 6 */                                               \
-            {                                                                                                     \
-                (nadm_metric) = 6U;                                                                                  \
-            }                                                                                                     \
-            else                                                                                                  \
-            {                                                                                                     \
-                (nadm_metric) = (uint8_t)temp_calc;                                                                 \
-            }                                                                                                     \
+            (nadm_metric) = (uint8_t)temp_calc;                                                                   \
         }                                                                                                         \
     } while (false)
-#endif
 
 /*!
  * @brief Macro to fetch the metric calculation factors for the NADM metric .
@@ -577,30 +553,30 @@ while (false)
 #define TGT_FM_CORR_1MBPS (255)
 #define NADM_METRIC_DIV_1MBPS (5)
 
-#define TGT_FM_CORR_2MBPS (255)
-#define NADM_METRIC_DIV_2MBPS (8)
+#define TGT_FM_CORR_2MBPS_BT05 (255)
+#define NADM_METRIC_DIV_2MBPS_BT05 (8)
 
-#define TGT_FM_CORR_RTT_96BIT (191)
-#define NADM_METRIC_DIV_RTT_96BIT (5)
-#define XCVR_LCL_GetNadmMetricCalFactors(datarate, rtt_type, tgt_fm_corr, div_fm_corr)                      \
+#define TGT_FM_CORR_2MBPS_BT2 (255)
+#define NADM_METRIC_DIV_2MBPS_BT2 (8)
+
+#define XCVR_LCL_GetNadmMetricCalFactors(rtt_phy, rtt_type, tgt_fm_corr, div_fm_corr)                       \
     do                                                                                                      \
     {                                                                                                       \
-        if ((datarate) == XCVR_RSM_RATE_1MBPS) /* divide factor differs by datarate */                      \
+                                                                                                            \
+        if (rtt_phy == XCVR_RSM_PHY_1MBPS_BT05) /* divide factor differs by datarate */                     \
         {                                                                                                   \
             (div_fm_corr) = NADM_METRIC_DIV_1MBPS;                                                          \
-        }                                                                                                   \
-        else                                                                                                \
-        {                                                                                                   \
-            (div_fm_corr) = NADM_METRIC_DIV_2MBPS;                                                          \
-        }                                                                                                   \
-        if ((rtt_type) == XCVR_RSM_RTT_96BIT_RANDOM) /* target FM_CORR value differs by RTT type */         \
-        {                                                                                                   \
-            (tgt_fm_corr) = TGT_FM_CORR_RTT_96BIT;     /* RTT 96 bit has custom target max FM CORR value */ \
-            (div_fm_corr) = NADM_METRIC_DIV_RTT_96BIT; /* RTT 96 bit has custom divide factor value */      \
-        }                                                                                                   \
-        else                                                                                                \
-        {                                                                                                   \
             (tgt_fm_corr) = TGT_FM_CORR_1MBPS;                                                              \
+        }                                                                                                   \
+        else if (rtt_phy == XCVR_RSM_PHY_2MBPS_BT05)                                                        \
+        {                                                                                                   \
+            (div_fm_corr) = NADM_METRIC_DIV_2MBPS_BT05;                                                     \
+            (tgt_fm_corr) = TGT_FM_CORR_2MBPS_BT05;                                                         \
+        }                                                                                                   \
+        else                                                                                                \
+        {                                                                                                   \
+            (div_fm_corr) = NADM_METRIC_DIV_2MBPS_BT2;                                                      \
+            (tgt_fm_corr) = TGT_FM_CORR_2MBPS_BT2;                                                          \
         }                                                                                                   \
     } while (false)
 
