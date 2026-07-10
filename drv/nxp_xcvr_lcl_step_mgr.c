@@ -460,7 +460,15 @@ xcvrLclStatus_t XCVR_LCL_ValidateSubeventInfo(cs_subevent_info_t * subevent_info
             (subevent_info_ptr->payload_list_refl == NULLPTR)  ||
             (subevent_info_ptr->channel_list == NULLPTR)  ||
             (subevent_info_ptr->hpm_cal_list == NULLPTR)  ||
-            (subevent_info_ptr->step_cfg_list== NULLPTR) )
+            (subevent_info_ptr->step_cfg_list == NULLPTR) ||
+            (subevent_info_ptr->step_type == NULLPTR) ||
+            (subevent_info_ptr->cfo_list == NULLPTR) ||
+            (subevent_info_ptr->phase_add_list == NULLPTR)
+#if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475)
+            || (subevent_info_ptr->phase_add_ap_list == NULLPTR) ||
+            (subevent_info_ptr->ant_permut_list == NULLPTR)
+#endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475) */
+            )
         {
             status = gXcvrLclStatusInvalidArgs;
         }
