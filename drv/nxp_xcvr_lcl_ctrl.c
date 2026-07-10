@@ -4076,13 +4076,18 @@ xcvrLclStatus_t XCVR_LCL_GetRsmDmaConfig(xcvr_lcl_rsmdma_config_t *rsm_dma_confi
     /* Select whether to use DMA duration from RSM registers or LCL antenna control */
     rsm_dma_config->dma_fm_dur = (uint16_t)((XCVR_MISC->RSM_CTRL4 & XCVR_MISC_RSM_CTRL4_RSM_DMA_DUR0_MASK) >>
                                            XCVR_MISC_RSM_CTRL4_RSM_DMA_DUR0_SHIFT);
-    uint8_t dma_iq_avg, dma_avg_enable;
+    uint8_t dma_iq_avg = 0U;
+    uint8_t dma_avg_enable = 0U;
     dma_avg_enable = (uint8_t)((rx_dig_ctrl1 & XCVR_RX_DIG_CTRL1_RX_DFT_IQ_OUT_AVERAGED_MASK) >> XCVR_RX_DIG_CTRL1_RX_DFT_IQ_OUT_AVERAGED_SHIFT);
-    if(dma_avg_enable)
+    if (dma_avg_enable)
     {
-      dma_iq_avg =    (uint8_t)((rx_dig_ctrl1 & XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN_MASK) >> XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN_SHIFT);
+        dma_iq_avg = (uint8_t)((rx_dig_ctrl1 & XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN_MASK) >> XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN_SHIFT);
     }
-    else dma_iq_avg =0;
+    else
+    {
+        dma_iq_avg = 0U;
+    }
+
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
     rsm_dma_config->rx_dft_iq_out_averaged = (rx_dig_ctrl1 & XCVR_RX_DIG_CTRL1_RX_DFT_IQ_OUT_AVERAGED_MASK) != 0U;
 #else
