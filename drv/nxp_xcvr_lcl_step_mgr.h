@@ -502,8 +502,15 @@ while (false)
         }                                                                                                         \
         else if ((rtt_type) == XCVR_RSM_RTT_96BIT_RANDOM) /* Scaling HW value as 96 bits is not power of 2 */     \
         {                                                                                                         \
-            (fm_corr_value) = (fm_corr_value * 171) >> 7U; /* 128/96 fixed point ratio (4/3) */                   \
-            (fm_corr_value) = (fm_corr_value > tgt_fm_corr) ? tgt_fm_corr:fm_corr_value;                          \
+            (fm_corr_value) = ((fm_corr_value) * 171U) >> 7U; /* 128/96 fixed point ratio (4/3) */                \
+            if ((fm_corr_value) > (tgt_fm_corr))                                                                  \
+            {                                                                                                     \
+                (fm_corr_value) = tgt_fm_corr;                                                                    \
+            }                                                                                                     \
+        }                                                                                                         \
+        else                                                                                                      \
+        {                                                                                                         \
+            /* no change to fm_corr_value */                                                                      \
         }                                                                                                         \
     } while (false)
 
@@ -515,8 +522,7 @@ while (false)
  * @param[in] uint8_t fm_corr_value The 8 bit FM_CORR value from the NADM_ERROR_RSSI result field.
  * @param[in] uint8_t tgt_fm_corr peak target value for FM_CORR value. Used in metric calculation.
  * @param[in] uint8_t div_fm_corr divide factor for FM_CORR value difference. Used in metric calculation.
- * @param[out] uint8_t nadm_metric The metric, ranging from 0 to 6 for valid inputs. 0xFF will be reported for zero
- * FM_CORR input.
+ * @param[out] uint8_t nadm_metric The metric, ranging from 0 to 6 for valid inputs.
  *
  */
 #define XCVR_LCL_CalcNadmMetric(fm_corr_value, tgt_fm_corr, div_fm_corr, nadm_metric)                             \
@@ -550,14 +556,14 @@ while (false)
  *
  */
 /* All should be signed constants */
-#define TGT_FM_CORR_1MBPS (255)
-#define NADM_METRIC_DIV_1MBPS (5)
+#define TGT_FM_CORR_1MBPS (255U)
+#define NADM_METRIC_DIV_1MBPS (5U)
 
-#define TGT_FM_CORR_2MBPS_BT05 (255)
-#define NADM_METRIC_DIV_2MBPS_BT05 (8)
+#define TGT_FM_CORR_2MBPS_BT05 (255U)
+#define NADM_METRIC_DIV_2MBPS_BT05 (8U)
 
-#define TGT_FM_CORR_2MBPS_BT2 (255)
-#define NADM_METRIC_DIV_2MBPS_BT2 (8)
+#define TGT_FM_CORR_2MBPS_BT2 (255U)
+#define NADM_METRIC_DIV_2MBPS_BT2 (8U)
 
 #define XCVR_LCL_GetNadmMetricCalFactors(rtt_phy, rtt_type, tgt_fm_corr, div_fm_corr)                       \
     do                                                                                                      \
