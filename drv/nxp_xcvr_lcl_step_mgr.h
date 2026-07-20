@@ -505,7 +505,7 @@ while (false)
             (fm_corr_value) = ((fm_corr_value) * 171U) >> 7U; /* 128/96 fixed point ratio (4/3) */                \
             if ((fm_corr_value) > (tgt_fm_corr))                                                                  \
             {                                                                                                     \
-                (fm_corr_value) = tgt_fm_corr;                                                                    \
+                (fm_corr_value) = (tgt_fm_corr);                                                                  \
             }                                                                                                     \
         }                                                                                                         \
         else                                                                                                      \
@@ -569,12 +569,12 @@ while (false)
     do                                                                                                      \
     {                                                                                                       \
                                                                                                             \
-        if (rtt_phy == XCVR_RSM_PHY_1MBPS_BT05) /* divide factor differs by datarate */                     \
+        if ((rtt_phy) == XCVR_RSM_PHY_1MBPS_BT05) /* divide factor differs by datarate */                   \
         {                                                                                                   \
             (div_fm_corr) = NADM_METRIC_DIV_1MBPS;                                                          \
             (tgt_fm_corr) = TGT_FM_CORR_1MBPS;                                                              \
         }                                                                                                   \
-        else if (rtt_phy == XCVR_RSM_PHY_2MBPS_BT05)                                                        \
+        else if ((rtt_phy) == XCVR_RSM_PHY_2MBPS_BT05)                                                      \
         {                                                                                                   \
             (div_fm_corr) = NADM_METRIC_DIV_2MBPS_BT05;                                                     \
             (tgt_fm_corr) = TGT_FM_CORR_2MBPS_BT05;                                                         \
