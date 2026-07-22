@@ -4078,9 +4078,8 @@ xcvrLclStatus_t XCVR_LCL_GetRsmDmaConfig(xcvr_lcl_rsmdma_config_t *rsm_dma_confi
                                            XCVR_MISC_RSM_CTRL4_RSM_DMA_DUR0_SHIFT);
     uint8_t dma_iq_avg = 0U;
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)  
-    bool dma_avg_enable = true;
-    dma_avg_enable = (rx_dig_ctrl1 & XCVR_RX_DIG_CTRL1_RX_DFT_IQ_OUT_AVERAGED_MASK) == XCVR_RX_DIG_CTRL1_RX_DFT_IQ_OUT_AVERAGED_MASK;
-    if (dma_avg_enable)
+    rsm_dma_config->rx_dft_iq_out_averaged = (rx_dig_ctrl1 & XCVR_RX_DIG_CTRL1_RX_DFT_IQ_OUT_AVERAGED_MASK) == XCVR_RX_DIG_CTRL1_RX_DFT_IQ_OUT_AVERAGED_MASK;
+    if (rsm_dma_config->rx_dft_iq_out_averaged)
     {
         dma_iq_avg = (uint8_t)((rx_dig_ctrl1 & XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN_MASK) >> XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN_SHIFT);
     }
@@ -4088,13 +4087,12 @@ xcvrLclStatus_t XCVR_LCL_GetRsmDmaConfig(xcvr_lcl_rsmdma_config_t *rsm_dma_confi
     {
         dma_iq_avg = 0U;
     }
-    rsm_dma_config->rx_dft_iq_out_averaged = dma_avg_enable;
 #else
     rsm_dma_config->rx_dft_iq_out_averaged = true; /* default dma get averaged samples with reduced sample rate ( KW45 ) */
     dma_iq_avg = (uint8_t)((rx_dig_ctrl1 & XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN_MASK) >> XCVR_RX_DIG_CTRL1_RX_IQ_PH_AVG_WIN_SHIFT);
 #endif
 
-    if ((dma_iq_avg == 0U) || rsm_dma_config->rx_dft_iq_out_averaged)
+    if (dma_iq_avg == 0U)
     {
         rsm_dma_config->dma_iq_avg = 1U;
     }
