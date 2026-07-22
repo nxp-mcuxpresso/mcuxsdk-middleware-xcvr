@@ -4440,17 +4440,17 @@ typedef struct {
 /* Helper functions for each step type */
 static void XCVR_LCL_CalculateFcsStep(xcvr_lcl_calc_context_t *ctx)
 {
-    uint8_t sample_compensation = 0U+SAMPLE_COMP_SUBTRACT_VALUE;
+    uint8_t sample_compensation = 1U;
     
     if (ctx->dma_config->dt_rx_mask_ena)
     { 
-        if ((ctx->role == XCVR_RSM_TX_MODE) && (ctx->rate == 1U))
+        if ((ctx->role == XCVR_RSM_TX_MODE) && (ctx->rate == 0U))
         {
-            sample_compensation = 1U+SAMPLE_COMP_SUBTRACT_VALUE;
+            sample_compensation -= 1U;
         }
         ctx->dma_samples +=
             (uint16_t)((ctx->state_duration->t_dt0_usec + ctx->rx_settling_latency + 
-                       ctx->rsm_rxlat_dig + sample_compensation - SAMPLE_COMP_SUBTRACT_VALUE) *
+                       ctx->rsm_rxlat_dig + sample_compensation) *
                        ctx->dma_config->sample_rate_per_usec);
     }
     
