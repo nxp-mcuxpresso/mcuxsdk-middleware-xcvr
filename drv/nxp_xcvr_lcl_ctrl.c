@@ -4545,10 +4545,9 @@ static void XCVR_LCL_CalculatePkTnTnPkStep(xcvr_lcl_calc_context_t *ctx, XCVR_RS
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
     if (ctx->dma_config->dt_rx_mask_ena)
     { 
-        sample_compensation = (ctx->role == XCVR_RSM_TX_MODE) ? 
-                             1U+SAMPLE_COMP_SUBTRACT_VALUE : 0U+SAMPLE_COMP_SUBTRACT_VALUE;
+        sample_compensation = ((ctx->role == XCVR_RSM_RX_MODE) && (ctx->rate == 0U)) ? 0U : 1U;
         ctx->dma_samples += ((ctx->state_duration->t_dt_usec + (uint16_t)ctx->rx_settling_latency +
-                             (uint16_t)ctx->rsm_rxlat_dig + sample_compensation - SAMPLE_COMP_SUBTRACT_VALUE) *
+                             (uint16_t)ctx->rsm_rxlat_dig + sample_compensation) *
                              ctx->dma_config->sample_rate_per_usec);
     }
 #endif
@@ -4575,12 +4574,11 @@ static void XCVR_LCL_CalculatePkTnTnPkStep(xcvr_lcl_calc_context_t *ctx, XCVR_RS
         {
             if (ctx->role == XCVR_RSM_TX_MODE)
             {
-                sample_compensation += (ctx->rate == 0U) ? 
-                                      8U+SAMPLE_COMP_SUBTRACT_VALUE : 24U+SAMPLE_COMP_SUBTRACT_VALUE;
+                sample_compensation += (ctx->rate == 0U) ? 8U : 24U;
             }
             else
             { 
-                sample_compensation += 1U+SAMPLE_COMP_SUBTRACT_VALUE;
+                sample_compensation += 1U;
             }
 
             ctx->dma_samples += ((ctx->state_duration->t_pm_usec[t_pm_sel] - temp_samples + 
