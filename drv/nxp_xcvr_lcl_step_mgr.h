@@ -347,7 +347,7 @@ while (false)
         {                                                                                                                \
             uint8_t base_idx = pack * 2U;                                                                               \
             uint32_t temp_phase_add = ((uint32_t)(*((phase_add_ptr)++))) & 0x0000FFFFU; /* pack low 16 bits */           \
-            if ((base_idx + 1U) < (num_ant))                                                                             \
+            if ((base_idx + 2U) < (num_ant))                                                                             \
             {                                                                                                            \
                 temp_phase_add |= ((uint32_t)(*((phase_add_ptr)++))) << 16U; /* pack high 16 bits */                    \
             }                                                                                                            \
