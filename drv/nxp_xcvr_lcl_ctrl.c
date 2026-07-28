@@ -4440,108 +4440,157 @@ typedef struct {
 /* Helper functions for each step type */
 static void XCVR_LCL_CalculateFcsStep(xcvr_lcl_calc_context_t *ctx)
 {
-    int8_t sample_compensation = 1U;
+    int8_t sample_compensation = 1;
+    uint32_t dma_samples_inc = 0U;
     
     if (ctx->dma_config->dt_rx_mask_ena)
     { 
         if (ctx->role == XCVR_RSM_TX_MODE)
         {
-          if (ctx->rate == 0U)
-          {
 #if (NXP_RADIO_GEN >= 475)
-            sample_compensation -= 3U;  // 1MBPS Initiator compensation
-          } else
-          {
-            sample_compensation -= 1U;  // 2MBPS Initiator compensation
+            if (ctx->rate == 0U)
+            {
+                sample_compensation -= 3;  // 1MBPS Initiator compensation
+            } else
+            {
+                sample_compensation -= 1;  // 2MBPS Initiator compensation
+            }
 #else
-            sample_compensation -= 1U;  // 1MBPS Initiator compensation
+            if (ctx->rate == 0U)
+            {
+                sample_compensation -= 1;  // 1MBPS Initiator compensation
+            }
 #endif
-          }
         }
-        ctx->dma_samples +=
-            (uint16_t)((ctx->state_duration->t_dt0_usec + ctx->rx_settling_latency + 
-                       ctx->rsm_rxlat_dig + sample_compensation) *
-                       ctx->dma_config->sample_rate_per_usec);
+        /* Compute in int32 to handle signed sample_compensation, then narrow to 16 bits
+           (MISRA 10.4, MISRA 10.8, CERT INT31-C). */
+        int32_t dt0_usec_sum = (int32_t)ctx->state_duration->t_dt0_usec +
+                               (int32_t)ctx->rx_settling_latency +
+                               (int32_t)ctx->rsm_rxlat_dig +
+                               (int32_t)sample_compensation;
+        int32_t dt0_samples = dt0_usec_sum * (int32_t)ctx->dma_config->sample_rate_per_usec;
+        /* Assign the multiply to a simple int32 variable so the cast operand is not a
+           composite expression (MISRA 10.8). Guard non-negative before the unsigned
+           conversion (CERT INT31-C) and accumulate in uint32 masked to 16 bits so the
+           modular truncation into dma_samples is explicit (CERT INT30-C). */
+        dma_samples_inc = (dt0_samples >= (int32_t)0) ? ((uint32_t)dt0_samples & 0xFFFFU) : 0U;
+        ctx->dma_samples = (uint16_t)(((uint32_t)ctx->dma_samples + dma_samples_inc) & 0xFFFFU);
     }
     
     if (ctx->role == XCVR_RSM_TX_MODE)
     { 
         if (ctx->dma_config->dma_mask_ena || ctx->dma_config->fm_rx_mask_ena)
         {
+            /* Compute in uint32 and mask to 16 bits: explicit narrowing into dma_samples (CERT INT31-C). */
             ctx->dma_samples +=
-                (ctx->dma_config->dma_fm_dur * ctx->dma_config->sample_rate_per_usec / 
-                 ctx->dma_config->dma_iq_avg);
+                (uint16_t)((((uint32_t)ctx->dma_config->dma_fm_dur *
+                              (uint32_t)ctx->dma_config->sample_rate_per_usec) /
+                             (uint32_t)ctx->dma_config->dma_iq_avg) & 0xFFFFU);
                  
             if (ctx->dma_config->fm_rx_mask_ena)
-            {   
-                ctx->dma_samples += ((T_FM_USEC - ctx->dma_config->dma_fm_dur +
-                                     ctx->rx_settling_latency) *
-                                     ctx->dma_config->sample_rate_per_usec);
+            {
+                /* Compute in uint32 and mask to 16 bits: explicit narrowing into dma_samples (CERT INT31-C). */
+                ctx->dma_samples +=
+                    (uint16_t)((((uint32_t)T_FM_USEC - (uint32_t)ctx->dma_config->dma_fm_dur +
+                                  (uint32_t)ctx->rx_settling_latency) *
+                                 (uint32_t)ctx->dma_config->sample_rate_per_usec) & 0xFFFFU);
             }
         }
     }
     
     /* Seq Len = T_FC+2*T_DT+T_IP1+T_S+T_FM */
-    ctx->step_length_us = ctx->state_duration->t_fc_usec + 
-                         (2U * ctx->state_duration->t_dt0_usec) +
-                         ctx->state_duration->t_ip1_usec + 
-                         ctx->state_duration->t_s_usec +
-                         T_FM_USEC;
+    /* Compute in uint32 and mask to 16 bits: explicit narrowing into step_length_us (CERT INT31-C). */
+    ctx->step_length_us = (uint16_t)(((uint32_t)ctx->state_duration->t_fc_usec +
+                         (2U * (uint32_t)ctx->state_duration->t_dt0_usec) +
+                         (uint32_t)ctx->state_duration->t_ip1_usec +
+                         (uint32_t)ctx->state_duration->t_s_usec +
+                         (uint32_t)T_FM_USEC) & 0xFFFFU);
 }
 
 static void XCVR_LCL_CalculatePkPkStep(xcvr_lcl_calc_context_t *ctx)
 {
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
     if (ctx->dma_config->dt_rx_mask_ena)
-    { 
-        ctx->dma_samples += ((ctx->state_duration->t_dt_usec + ctx->rx_settling_latency + 
-                             ctx->rsm_rxlat_dig + 1U) *
-                             ctx->dma_config->sample_rate_per_usec);
+    {
+        /* Compute in uint32 and mask to 16 bits: explicit narrowing into dma_samples (CERT INT31-C). */
+        ctx->dma_samples +=
+            (uint16_t)((((uint32_t)ctx->state_duration->t_dt_usec +
+                          (uint32_t)ctx->rx_settling_latency +
+                          (uint32_t)ctx->rsm_rxlat_dig + 1U) *
+                         (uint32_t)ctx->dma_config->sample_rate_per_usec) & 0xFFFFU);
     }
 #endif
     /* Seq Len = T_FC+2*T_DT+T_IP1 */
-    ctx->step_length_us = ctx->state_duration->t_fc_usec + 
-                         (2U * ctx->state_duration->t_dt_usec) + 
-                         ctx->state_duration->t_ip1_usec;
+    /* Compute in uint32 and mask to 16 bits: explicit narrowing into step_length_us (CERT INT31-C). */
+    ctx->step_length_us = (uint16_t)(((uint32_t)ctx->state_duration->t_fc_usec +
+                         (2U * (uint32_t)ctx->state_duration->t_dt_usec) +
+                         (uint32_t)ctx->state_duration->t_ip1_usec) & 0xFFFFU);
 }
 
 static void XCVR_LCL_CalculateTnTnStep(xcvr_lcl_calc_context_t *ctx, XCVR_RSM_T_PM_FM_SEL_T t_pm_sel)
 {
     uint16_t temp_samples;
-    int8_t sample_compensation = 0U;
-    
+    int8_t sample_compensation = 0;
+    uint32_t dma_samples_inc = 0U;
+
     if (!ctx->dma_config->rsm_dma_mask_used)
     {
         /* RSM DMA mask not used == LCL block used; Must consider multi-ant */
-        temp_samples = ctx->dma_config->dma_pm_dur *
-                      ((uint16_t)ctx->ant_cnt + (uint16_t)TONE_EXT_COUNT);
+        temp_samples = (uint16_t)(((uint32_t)ctx->dma_config->dma_pm_dur *
+                        ((uint32_t)ctx->ant_cnt + (uint32_t)TONE_EXT_COUNT)) & 0xFFFFU);
 #if (NXP_RADIO_GEN>=475)
-        sample_compensation = 1U;
+        sample_compensation = 1;
 #else
-        sample_compensation = (ctx->dma_config->rx_dft_iq_out_averaged) ? -ctx->ant_cnt : 1;
+        {
+            /* Mask ant_cnt to 7 bits into a plain uint8_t so the signed cast operand is a
+               simple variable, not a composite expression (MISRA 10.8); value 0..127 always
+               fits int8_t (CERT INT31-C). */
+            uint8_t ant_cnt_masked = (uint8_t)(ctx->ant_cnt & 0x7FU);
+            sample_compensation = (ctx->dma_config->rx_dft_iq_out_averaged) ?
+                (int8_t)(0 - (int8_t)ant_cnt_masked) : (int8_t)1;
+        }
 #endif
     }
     else
-    { 
+    {
         temp_samples = ctx->dma_config->dma_pm_dur;
 #if (NXP_RADIO_GEN >= 475)
-        sample_compensation = (ctx->dma_config->dma_iq_avg > 1) ? 0U : 1U;
+        sample_compensation = (ctx->dma_config->dma_iq_avg > 1U) ? 0 : 1;
 #else
-        sample_compensation = 1U;
+        sample_compensation = 1;
 #endif
     }
-    
+
     if (ctx->dma_config->dma_mask_ena || ctx->dma_config->pm_rx_mask_ena)
     {
-        ctx->dma_samples += (temp_samples * ctx->dma_config->sample_rate_per_usec) / 
-                           ctx->dma_config->dma_iq_avg;
+        /* Compute product/quotient in uint64 to prevent unsigned wrap (CERT INT30-C).
+           Store in dma_samples_inc, then accumulate in uint32 and mask to 16 bits so
+           the modular truncation into dma_samples is explicit (CERT INT30-C / INT31-C). */
+        dma_samples_inc =
+            (uint32_t)((((uint64_t)temp_samples * (uint64_t)ctx->dma_config->sample_rate_per_usec) /
+                         (uint64_t)ctx->dma_config->dma_iq_avg) & 0xFFFFU);
+        ctx->dma_samples = (uint16_t)(((uint32_t)ctx->dma_samples + dma_samples_inc) & 0xFFFFU);
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
         if (ctx->dma_config->pm_rx_mask_ena)
         {
-            ctx->dma_samples += ((ctx->state_duration->t_pm_usec[t_pm_sel] - temp_samples + 
-                                 ctx->rx_settling_latency) *
-                                 ctx->dma_config->sample_rate_per_usec);
-            ctx->dma_samples = ctx->dma_samples + sample_compensation;
+            /* Compute (t_pm - temp_samples + rx_latency) in signed int32 so unsigned
+               wrap cannot occur when temp_samples exceeds t_pm_usec (CERT INT30-C).
+               Guard non-negative before the unsigned conversion (CERT INT31-C). */
+            int32_t pm_delta = (int32_t)ctx->state_duration->t_pm_usec[t_pm_sel] -
+                               (int32_t)temp_samples + (int32_t)ctx->rx_settling_latency;
+            uint32_t pm_delta_u = (pm_delta >= (int32_t)0) ? (uint32_t)pm_delta : 0U;
+            /* Multiply in uint64 to prevent wrap (product can exceed uint32 range),
+               then mask to 16 bits and accumulate in uint32 before the narrowing
+               assignment to dma_samples (CERT INT30-C / INT31-C). */
+            dma_samples_inc =
+                (uint32_t)(((uint64_t)pm_delta_u * (uint64_t)ctx->dma_config->sample_rate_per_usec) & 0xFFFFU);
+            ctx->dma_samples = (uint16_t)(((uint32_t)ctx->dma_samples + dma_samples_inc) & 0xFFFFU);
+            /* Add signed compensation in int32 (no lossy uint16->int16 cast), then
+               narrow to 16 bits. Guard the signed-to-unsigned cast so the value is
+               non-negative before conversion (CERT INT31-C). */
+            int32_t temp_dma_samples = (int32_t)ctx->dma_samples + (int32_t)sample_compensation;
+            ctx->dma_samples = (temp_dma_samples >= (int32_t)0) ?
+                (uint16_t)((uint32_t)temp_dma_samples & 0xFFFFU) : (uint16_t)0U;
         }
 #else
         (void)sample_compensation;
@@ -4549,66 +4598,90 @@ static void XCVR_LCL_CalculateTnTnStep(xcvr_lcl_calc_context_t *ctx, XCVR_RSM_T_
     }
     
     /* Seq Len = T_FC+2*T_PM*NUM_ANT+T_IP2 */
-    ctx->step_length_us = ctx->state_duration->t_fc_usec + 
-                         (2U * ctx->state_duration->t_pm_usec[t_pm_sel]) +
-                         ctx->state_duration->t_ip2_usec;
+    /* Compute in uint32 and mask to 16 bits: explicit narrowing into step_length_us (CERT INT31-C). */
+    ctx->step_length_us = (uint16_t)(((uint32_t)ctx->state_duration->t_fc_usec +
+                         (2U * (uint32_t)ctx->state_duration->t_pm_usec[t_pm_sel]) +
+                         (uint32_t)ctx->state_duration->t_ip2_usec) & 0xFFFFU);
 }
 
 static void XCVR_LCL_CalculatePkTnTnPkStep(xcvr_lcl_calc_context_t *ctx, XCVR_RSM_T_PM_FM_SEL_T t_pm_sel)
 {
     uint16_t temp_samples;
-    int8_t sample_compensation = 0U;
-    
+    int8_t sample_compensation = 0;
+    uint32_t dma_samples_inc = 0U;
+
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
     if (ctx->dma_config->dt_rx_mask_ena)
-    { 
+    {
 #if (NXP_RADIO_GEN >= 475)
       sample_compensation = 1;
       if(ctx->role == XCVR_RSM_RX_MODE) {
         sample_compensation = (ctx->rate == 0U)? -2 : 0;
       }
 #else
-        sample_compensation = ((ctx->role == XCVR_RSM_RX_MODE) && (ctx->rate == 0U)) ? 0U : 1U;
+        sample_compensation = ((ctx->role == XCVR_RSM_RX_MODE) && (ctx->rate == 0U)) ? 0 : 1;
 #endif
-        ctx->dma_samples += ((ctx->state_duration->t_dt_usec + (uint16_t)ctx->rx_settling_latency +
-                             (uint16_t)ctx->rsm_rxlat_dig + sample_compensation) *
-                             ctx->dma_config->sample_rate_per_usec);
+        /* Compute in int32 to handle signed sample_compensation, then narrow to 16 bits
+           (MISRA 10.4, CERT INT31-C). */
+        int32_t dt_usec_sum = (int32_t)ctx->state_duration->t_dt_usec +
+                              (int32_t)ctx->rx_settling_latency +
+                              (int32_t)ctx->rsm_rxlat_dig +
+                              (int32_t)sample_compensation;
+        int32_t dt_samples = dt_usec_sum * (int32_t)ctx->dma_config->sample_rate_per_usec;
+        /* Assign the multiply to a simple int32 variable so the cast operand is not a
+           composite expression (MISRA 10.8). Guard non-negative before the unsigned
+           conversion (CERT INT31-C) and accumulate in uint32 masked to 16 bits so the
+           modular truncation into dma_samples is explicit (CERT INT30-C). */
+        dma_samples_inc = (dt_samples >= (int32_t)0) ? ((uint32_t)dt_samples & 0xFFFFU) : 0U;
+        ctx->dma_samples = (uint16_t)(((uint32_t)ctx->dma_samples + dma_samples_inc) & 0xFFFFU);
     }
 #endif
 
     if (!ctx->dma_config->rsm_dma_mask_used)
     {
-        temp_samples = ctx->dma_config->dma_pm_dur *
-                      ((uint16_t)ctx->ant_cnt + (uint16_t)TONE_EXT_COUNT);
+        temp_samples = (uint16_t)(((uint32_t)ctx->dma_config->dma_pm_dur *
+                      ((uint32_t)ctx->ant_cnt + (uint32_t)TONE_EXT_COUNT)) & 0xFFFFU);
 #if (NXP_RADIO_GEN>=475)
-        sample_compensation = 1U;
+        sample_compensation = 1;
 #else
-        sample_compensation = (ctx->dma_config->rx_dft_iq_out_averaged) ? -ctx->ant_cnt : 1;
+        {
+            /* Mask ant_cnt to 7 bits into a plain uint8_t so the signed cast operand is a
+               simple variable, not a composite expression (MISRA 10.8); value 0..127 always
+               fits int8_t (CERT INT31-C). */
+            uint8_t ant_cnt_masked = (uint8_t)(ctx->ant_cnt & 0x7FU);
+            sample_compensation = (ctx->dma_config->rx_dft_iq_out_averaged) ?
+                (int8_t)(0 - (int8_t)ant_cnt_masked) : (int8_t)1;
+        }
 #endif
     }
     else
-    { 
+    {
         temp_samples = ctx->dma_config->dma_pm_dur;
 #if (NXP_RADIO_GEN >= 475)
-        sample_compensation = (ctx->dma_config->dma_iq_avg > 1) ? 0U : 1U;
+        sample_compensation = (ctx->dma_config->dma_iq_avg > 1U) ? 0 : 1;
 #else
-        sample_compensation = 1U;
+        sample_compensation = 1;
 #endif
     }
 
     if (ctx->dma_config->dma_mask_ena || ctx->dma_config->pm_rx_mask_ena)
     {
-        ctx->dma_samples += (temp_samples * ctx->dma_config->sample_rate_per_usec) / 
-                           ctx->dma_config->dma_iq_avg;
+        /* Compute product/quotient in uint64 to prevent unsigned wrap (CERT INT30-C).
+           Store in dma_samples_inc, then accumulate in uint32 and mask to 16 bits so
+           the modular truncation into dma_samples is explicit (CERT INT30-C / INT31-C). */
+        dma_samples_inc =
+            (uint32_t)((((uint64_t)temp_samples * (uint64_t)ctx->dma_config->sample_rate_per_usec) /
+                         (uint64_t)ctx->dma_config->dma_iq_avg) & 0xFFFFU);
+        ctx->dma_samples = (uint16_t)(((uint32_t)ctx->dma_samples + dma_samples_inc) & 0xFFFFU);
 #if defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470)
         if (ctx->dma_config->pm_rx_mask_ena)
         {
             if (ctx->role == XCVR_RSM_TX_MODE)
             {
 #if (NXP_RADIO_GEN >= 475)
-                sample_compensation += (ctx->rate == 0U) ? 7U : 31U;
+                sample_compensation += (ctx->rate == 0U) ? 7 : 31;
 #else
-                sample_compensation += (ctx->rate == 0U) ? 7U : 23U;
+                sample_compensation += (ctx->rate == 0U) ? 7 : 23;
 #endif
             }
             else
@@ -4616,10 +4689,23 @@ static void XCVR_LCL_CalculatePkTnTnPkStep(xcvr_lcl_calc_context_t *ctx, XCVR_RS
                // sample_compensation += 1U;
             }
 
-            ctx->dma_samples += ((ctx->state_duration->t_pm_usec[t_pm_sel] - temp_samples + 
-                                 ctx->rx_settling_latency) *
-                                 ctx->dma_config->sample_rate_per_usec);
-            ctx->dma_samples = ctx->dma_samples + sample_compensation;
+            /* Compute (t_pm - temp_samples + rx_latency) in signed int32 so unsigned
+               wrap cannot occur when temp_samples exceeds t_pm_usec (CERT INT30-C).
+               Guard non-negative before the unsigned conversion (CERT INT31-C). */
+            int32_t pm_delta = (int32_t)ctx->state_duration->t_pm_usec[t_pm_sel] -
+                               (int32_t)temp_samples + (int32_t)ctx->rx_settling_latency;
+            uint32_t pm_delta_u = (pm_delta >= (int32_t)0) ? (uint32_t)pm_delta : 0U;
+            /* Multiply in uint64 to prevent wrap (product can exceed uint32 range),
+               then mask to 16 bits and accumulate in uint32 before the narrowing
+               assignment to dma_samples (CERT INT30-C / INT31-C). */
+            dma_samples_inc =
+                (uint32_t)(((uint64_t)pm_delta_u * (uint64_t)ctx->dma_config->sample_rate_per_usec) & 0xFFFFU);
+            ctx->dma_samples = (uint16_t)(((uint32_t)ctx->dma_samples + dma_samples_inc) & 0xFFFFU);
+            /* Add signed compensation in int32 (avoids uint16->int16 narrowing cast); narrow to 16 bits.
+               Guard the signed-to-unsigned cast so the value is non-negative before conversion (CERT INT31-C). */
+            int32_t temp_dma_samples = (int32_t)ctx->dma_samples + (int32_t)sample_compensation;
+            ctx->dma_samples = (temp_dma_samples >= (int32_t)0) ?
+                (uint16_t)((uint32_t)temp_dma_samples & 0xFFFFU) : (uint16_t)0U;
         }
 #else
         (void)sample_compensation;
@@ -4627,10 +4713,12 @@ static void XCVR_LCL_CalculatePkTnTnPkStep(xcvr_lcl_calc_context_t *ctx, XCVR_RS
     }
 
     /* Seq Len = T_FC+2*T_DT+2*T_S+2*T_PM*NUM_ANT+T_IP2 */
-    ctx->step_length_us = ctx->state_duration->t_fc_usec + (2U * ctx->state_duration->t_dt_usec) +
-                         (2U * ctx->state_duration->t_pm_usec[t_pm_sel]) + 
-                         (2U * ctx->state_duration->t_s_usec) +
-                         ctx->state_duration->t_ip2_usec;
+    /* Compute in uint32 and mask to 16 bits: explicit narrowing into step_length_us (CERT INT31-C). */
+    ctx->step_length_us = (uint16_t)(((uint32_t)ctx->state_duration->t_fc_usec +
+                         (2U * (uint32_t)ctx->state_duration->t_dt_usec) +
+                         (2U * (uint32_t)ctx->state_duration->t_pm_usec[t_pm_sel]) +
+                         (2U * (uint32_t)ctx->state_duration->t_s_usec) +
+                         (uint32_t)ctx->state_duration->t_ip2_usec) & 0xFFFFU);
 }
 
 /* Process a single step and update the calculation context */
