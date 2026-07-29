@@ -231,8 +231,6 @@ extern "C" {
 
 #define HPM_CAL_REPETITIONS  (16U)   /* Repetition count for HPM CAL averaging CONNRF-1460 */
 
-#define XCVR_RSM_PHY_TO_RATE(PHY) (((PHY) == XCVR_RSM_PHY_1MBPS_BT05) ? XCVR_RSM_RATE_1MBPS:XCVR_RSM_RATE_2MBPS)
-
 /*! @brief  RSM control mode settings. */
 typedef enum
 {
@@ -423,6 +421,20 @@ typedef enum
     XCVR_RSM_TX_SNR_ERROR    = 5U, /*!< Error limit. */
 } XCVR_RSM_TX_SNR_T;
 #endif /* defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 470) */
+
+/*!
+ * @brief Translate an RSM PHY selection to the corresponding data rate.
+ *
+ * @param[in] phy  PHY selection (XCVR_RSM_PHY_T).
+ * @return         XCVR_RSM_RATE_1MBPS for 1Mbps PHY, XCVR_RSM_RATE_2MBPS for all 2Mbps PHYs.
+ * @note Inline function chosen because macro implementation cannot be MISRA clean over all 
+ *  calling possibilities (calling with variable vs. calling with a macro symbol)
+ */
+static inline XCVR_RSM_SQTE_RATE_T XCVR_RSM_PHY_TO_RATE(XCVR_RSM_PHY_T phy)
+{
+    return (phy == XCVR_RSM_PHY_1MBPS_BT05) ? XCVR_RSM_RATE_1MBPS : XCVR_RSM_RATE_2MBPS;
+}
+
 /* Define callback function for RSM interrupt. */
 /*! *********************************************************************************
  * \brief  This callback is a pointer to a user routine to be called when RSM interrtupt happens.

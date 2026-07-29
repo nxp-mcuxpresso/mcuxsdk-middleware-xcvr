@@ -217,10 +217,10 @@ extern "C" {
         (cfg_entry)->header.CHANNEL_NUM    = (uint16_t)(mapped_channel); /* Entry is full 16 bits wide so no need to mask/shift */ \
         (cfg_entry)->header.STEP_CFO       = (step_cfo);     /* Entry is full 16 bits wide so no need to mask/shift */ \
         (cfg_entry)->header.HPM_CAL_FACTOR = (uint16_t)(COM_MODE_013_CFG_HDR_HPM_CAL_FACTOR_HPM_CAL_FACTOR(                       \
-            (hpm_cal) >> 1U)); /*  Field stores the 12MSBs of HPM_CAL_FACTOR: HPM_CAL_FACTOR[12:1] */                     \
+            ((uint16_t)(hpm_cal)) >> 1U)); /*  Field stores the 12MSBs of HPM_CAL_FACTOR: HPM_CAL_FACTOR[12:1] */                     \
         (cfg_entry)->header.CTUNE_MANUAL = COM_MODE_013_CFG_HDR_CTUNE_MANUAL_CTUNE_MANUAL((ctune));                      \
         (cfg_entry)->header.PHASE_ADD    = COM_MODE_013_CFG_HDR_PHASE_ADD_PHASE_ADD((phase_add));                        \
-    } while (false)
+    } while ((bool)false)
 
 #if (1) /* use this option if the pointers passed into the macro are not incrementable */
 #define XCVR_LCL_WriteCommonHeader(pkt_ram_p, sys_ram_p)     \
@@ -235,7 +235,7 @@ extern "C" {
         (pktram)->U32_data[0] = (sysram)->U32_data[0]; \
         (pktram)->U32_data[1] = (sysram)->U32_data[1]; \
         (pktram)->U32_data[2] = (sysram)->U32_data[2]; \
-    } while (false)
+    } while ((bool)false)
 #else /* use this option if the pointers passed in are incrementable */
 #define XCVR_LCL_WriteCommonHeader(pkt_ram_p, sys_ram_p) \
     do                                                   \
@@ -243,7 +243,7 @@ extern "C" {
         *pkt_ram_p++ = *sys_ram_p++;                     \
         *pkt_ram_p++ = *sys_ram_p++;                     \
         *pkt_ram_p++ = *sys_ram_p++;                     \
-    } while (false)
+    } while ((bool)false)
 #endif
 
 /*!
@@ -305,7 +305,7 @@ while (false)
         {                                                                                              \
             *payload_ptr++ = *(payload_refl_ptr)++; /* Increments the pointer that is passed in */     \
         }                                                                                              \
-    } while (false)
+    } while ((bool)false)
 
 /*!
  * @brief Macro to configure the Mode 2/3 step Body structure ( antenna permutation and phase part ).
@@ -353,7 +353,7 @@ while (false)
             }                                                                                                            \
             *cfg_body_ptr++ = temp_phase_add;                                                                            \
         }                                                                                                                \
-    } while (false)
+    } while ((bool)false)
     
 /*!
  * @brief Macro to unpack the Common header portion of step result COM_RES_HDR_Type structure.
@@ -380,13 +380,13 @@ while (false)
                     COM_RES_HDR_SIZE_AGC_IDX_AGC_IDX_SHIFT);                                                     \
         (result_size) = (((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_RESULT_SIZE_MASK) >>  \
                        COM_RES_HDR_PBCD_CTUNE_AA_DET_RESULT_SIZE_SHIFT);                                         \
-        (pbcd_ctune) = (((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_PBCD_CTUNE_MASK) >>    \
+        (pbcd_ctune) = (uint8_t)(((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_PBCD_CTUNE_MASK) >>    \
                       COM_RES_HDR_PBCD_CTUNE_AA_DET_PBCD_CTUNE_SHIFT);                                           \
-        (time_drift) = (((com_res_hdr_ptr)->SIZE_AGC_IDX & COM_RES_HDR_SIZE_AGC_IDX_TIME_DRIFT_MASK) >>              \
+        (time_drift) = (uint8_t)(((com_res_hdr_ptr)->SIZE_AGC_IDX & COM_RES_HDR_SIZE_AGC_IDX_TIME_DRIFT_MASK) >>              \
                       COM_RES_HDR_SIZE_AGC_IDX_TIME_DRIFT_SHIFT);                                                \
-        (aa_det) = (((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_AA_DET_MASK) >>            \
-                  COM_RES_HDR_PBCD_CTUNE_AA_DET_AA_DET_SHIFT);                                                   \
-    } while (false)
+        (aa_det) = (uint8_t)((uint8_t)((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET >>                                               \
+                  COM_RES_HDR_PBCD_CTUNE_AA_DET_AA_DET_SHIFT) & 0xFFU);                                                   \
+    } while ((bool)false)
 #else
 #define XCVR_LCL_Unpack_Common_Header_Result(com_res_hdr_ptr, step_id, agc_idx, result_size,                     \
                                              pbcd_ctune, time_drift, aa_det)                                     \
@@ -398,13 +398,13 @@ while (false)
                     COM_RES_HDR_SIZE_AGC_IDX_AGC_IDX_SHIFT);                                                     \
         (result_size) = (((com_res_hdr_ptr)->SIZE_AGC_IDX & COM_RES_HDR_SIZE_AGC_IDX_RESULT_SIZE_MASK) >>            \
                         COM_RES_HDR_SIZE_AGC_IDX_RESULT_SIZE_SHIFT);                                             \
-        (pbcd_ctune) = (((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_PBCD_CTUNE_MASK) >>    \
+        (pbcd_ctune) = (uint8_t)(((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_PBCD_CTUNE_MASK) >>    \
                       COM_RES_HDR_PBCD_CTUNE_AA_DET_PBCD_CTUNE_SHIFT);                                           \
-        (time_drift) = (((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_TIME_DRIFT_MASK) >>    \
+        (time_drift) = (uint8_t)(((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_TIME_DRIFT_MASK) >>    \
                       COM_RES_HDR_PBCD_CTUNE_AA_DET_TIME_DRIFT_SHIFT);                                           \
-        (aa_det) = (((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_AA_DET_MASK) >>            \
-                  COM_RES_HDR_PBCD_CTUNE_AA_DET_AA_DET_SHIFT);                                                   \
-    } while (false)
+        (aa_det) = (uint8_t)((uint8_t)((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET >>                                               \
+                  COM_RES_HDR_PBCD_CTUNE_AA_DET_AA_DET_SHIFT) & 0xFFU);                                                   \
+    } while ((bool)false)
 #endif
 
 #if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN >= 475))                                                           
@@ -427,21 +427,21 @@ while (false)
     nadm_fm_symb_err_value, nadm_fm_symb_err_valid, nadm_pdelta)                                                \
     do                                                                                                          \
     {                                                                                                           \
-        (nadm_fm_corr_value) =                                                                                    \
+        (nadm_fm_corr_value) = (uint8_t)                                                                                    \
             (((nadm_result_packed) & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_MASK) >>            \
             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_SHIFT);                                    \
-        (nadm_fm_corr_valid) =                                                                                    \
+        (nadm_fm_corr_valid) = (bool)                                                                                    \
             (((nadm_result_packed) & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALID_MASK) >>            \
             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALID_SHIFT);                                    \
-        (nadm_fm_symb_err_value) =                                                                                \
+        (nadm_fm_symb_err_value) = (uint8_t)                                                                                \
             (((nadm_result_packed) & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_MASK) >>        \
             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_SHIFT);                                \
-        (nadm_fm_symb_err_valid) =                                                                                \
+        (nadm_fm_symb_err_valid) = (bool)                                                                                \
             (((nadm_result_packed) & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALID_MASK) >>        \
-            COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_SHIFT);                                \
-        (nadm_pdelta) = (((nadm_result_packed) & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_PDELTA_MASK) >>         \
+            COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALID_SHIFT);                                \
+        (nadm_pdelta) = (uint16_t)(((nadm_result_packed) & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_PDELTA_MASK) >>         \
             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_PDELTA_SHIFT);                                           \
-    } while (false)
+    } while ((bool)false)
 #else
 /*!
  * @brief Macro to unpack the NADM portion of Mode 0/1/3 step result structure COM_MODE_013_RES_BODY.
@@ -463,24 +463,24 @@ while (false)
     nadm_fm_symb_err_value, nadm_fm_symb_err_valid, nadm_pdelta)                                                \
     do                                                                                                          \
     {                                                                                                           \
-        (rssi_nb) = (((nadm_result_packed) & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >>                 \
+        (rssi_nb) = (uint8_t)(((nadm_result_packed) & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_MASK) >>                 \
                   COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RSSI_NB_SHIFT);                                         \
-        (nadm_fm_corr_value) =                                                                                    \
+        (nadm_fm_corr_value) = (uint8_t)                                                                                    \
             (((nadm_result_packed) & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_MASK) >>            \
             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALUE_SHIFT);                                    \
-        (nadm_fm_corr_valid) =                                                                                    \
+        (nadm_fm_corr_valid) = (bool)                                                                                    \
             (((nadm_result_packed) & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALID_MASK) >>            \
             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_CORR_VALID_SHIFT);                                    \
-        (nadm_fm_symb_err_value) =                                                                                \
+        (nadm_fm_symb_err_value) = (uint8_t)                                                                                \
             (((nadm_result_packed) & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_MASK) >>        \
             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALUE_SHIFT);                                \
-        (nadm_fm_symb_err_valid) =                                                                                \
+        (nadm_fm_symb_err_valid) = (bool)                                                                                \
             (((nadm_result_packed) & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALID_MASK) >>        \
             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_FM_SYMB_ERR_VALID_SHIFT);                                \
-        (nadm_pdelta) =                                                                                           \
+        (nadm_pdelta) = (uint16_t)                                                                                           \
             (((nadm_result_packed) & COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_PDELTA_MASK) >>                   \
             COM_MODE_013_RES_BODY_NADM_ERROR_RSSI_RAW_NADM_PDELTA_SHIFT);                                           \
-    } while (false)
+    } while ((bool)false)
 #endif                                                                                                                                                                                                               \
 
 /*!
@@ -512,7 +512,7 @@ while (false)
         {                                                                                                         \
             /* no change to fm_corr_value */                                                                      \
         }                                                                                                         \
-    } while (false)
+    } while ((bool)false)
 
 /*!
  * @brief Macro to calculate the NADM metric from the FM_CORR value reported in COM_MODE_013_RES_BODY.
@@ -543,7 +543,7 @@ while (false)
         {                                                                                                         \
             (nadm_metric) = (uint8_t)temp_calc;                                                                   \
         }                                                                                                         \
-    } while (false)
+    } while ((bool)false)
 
 /*!
  * @brief Macro to fetch the metric calculation factors for the NADM metric .
@@ -557,14 +557,14 @@ while (false)
  *
  */
 /* All should be signed constants */
-#define TGT_FM_CORR_1MBPS (255U)
-#define NADM_METRIC_DIV_1MBPS (5U)
+#define TGT_FM_CORR_1MBPS (255)
+#define NADM_METRIC_DIV_1MBPS (5)
 
-#define TGT_FM_CORR_2MBPS_BT05 (255U)
-#define NADM_METRIC_DIV_2MBPS_BT05 (8U)
+#define TGT_FM_CORR_2MBPS_BT05 (255)
+#define NADM_METRIC_DIV_2MBPS_BT05 (8)
 
-#define TGT_FM_CORR_2MBPS_BT2 (255U)
-#define NADM_METRIC_DIV_2MBPS_BT2 (8U)
+#define TGT_FM_CORR_2MBPS_BT2 (255)
+#define NADM_METRIC_DIV_2MBPS_BT2 (8)
 
 #define XCVR_LCL_GetNadmMetricCalFactors(rtt_phy, rtt_type, tgt_fm_corr, div_fm_corr)                       \
     do                                                                                                      \
@@ -572,20 +572,20 @@ while (false)
                                                                                                             \
         if ((rtt_phy) == XCVR_RSM_PHY_1MBPS_BT05) /* divide factor differs by datarate */                   \
         {                                                                                                   \
-            (div_fm_corr) = NADM_METRIC_DIV_1MBPS;                                                          \
-            (tgt_fm_corr) = TGT_FM_CORR_1MBPS;                                                              \
+            (div_fm_corr) = (int8_t)(NADM_METRIC_DIV_1MBPS);                                                          \
+            (tgt_fm_corr) = (int16_t)(TGT_FM_CORR_1MBPS);                                                              \
         }                                                                                                   \
         else if ((rtt_phy) == XCVR_RSM_PHY_2MBPS_BT05)                                                      \
         {                                                                                                   \
-            (div_fm_corr) = NADM_METRIC_DIV_2MBPS_BT05;                                                     \
-            (tgt_fm_corr) = TGT_FM_CORR_2MBPS_BT05;                                                         \
+            (div_fm_corr) = (int8_t)(NADM_METRIC_DIV_2MBPS_BT05);                                                     \
+            (tgt_fm_corr) = (int16_t)(TGT_FM_CORR_2MBPS_BT05);                                                         \
         }                                                                                                   \
         else                                                                                                \
         {                                                                                                   \
-            (div_fm_corr) = NADM_METRIC_DIV_2MBPS_BT2;                                                      \
-            (tgt_fm_corr) = TGT_FM_CORR_2MBPS_BT2;                                                          \
+            (div_fm_corr) = (int8_t)(NADM_METRIC_DIV_2MBPS_BT2);                                                      \
+            (tgt_fm_corr) = (int16_t)(TGT_FM_CORR_2MBPS_BT2);                                                          \
         }                                                                                                   \
-    } while (false)
+    } while ((bool)false)
 
 /*!
  * @brief Macro to unpack the RTT portion of Mode 0/1/3 step result structure COM_MODE_013_RES_BODY.
@@ -628,10 +628,10 @@ while (false)
         uint8_t temp_adj;                                                                                              \
         temp_adj    = (uint8_t)(((rtt_result_packed) & COM_MODE_013_RES_BODY_RTT_RESULT_RTT_INT_ADJ_MASK) >>             \
                              COM_MODE_013_RES_BODY_RTT_RESULT_RTT_INT_ADJ_SHIFT);                                   \
-        (rtt_int_adj) = ((int8_t)(temp_adj << 6)) >> 6; /* extend sign */                                                \
+        (rtt_int_adj) = (int8_t)((uint8_t)(temp_adj << 6U) >> 6U); /* sign-extend 2-bit field: shift unsigned, cast to signed */                                                \
         (rtt_p_delta) = (uint16_t)(((rtt_result_packed) & COM_MODE_013_RES_BODY_RTT_RESULT_RTT_P_DELTA_MASK) >>            \
                                  COM_MODE_013_RES_BODY_RTT_RESULT_RTT_P_DELTA_SHIFT);                                  \
-    } while (false)
+    } while ((bool)false)
 
 
 #if (defined(NXP_RADIO_GEN) && (NXP_RADIO_GEN>= 475))
@@ -650,18 +650,18 @@ while (false)
 #define XCVR_LCL_Unpack013_CFO_Result(cfo_est, cfo_signed, rssi_vld, rssi_nb, snr_nb)                               \
     do                                                                                                              \
     {                                                                                                               \
-        uint16_t temp_cfo = (uint16_t)(((cfo_est) & COM_MODE_013_RES_BODY_CFO_EST_CFO_EST_MASK) >>                    \
+        uint16_t temp_cfo = (uint16_t)(((uint32_t)(cfo_est) & COM_MODE_013_RES_BODY_CFO_EST_CFO_EST_MASK) >>                    \
                                        COM_MODE_013_RES_BODY_CFO_EST_CFO_EST_SHIFT);                                \
         temp_cfo =                                                                                                  \
-            (((temp_cfo & 0x200U) == 0U) ? temp_cfo :                                                               \
-                                           temp_cfo | 0xFC00); /* sign extend within the 16bits unsigned storage */ \
+            (uint16_t)(((temp_cfo & 0x200U) == (uint16_t)0U) ? temp_cfo :                                                               \
+                                           temp_cfo | 0xFC00U); /* sign extend within the 16bits unsigned storage */ \
         (cfo_signed) = (int16_t)(temp_cfo);                                                                           \
-        (rssi_nb) = (int8_t)((((cfo_est) & COM_MODE_013_RES_BODY_CFO_EST_RSSI_NB_MASK) >>                                        \
+        (rssi_nb) = (uint8_t)((((cfo_est) & COM_MODE_013_RES_BODY_CFO_EST_RSSI_NB_MASK) >>                                        \
                   COM_MODE_013_RES_BODY_CFO_EST_RSSI_NB_SHIFT));                                                     \
         (rssi_vld) = (((cfo_est) & COM_MODE_013_RES_BODY_CFO_EST_RSSI_VLD_MASK) >>                                      \
                     COM_MODE_013_RES_BODY_CFO_EST_RSSI_VLD_SHIFT);                                                  \
         (snr_nb) = (((cfo_est) & COM_MODE_013_RES_BODY_CFO_EST_SNR_MASK) >> COM_MODE_013_RES_BODY_CFO_EST_SNR_SHIFT);   \
-    } while (false)
+    } while ((bool)false)
 #else
 /*!
  * @brief Macro to unpack the CFO portion of Mode 0/1/3 step result structure COM_MODE_013_RES_BODY.
@@ -675,13 +675,13 @@ while (false)
 #define XCVR_LCL_Unpack013_CFO_Result(cfo_est, cfo_signed)                                                          \
     do                                                                                                              \
     {                                                                                                               \
-        uint16_t temp_cfo = (uint16_t)(((cfo_est) & COM_MODE_013_RES_BODY_CFO_EST_CFO_EST_MASK) >>                    \
+        uint16_t temp_cfo = (uint16_t)(((uint32_t)(cfo_est) & COM_MODE_013_RES_BODY_CFO_EST_CFO_EST_MASK) >>                    \
                                        COM_MODE_013_RES_BODY_CFO_EST_CFO_EST_SHIFT);                                \
         temp_cfo =                                                                                                  \
-            (((temp_cfo & 0x200U) == 0U) ? temp_cfo :                                                               \
-                                           temp_cfo | 0xFC00); /* sign extend within the 16bits unsigned storage */ \
+            (uint16_t)(((temp_cfo & 0x200U) == (uint16_t)0U) ? temp_cfo :                                                               \
+                                           temp_cfo | 0xFC00U); /* sign extend within the 16bits unsigned storage */ \
         (cfo_signed) = (int16_t)(temp_cfo);                                                                           \
-    } while (false)
+    } while ((bool)false)
 #endif
 #else
 /*!
