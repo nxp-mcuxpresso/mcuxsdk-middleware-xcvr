@@ -216,8 +216,10 @@ extern "C" {
         MAKE_MAPPED_CHAN_OVRD2((channel_num), mapped_channel); /* Maps to proper format for RSM channels */            \
         (cfg_entry)->header.CHANNEL_NUM    = (uint16_t)(mapped_channel); /* Entry is full 16 bits wide so no need to mask/shift */ \
         (cfg_entry)->header.STEP_CFO       = (step_cfo);     /* Entry is full 16 bits wide so no need to mask/shift */ \
-        (cfg_entry)->header.HPM_CAL_FACTOR = (uint16_t)(COM_MODE_013_CFG_HDR_HPM_CAL_FACTOR_HPM_CAL_FACTOR(                       \
-            ((uint16_t)(hpm_cal)) >> 1U)); /*  Field stores the 12MSBs of HPM_CAL_FACTOR: HPM_CAL_FACTOR[12:1] */                     \
+        uint32_t hpm_cal_shifted = (uint32_t)(hpm_cal);                    \
+        hpm_cal_shifted = ((hpm_cal_shifted) >> 1U);                    \
+        (cfg_entry)->header.HPM_CAL_FACTOR =                                                  \
+            COM_MODE_013_CFG_HDR_HPM_CAL_FACTOR_HPM_CAL_FACTOR(hpm_cal_shifted);             \
         (cfg_entry)->header.CTUNE_MANUAL = COM_MODE_013_CFG_HDR_CTUNE_MANUAL_CTUNE_MANUAL((ctune));                      \
         (cfg_entry)->header.PHASE_ADD    = COM_MODE_013_CFG_HDR_PHASE_ADD_PHASE_ADD((phase_add));                        \
     } while ((bool)false)
@@ -374,17 +376,17 @@ while (false)
                                              pbcd_ctune, time_drift, aa_det)                                     \
     do                                                                                                           \
     {                                                                                                            \
-        (step_id) = (((com_res_hdr_ptr)->STEP_ID & COM_RES_HDR_STEP_ID_STEP_ID_MASK) >>                              \
+        (step_id) = (uint8_t)(((com_res_hdr_ptr)->STEP_ID & COM_RES_HDR_STEP_ID_STEP_ID_MASK) >>                              \
                     COM_RES_HDR_STEP_ID_STEP_ID_SHIFT );                                                         \
-        (agc_idx) = (((com_res_hdr_ptr)->SIZE_AGC_IDX & COM_RES_HDR_SIZE_AGC_IDX_AGC_IDX_MASK) >>                    \
+        (agc_idx) = (uint8_t)(((com_res_hdr_ptr)->SIZE_AGC_IDX & COM_RES_HDR_SIZE_AGC_IDX_AGC_IDX_MASK) >>                    \
                     COM_RES_HDR_SIZE_AGC_IDX_AGC_IDX_SHIFT);                                                     \
-        (result_size) = (((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_RESULT_SIZE_MASK) >>  \
+        (result_size) = (uint8_t)(((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_RESULT_SIZE_MASK) >>  \
                        COM_RES_HDR_PBCD_CTUNE_AA_DET_RESULT_SIZE_SHIFT);                                         \
         (pbcd_ctune) = (uint8_t)(((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET & COM_RES_HDR_PBCD_CTUNE_AA_DET_PBCD_CTUNE_MASK) >>    \
                       COM_RES_HDR_PBCD_CTUNE_AA_DET_PBCD_CTUNE_SHIFT);                                           \
         (time_drift) = (uint8_t)(((com_res_hdr_ptr)->SIZE_AGC_IDX & COM_RES_HDR_SIZE_AGC_IDX_TIME_DRIFT_MASK) >>              \
                       COM_RES_HDR_SIZE_AGC_IDX_TIME_DRIFT_SHIFT);                                                \
-        (aa_det) = (uint8_t)((uint8_t)((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET >>                                               \
+        (aa_det) = (uint8_t)(((com_res_hdr_ptr)->PBCD_CTUNE_AA_DET >>                                               \
                   COM_RES_HDR_PBCD_CTUNE_AA_DET_AA_DET_SHIFT) & 0xFFU);                                                   \
     } while ((bool)false)
 #else
@@ -628,7 +630,15 @@ while (false)
         uint8_t temp_adj;                                                                                              \
         temp_adj    = (uint8_t)(((rtt_result_packed) & COM_MODE_013_RES_BODY_RTT_RESULT_RTT_INT_ADJ_MASK) >>             \
                              COM_MODE_013_RES_BODY_RTT_RESULT_RTT_INT_ADJ_SHIFT);                                   \
-        (rtt_int_adj) = (int8_t)((uint8_t)(temp_adj << 6U) >> 6U); /* sign-extend 2-bit field: shift unsigned, cast to signed */                                                \
+        uint8_t tmp_int_adj = temp_adj&0x1U; /* LSB indicates whether this is a 0 or a +/-1 */ \
+        if ((temp_adj & 0x2U) != 0U)  /* Check sign bit for 2 bit quantity */ \
+        { \
+            (rtt_int_adj) = ((int8_t)tmp_int_adj) * -1; \
+        } \
+        else \
+        { \
+            (rtt_int_adj) = (int8_t)tmp_int_adj; \
+        } \
         (rtt_p_delta) = (uint16_t)(((rtt_result_packed) & COM_MODE_013_RES_BODY_RTT_RESULT_RTT_P_DELTA_MASK) >>            \
                                  COM_MODE_013_RES_BODY_RTT_RESULT_RTT_P_DELTA_SHIFT);                                  \
     } while ((bool)false)
@@ -658,9 +668,9 @@ while (false)
         (cfo_signed) = (int16_t)(temp_cfo);                                                                           \
         (rssi_nb) = (uint8_t)((((cfo_est) & COM_MODE_013_RES_BODY_CFO_EST_RSSI_NB_MASK) >>                                        \
                   COM_MODE_013_RES_BODY_CFO_EST_RSSI_NB_SHIFT));                                                     \
-        (rssi_vld) = (((cfo_est) & COM_MODE_013_RES_BODY_CFO_EST_RSSI_VLD_MASK) >>                                      \
+        (rssi_vld) = (uint8_t)(((cfo_est) & COM_MODE_013_RES_BODY_CFO_EST_RSSI_VLD_MASK) >>                                      \
                     COM_MODE_013_RES_BODY_CFO_EST_RSSI_VLD_SHIFT);                                                  \
-        (snr_nb) = (((cfo_est) & COM_MODE_013_RES_BODY_CFO_EST_SNR_MASK) >> COM_MODE_013_RES_BODY_CFO_EST_SNR_SHIFT);   \
+        (snr_nb) = (uint8_t)(((cfo_est) & COM_MODE_013_RES_BODY_CFO_EST_SNR_MASK) >> COM_MODE_013_RES_BODY_CFO_EST_SNR_SHIFT);   \
     } while ((bool)false)
 #else
 /*!
