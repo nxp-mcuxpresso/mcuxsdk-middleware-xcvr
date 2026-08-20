@@ -14,11 +14,11 @@
 /* constants for fixed point atan2 approximation function */
 #define addfac ((int16_t)0x10EF)
 #define zp273 ((int16_t)0x045E)
-#define neg_zp273 ((int16_t)0xFBA2)
-#define piover2 ((int16_t)0x1921)
-#define neg_piover2 ((int16_t)0xE6DF)
-#define pi ((int16_t)0x3243)
-#define neg_pi ((int16_t)0xCDBC)
+#define neg_zp273   ((int16_t)(-1118))  /* two's complement of 0x045E, within int16_t range */
+#define piover2     ((int16_t)0x1921)
+#define neg_piover2 ((int16_t)(-6433))  /* two's complement of 0x1921, within int16_t range */
+#define pi          ((int16_t)0x3243)
+#define neg_pi      ((int16_t)(-12868)) /* two's complement of 0xCDBC, within int16_t range */
 
 #define USE_FPINLINE (1)
 #define NUMQBITS (12U) /* define the number of fractional bits to be used. Leaves 3 integer bits & a sign bit */
@@ -29,7 +29,7 @@ static inline int16_t FPERRORCHECK(int16_t x, int16_t y)
     int16_t retval = 0; /* non-error return */
     if (((y == 0) && (x == 0)) || ((x > 4095) || (x < -4096) || (y > 4095) || (y < -4096)))
     {
-        retval = (int16_t)0xFFFF; /* invalid return value indicating an error */
+        retval = (int16_t)(-1); /* invalid return value indicating an error (-1 == 0xFFFF in two's complement) */
     }
     return retval;
 };
@@ -53,34 +53,38 @@ static inline int16_t FPABS(int16_t x)
 
 static inline int16_t FPADD(int16_t x, int16_t y)
 {
-    return x + y; /* simple addition works in fixed point */
+    /* Perform addition in int32 to avoid implicit narrowing on return (CERT INT31-C).
+     * Inputs are bounded to 12-bit Q-format range by FPERRORCHECK so no overflow occurs. */
+    return (int16_t)((int32_t)x + (int32_t)y);
 };
 
 static inline int16_t FPSUB(int16_t x, int16_t y)
 {
-    return x - y; /* simple subtraction works in fixed point */
+    /* Perform subtraction in int32 to avoid implicit narrowing on return (CERT INT31-C).
+     * Inputs are bounded to 12-bit Q-format range by FPERRORCHECK so no underflow occurs. */
+    return (int16_t)((int32_t)x - (int32_t)y);
 };
 
 static inline int16_t FPMUL(int16_t x, int16_t y, uint8_t q)
 {
-    int32_t retval         = (int32_t)x * (int32_t)y; /* perform the multiply */
-    uint32_t temp_prod_u32 = (uint32_t)retval; /* now cast the int32 to uint32. Upper 16 bits will be zeros or 1s */
-    /* scale back to the original scale */
-    temp_prod_u32 = temp_prod_u32 >> q;        /* assert above guarantees shift strictly less than 16 */
-    temp_prod_u32 &= 0x0000FFFFU;              /* mask off the upper bits to get within 16 bit size */
-    int16_t temp_i16 = (int16_t)temp_prod_u32; /* cast back to int16 */
-    return temp_i16;
+    /* Multiply in int32, shift right (well-defined for the 12-bit bounded inputs), then
+     * saturate before the narrowing cast to int16 to satisfy CERT INT31-C. */
+    int32_t retval = ((int32_t)x * (int32_t)y) >> q;
+    if (retval > (int32_t)INT16_MAX) { retval = (int32_t)INT16_MAX; }
+    if (retval < (int32_t)INT16_MIN) { retval = (int32_t)INT16_MIN; }
+    return (int16_t)retval;
 };
 
 static inline int16_t FPDIV(int16_t x, int16_t y, uint8_t q)
 {
-    int32_t temp_x_i32 =
-        (int32_t)x; /* cast from int16 to int32 type, upper 16 bits will be zeros or 1s based on sign of x */
-    uint32_t temp_x_u32 = (uint32_t)temp_x_i32;
-    temp_x_u32 = temp_x_u32 << q; /* Scale up, shift strictly less than 16 due to assert above. Sign bits preserved */
-    int32_t retval = (int32_t)(temp_x_u32); /*  cast the result back to an int32 type */
-    retval         = retval / y;
-    return (int16_t)(retval); /* mask off upper bits and cast back to int16 */
+    /* Scale numerator in int32 (inputs bounded to +/-4095 and q=12, so max scaled value is
+     * 4095 * 4096 = 16,773,120 which fits in int32). Divide in int32, then saturate before
+     * narrowing cast to int16 to satisfy CERT INT31-C. Division is always y/x or x/y where
+     * the larger operand is the denominator, so the result is always in [-1, +1] Q12 range. */
+    int32_t retval = ((int32_t)x << q) / (int32_t)y;
+    if (retval > (int32_t)INT16_MAX) { retval = (int32_t)INT16_MAX; }
+    if (retval < (int32_t)INT16_MIN) { retval = (int32_t)INT16_MIN; }
+    return (int16_t)retval;
 };
 
 static inline int16_t INNERCALC(int16_t iqd, int16_t sgz, uint8_t q)
