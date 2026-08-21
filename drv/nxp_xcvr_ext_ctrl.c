@@ -1836,10 +1836,10 @@ static uint32_t XCVR_LCL_GroupNibbles(const lclAntennaSwitchingLutConfig_t *pCon
     uint32_t temp_value = 0U;
     if (startindex <= (32U-8U)) /* make sure not to overflow loop counter or go off end of array */
     {
-        for (uint8_t j = startindex; j < (startindex + 8U); j++)
+        for (uint8_t i = 0U; i < 8U; i++)
         {
-            temp_value |= (((uint32_t)(pConfig->antennaLut[j]) & 0xFUL)
-                           << (4U * (j - startindex))); /* assemble 8 chunks of 4 bits into a 32bit word*/
+            temp_value |= (((uint32_t)(pConfig->antennaLut[startindex + i]) & 0xFUL)
+                           << (4U * i)); /* assemble 8 chunks of 4 bits into a 32-bit word */
         }
     }
     return (temp_value);

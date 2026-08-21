@@ -3698,18 +3698,25 @@ uint8_t XCVR_LCL_CalcAdcOffset(uint8_t adc_offset_s7, uint8_t dig_corr_s8)
 #endif /*  !defined(GCOV_DO_COVERAGE) */
 {
 /* Common ADC offset calculation for use by XCVR_LCL_SetupManualDcoc() */
-    uint8_t temp_adc_offset;
     int16_t temp_total_offset;
-    /* Input data is 7 bit 2's complement signed value stored in uint8_t */                                                        
-    /* Sign extend from 7 to 8 bits, still in uint8_t */
-    temp_adc_offset = adc_offset_s7;
-    temp_adc_offset |= (((temp_adc_offset & 0x40U) == 0x40U) ? 0x80U : 0x0U); 
-    /* Cast the signed data (stored in unsigned 8 bits) to int8_t for combination with another int8_t (in an int16_t
-     * variable) */
-    temp_total_offset = (int8_t)temp_adc_offset;
-    /* add 8 bit signed data */
-    /* Input data for digital correction is 2's complement 8bit stored in uint8_t */
-    temp_total_offset += (int8_t)dig_corr_s8;
+    uint8_t temp_input_val;
+    /* Input data is 7 bit 2's complement signed value stored in uint8_t.
+     * Sign-extend from 7 bits to int16_t using defined arithmetic: mask off the
+     * magnitude bits, then subtract 64 if the sign bit (bit 6) is set. */
+    temp_input_val = (adc_offset_s7 & 0x3FU);
+    temp_total_offset = (int16_t)(temp_input_val);
+    if ((adc_offset_s7 & 0x40U) != 0U)
+    {
+        temp_total_offset -= (int16_t)64;
+    }
+    /* Add 8-bit signed digital correction using defined arithmetic: mask off the
+     * magnitude bits, then subtract 128 if the sign bit (bit 7) is set. */
+    temp_input_val = (dig_corr_s8 & 0x7FU);
+    temp_total_offset += (int16_t)(temp_input_val);
+    if ((dig_corr_s8 & 0x80U) != 0U)
+    {
+        temp_total_offset -= (int16_t)128;
+    }
     /* saturate to ensure the total (stored in 16 bits) fits within the allocated 7 bits (signed) */
     if (temp_total_offset > 63)
     {
@@ -3723,7 +3730,7 @@ uint8_t XCVR_LCL_CalcAdcOffset(uint8_t adc_offset_s7, uint8_t dig_corr_s8)
         }
     }
     /* cast the signed 16 bits back to unsigned 8 bits */
-    return  (uint8_t)(temp_total_offset); 
+    return  (uint8_t)(temp_total_offset);
 }
 
 uint32_t XCVR_LCL_SetupManualDcoc(void)
