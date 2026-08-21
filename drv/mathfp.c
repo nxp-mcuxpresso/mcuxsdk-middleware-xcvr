@@ -67,23 +67,21 @@ static inline int16_t FPSUB(int16_t x, int16_t y)
 
 static inline int16_t FPMUL(int16_t x, int16_t y, uint8_t q)
 {
-    /* Multiply in int32, shift right (well-defined for the 12-bit bounded inputs), then
-     * saturate before the narrowing cast to int16 to satisfy CERT INT31-C. */
-    int32_t retval = ((int32_t)x * (int32_t)y) >> q;
-    if (retval > (int32_t)INT16_MAX) { retval = (int32_t)INT16_MAX; }
-    if (retval < (int32_t)INT16_MIN) { retval = (int32_t)INT16_MIN; }
+    /* Multiply in int32, divide by power-of-2 scale factor (avoids signed shift per MISRA 10.1).
+     * Inputs are bounded to 12-bit Q-format range by FPERRORCHECK so no overflow occurs. */
+    uint32_t shift_val = (uint32_t)1U << (uint32_t)q;
+    int32_t retval = ((int32_t)x * (int32_t)y) / (int32_t)(shift_val);
     return (int16_t)retval;
 };
 
 static inline int16_t FPDIV(int16_t x, int16_t y, uint8_t q)
 {
-    /* Scale numerator in int32 (inputs bounded to +/-4095 and q=12, so max scaled value is
-     * 4095 * 4096 = 16,773,120 which fits in int32). Divide in int32, then saturate before
-     * narrowing cast to int16 to satisfy CERT INT31-C. Division is always y/x or x/y where
-     * the larger operand is the denominator, so the result is always in [-1, +1] Q12 range. */
-    int32_t retval = ((int32_t)x << q) / (int32_t)y;
-    if (retval > (int32_t)INT16_MAX) { retval = (int32_t)INT16_MAX; }
-    if (retval < (int32_t)INT16_MIN) { retval = (int32_t)INT16_MIN; }
+    /* Scale numerator in int32 by multiplying by power-of-2 scale factor (avoids signed shift
+     * per MISRA 10.1). Inputs bounded to +/-4095 and q=12, so max scaled value is
+     * 4095 * 4096 = 16,773,120 which fits in int32. Division is always y/x or x/y where
+     * the larger operand is the denominator, so result fits in int16_t range. */
+    uint32_t shift_val = (uint32_t)1U << (uint32_t)q;
+    int32_t retval = ((int32_t)x * (int32_t)(shift_val)) / (int32_t)y;
     return (int16_t)retval;
 };
 

@@ -3699,17 +3699,20 @@ uint8_t XCVR_LCL_CalcAdcOffset(uint8_t adc_offset_s7, uint8_t dig_corr_s8)
 {
 /* Common ADC offset calculation for use by XCVR_LCL_SetupManualDcoc() */
     int16_t temp_total_offset;
+    uint8_t temp_input_val;
     /* Input data is 7 bit 2's complement signed value stored in uint8_t.
      * Sign-extend from 7 bits to int16_t using defined arithmetic: mask off the
      * magnitude bits, then subtract 64 if the sign bit (bit 6) is set. */
-    temp_total_offset = (int16_t)(adc_offset_s7 & 0x3FU);
+    temp_input_val = (adc_offset_s7 & 0x3FU);
+    temp_total_offset = (int16_t)(temp_input_val);
     if ((adc_offset_s7 & 0x40U) != 0U)
     {
         temp_total_offset -= (int16_t)64;
     }
     /* Add 8-bit signed digital correction using defined arithmetic: mask off the
      * magnitude bits, then subtract 128 if the sign bit (bit 7) is set. */
-    temp_total_offset += (int16_t)(dig_corr_s8 & 0x7FU);
+    temp_input_val = (dig_corr_s8 & 0x7FU);
+    temp_total_offset += (int16_t)(temp_input_val);
     if ((dig_corr_s8 & 0x80U) != 0U)
     {
         temp_total_offset -= (int16_t)128;
